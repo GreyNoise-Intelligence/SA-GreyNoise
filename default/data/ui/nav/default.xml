@@ -1,0 +1,7 @@
+<nav search_view="search" color="#3C444D">
+<view name="overview" default="true"/>
+<view name="noise_ip_addresses"/>
+<view name="live_investigation"/>
+<view name="configuration"/>
+<view name="search" label="Search"/>
+</nav>

@@ -1,0 +1,322 @@
+<form isDashboard="true">
+  <label>Overview</label>
+  <fieldset submitButton="false"></fieldset>
+  <row>
+  
+    <panel>
+      <single>
+        <title># of IPs scanned in the deployment</title>
+        <search>
+          <query>
+            | inputlookup gn_scan_deployment_ip_lookup 
+            | stats count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+        <option name="drilldown">all</option>
+        <drilldown>
+          <link target="_blank">
+            <![CDATA[
+              /app/app-greynoise/noise_ip_addresses?form.tkn_ip_address=*
+            ]]>
+          </link>
+        </drilldown>
+      </single>
+    </panel>
+
+    <panel>
+      <single>
+        <title># of Noise IPs in the deployment</title>
+        <search>
+          <query>
+            | inputlookup gn_scan_deployment_ip_lookup where (noise="1") 
+            | stats count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+        <option name="drilldown">all</option>
+        <drilldown>
+          <link target="_blank">
+            <![CDATA[
+              /app/app-greynoise/noise_ip_addresses?form.tkn_ip_address=*&form.tkn_noise=1
+            ]]>
+          </link>
+        </drilldown>
+      </single>
+    </panel>
+
+    <panel>
+      <single>
+        <title>Percentage of Noise IPs in the deployment</title>
+        <search>
+          <query>
+            | inputlookup gn_scan_deployment_ip_lookup
+            | stats count(eval(noise=1)) AS noisy_ips, count(eval(noise=1 OR noise=0)) AS total_ips
+            | eval noise_percent=((noisy_ips/total_ips)*100)
+            | eval noise_percent = if(noise_percent>0, noise_percent, 0)
+            | table noise_percent
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0.00</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="unit">%</option>
+      </single>
+    </panel>
+
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title># of Malicious IP Addresses today</title>
+        <search>
+          <query>
+            | inputlookup gn_overview_lookup where (stats_field=classification AND classification=malicious)
+            | table stats_count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+
+    <panel>
+      <single>
+        <title># of Benign IP Addresses today</title>
+        <search>
+          <query>
+            | inputlookup gn_overview_lookup where (stats_field=classification AND classification=benign)
+            | table stats_count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+
+    <panel>
+      <single>
+        <title># of Unknown IP Addresses today</title>
+        <search>
+          <query>
+            | inputlookup gn_overview_lookup where (stats_field=classification AND classification=unknown)
+            | table stats_count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+
+  </row>
+  <row>
+
+    <panel>
+      <html><p><i><b>Note:</b> The data presented in the below panels may lag by 30 minutes.</i></p></html>
+      <input type="dropdown" token="tkn_classification" searchWhenChanged="true">
+        <label>Classification</label>
+        <choice value="*">All</choice>
+        <choice value="malicious">malicious</choice>
+        <choice value="benign">benign</choice>
+        <choice value="unknown">unknown</choice>
+        <default>*</default>
+      </input>
+    </panel>
+
+  </row>
+  <row>
+
+    <panel>
+      <chart>
+        <title>Top 10 Organizations</title>
+        <search>
+          <query>
+            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="organization")
+            | stats sum(stats_count) as stats_count by stats_value
+            | sort -stats_count
+            | head 10
+            | rename stats_value as Organization, stats_count as count
+            | table Organization, count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_blank">
+            <![CDATA[
+              /app/app-greynoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_organization=$click.value$&form.redirect=redirect
+            ]]>
+          </link>
+        </drilldown>
+      </chart>
+    </panel>
+
+    <panel>
+      <chart>
+        <title>Top 10 Actors</title>
+        <search>
+          <query>
+            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="actor")
+            | stats sum(stats_count) as stats_count by stats_value
+            | sort -stats_count
+            | head 10 
+            | rename stats_value as Actor, stats_count as count
+            | table Actor, count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_blank">
+            <![CDATA[
+              /app/app-greynoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_actor=$click.value$&form.redirect=redirect
+            ]]>
+          </link>
+        </drilldown>
+      </chart>
+    </panel>
+
+  </row>
+  <row>
+    
+    <panel>
+      <chart>
+        <title>Top 10 Tags</title>
+        <search>
+          <query>
+            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="tag")
+            | stats sum(stats_count) as stats_count by stats_value
+            | sort -stats_count
+            | head 10
+            | rename stats_value as Tag, stats_count as Count
+            | table Tag, Count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">bar</option>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.seriesColors">
+          [0x669966]
+        </option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_blank">
+            <![CDATA[
+              /app/app-greynoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_tag=$click.value$&form.redirect=redirect
+            ]]>
+          </link>
+        </drilldown>
+      </chart>
+    </panel>
+    
+    <panel>
+      <chart>
+        <title>Top 10 ASN</title>
+        <search>
+          <query>
+            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="asn")
+            | stats sum(stats_count) as stats_count by stats_value
+            | sort -stats_count
+            | head 10
+            | rename stats_value as ASN, stats_count as Count
+            | table ASN, Count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.seriesColors">
+          [0x6B1037]
+        </option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_blank">
+            <![CDATA[
+              /app/app-greynoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_asn=$click.value$&form.redirect=redirect
+            ]]>
+          </link>
+        </drilldown>
+      </chart>
+    </panel>
+
+  </row>
+  <row>
+    
+    <panel>
+      <chart>
+        <title>Top 10 Categories</title>
+        <search>
+          <query>
+            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="category")
+            | stats sum(stats_count) as stats_count by stats_value
+            | sort -stats_count
+            | head 10
+            | rename stats_value as Category, stats_count as Count
+            | table Category, Count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.seriesColors">
+          [0x067097]
+        </option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    
+    <panel>
+      <chart>
+        <title>Top 10 OS</title>
+        <search>
+          <query>
+            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="operating_system")
+            | stats sum(stats_count) as stats_count by stats_value
+            | sort -stats_count
+            | head 10
+            | rename stats_value as "Operating System", stats_count as Count
+            | table "Operating System", Count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">bar</option>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.seriesColors">
+          [0x986B1C]
+        </option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+
+  </row>
+</form>

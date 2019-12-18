@@ -1,0 +1,3 @@
+div[data-test='real-time-column'], div[data-test='relative-column'][data-divider="false"], div[data-test='other-column'], div[data-test-panel-id="realTime"], div[data-test-panel-id="dateTime"], div[data-test-panel-id="advanced"], div[data-test-panel-id="relative"] {
+    display: none;
+ }

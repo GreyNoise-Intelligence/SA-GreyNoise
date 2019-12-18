@@ -1,0 +1,105 @@
+<form isDashboard="true">
+  <label>Noise IP Addresses</label>
+  <fieldset submitButton="false">
+
+    <input type="text" token="tkn_ip_address" searchWhenChanged="true">
+      <label>IP Addresses</label>
+      <default>*</default>
+      <!-- Reset token tkn_ip_for_request on any change in inputs 
+      to disable the existing IP noise drilldown panel -->
+      <change>
+        <unset token="tkn_ip_for_request"></unset>
+      </change>
+      <prefix>"</prefix>
+      <suffix>"</suffix>
+    </input>
+
+    <input type="dropdown" token="tkn_noise" searchWhenChanged="true">
+      <label>Noise status</label>
+      <choice value="*">All</choice>
+      <choice value="1">True</choice>
+      <choice value="0">False</choice>
+      <default>*</default>
+      <!-- Reset token tkn_ip_for_request on any change in inputs 
+      to disable the existing IP noise drilldown panel -->
+      <change>
+        <unset token="tkn_ip_for_request"></unset>
+      </change>
+    </input>
+  </fieldset>
+
+  <row>
+    <panel>
+      <table>
+        <search>
+          <query>
+            | inputlookup gn_scan_deployment_ip_lookup where (_key=$tkn_ip_address$)
+            | search noise=$tkn_noise$
+            | eval noise = if(noise=="1", "True", if(noise=="0", "False", "NA"))
+            | rename _key as IP, noise as Noise, last_checked as "Last Checked"
+            | eval "Check Live Status" = "Check Live Status"
+            | lookup gn_code_mapping local=true code OUTPUT code_message as "Code Message"
+            | table IP, Noise, "Code Message", "Last Checked", "Check Live Status"
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="count">10</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">cell</option>
+        <drilldown>
+          <condition field="IP">
+            <unset token="tkn_ip_for_request"></unset>
+            <link target="_blank">
+              <![CDATA[
+                /app/app-greynoise/live_investigation?form.tkn_ip_address=$row.IP$&form.redirect=redirect&form.last_7_days=true
+              ]]>
+            </link>
+          </condition>
+
+          <condition field="Noise">
+            <unset token="tkn_ip_for_request"></unset>
+            <link target="_blank">
+              <![CDATA[
+                /app/app-greynoise/live_investigation?form.tkn_ip_address=$row.IP$&form.redirect=redirect&form.last_7_days=true
+              ]]>
+            </link>
+          </condition>
+
+          <!-- No drill down for Last Checked field -->
+          <condition field="Last Checked"></condition>
+          
+          <!-- No drill down for the Code Message field -->
+          <condition field="Code Message"></condition>
+          <condition field="Check Live Status">
+            <set token="tkn_ip_for_request">$row.IP$</set>
+          </condition>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel depends="$tkn_ip_for_request$">
+      <single>
+        <title>Current status of IP: $tkn_ip_for_request$</title>
+        <search>
+          <query>
+            | gnquick ip="$tkn_ip_for_request$"
+            | eval last_checked=strftime(time(), "%Y-%m-%d %T")
+            | eval _key = ip
+            | eval noise = if(noise=1, 1, if(noise=0, 0, "Could not retrieve noise status"))
+            | outputlookup gn_scan_deployment_ip_lookup append=true
+            | eval noise = if(noise=1, "True", if(noise=0, "False", "Could not retrieve noise status"))
+            | table noise
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+  </row>
+</form>

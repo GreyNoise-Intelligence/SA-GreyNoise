@@ -1,0 +1,11 @@
+
+[]
+access = read : [ * ], write : [ admin ]
+export = system
+
+[views]
+access = read : [ * ], write : [ admin ]
+export = none
+
+[workflow_actions/greynoise_identify_noise]
+export = system

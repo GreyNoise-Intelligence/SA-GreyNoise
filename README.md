@@ -17,27 +17,6 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
  - OS: Platform independent
  - Vendor Products: GreyNoise API
 
-# OPEN SOURCE COMPONENTS AND LICENSES #
-The third party library and its license information is as follows:
-
- - futures version 3.3.0 https://pypi.org/project/futures/ (LICENSE https://github.com/agronholm/pythonfutures/blob/master/LICENSE)
- - concurrent.futures version 3.7.4 https://docs.python.org/3/library/concurrent.futures.html (LICENSE https://github.com/python/cpython/blob/v3.7.4/LICENSE)
- - cachetools version 3.1.1 https://pypi.org/project/cachetools/ (LICENSE https://github.com/tkem/cachetools/blob/v3.1.1/LICENSE)
- - certifi version 2019.09.11 https://pypi.org/project/certifi/ (LICENSE https://github.com/certifi/python-certifi/blob/2019.09.11/LICENSE)
- - chardet version 3.0.4 https://pypi.org/project/chardet/ (LICENSE https://github.com/chardet/chardet/blob/3.0.4/LICENSE)
- - idna version 2.8 https://pypi.org/project/idna/ (LICENSE https://github.com/kjd/idna/blob/v2.8/LICENSE.rst)
- - more_itertools version 5.0.0 https://pypi.org/project/more-itertools/ (LICENSE https://github.com/erikrose/more-itertools/blob/5.0.0/LICENSE)
- - requests version 2.22.0 https://pypi.org/project/requests/ (LICENSE https://github.com/psf/requests/blob/v2.22.0/LICENSE)
- - schematics version 2.1.0 https://pypi.org/project/schematics/ (LICENSE https://github.com/schematics/schematics/blob/v2.1.0/LICENSE)
- - sortedcontainers version 2.1.0 https://pypi.org/project/sortedcontainers/ (LICENSE https://github.com/grantjenks/python-sortedcontainers/tree/v2.1.0)
- - splunklib version 1.6.11 https://github.com/splunk/splunk-sdk-python/tree/master/splunklib (LICENSE https://github.com/splunk/splunk-sdk-python/blob/1.6.11/LICENSE)
- - structlog version 19.2.0 https://pypi.org/project/structlog/ (LICENSE https://github.com/hynek/structlog/blob/19.2.0/LICENSE)
- - urllib3 version 1.25.7 https://pypi.org/project/urllib3/ (LICENSE https://github.com/urllib3/urllib3/blob/1.25.7/LICENSE.txt)
- - decorator.py version 4.1.2 https://pypi.org/project/decorator/ (LICENSE https://github.com/micheles/decorator/blob/4.1.2/LICENSE.txt)
- - six.py version 1.13.0 https://pypi.org/project/six/ (LICENSE https://github.com/benjaminp/six/blob/1.13.0/LICENSE)
- - daterangepicker.css and daterangepicker.min.js version 3.14.1 (LICENSE https://www.daterangepicker.com/#license)
- - moment.min.js version 2.18.1 (LICENSE https://github.com/moment/momentjs.com/blob/master/LICENSE)
-
 # TOPOLOGY AND SETTING UP SPLUNK ENVIRONMENT #
 Standalone Mode
  
@@ -187,6 +166,28 @@ To uninstall app, user can follow below steps:
  - Email: support@greynoise.io
  - Hours: 9AM-5PM EDT Monday-Friday
  - Observed Holidays: Major US Holidays
+
+# OPEN SOURCE COMPONENTS AND LICENSES #
+The third party library and its license information is as follows:
+
+ - futures version 3.3.0 https://pypi.org/project/futures/ (LICENSE https://github.com/agronholm/pythonfutures/blob/master/LICENSE)
+ - concurrent.futures version 3.7.4 https://docs.python.org/3/library/concurrent.futures.html (LICENSE https://github.com/python/cpython/blob/v3.7.4/LICENSE)
+ - cachetools version 3.1.1 https://pypi.org/project/cachetools/ (LICENSE https://github.com/tkem/cachetools/blob/v3.1.1/LICENSE)
+ - certifi version 2019.09.11 https://pypi.org/project/certifi/ (LICENSE https://github.com/certifi/python-certifi/blob/2019.09.11/LICENSE)
+ - chardet version 3.0.4 https://pypi.org/project/chardet/ (LICENSE https://github.com/chardet/chardet/blob/3.0.4/LICENSE)
+ - idna version 2.8 https://pypi.org/project/idna/ (LICENSE https://github.com/kjd/idna/blob/v2.8/LICENSE.rst)
+ - more_itertools version 5.0.0 https://pypi.org/project/more-itertools/ (LICENSE https://github.com/erikrose/more-itertools/blob/5.0.0/LICENSE)
+ - requests version 2.22.0 https://pypi.org/project/requests/ (LICENSE https://github.com/psf/requests/blob/v2.22.0/LICENSE)
+ - schematics version 2.1.0 https://pypi.org/project/schematics/ (LICENSE https://github.com/schematics/schematics/blob/v2.1.0/LICENSE)
+ - sortedcontainers version 2.1.0 https://pypi.org/project/sortedcontainers/ (LICENSE https://github.com/grantjenks/python-sortedcontainers/tree/v2.1.0)
+ - splunklib version 1.6.11 https://github.com/splunk/splunk-sdk-python/tree/master/splunklib (LICENSE https://github.com/splunk/splunk-sdk-python/blob/1.6.11/LICENSE)
+ - structlog version 19.2.0 https://pypi.org/project/structlog/ (LICENSE https://github.com/hynek/structlog/blob/19.2.0/LICENSE)
+ - urllib3 version 1.25.7 https://pypi.org/project/urllib3/ (LICENSE https://github.com/urllib3/urllib3/blob/1.25.7/LICENSE.txt)
+ - decorator.py version 4.1.2 https://pypi.org/project/decorator/ (LICENSE https://github.com/micheles/decorator/blob/4.1.2/LICENSE.txt)
+ - six.py version 1.13.0 https://pypi.org/project/six/ (LICENSE https://github.com/benjaminp/six/blob/1.13.0/LICENSE)
+ - daterangepicker.css and daterangepicker.min.js version 3.14.1 (LICENSE https://www.daterangepicker.com/#license)
+ - moment.min.js version 2.18.1 (LICENSE https://github.com/moment/momentjs.com/blob/master/LICENSE)
+
 
 # COPYRIGHT #
 

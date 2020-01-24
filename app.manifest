@@ -4,7 +4,7 @@
     "title": "GreyNoise App for Splunk",
     "id": {
       "group": null,
-      "name": "app-greynoise",
+      "name": "SA-GreyNoise",
       "version": "2.0.0"
     },
     "author": [

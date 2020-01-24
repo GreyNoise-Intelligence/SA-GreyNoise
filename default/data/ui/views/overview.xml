@@ -19,7 +19,7 @@
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/app-greynoise/noise_ip_addresses?form.tkn_ip_address=*
+              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*
             ]]>
           </link>
         </drilldown>
@@ -42,7 +42,7 @@
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/app-greynoise/noise_ip_addresses?form.tkn_ip_address=*&form.tkn_noise=1
+              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*&form.tkn_noise=1
             ]]>
           </link>
         </drilldown>
@@ -159,7 +159,7 @@
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/app-greynoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_organization=$click.value$&form.redirect=redirect
+              /app/SA-GreyNoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_organization=$click.value$&form.redirect=redirect
             ]]>
           </link>
         </drilldown>
@@ -187,7 +187,7 @@
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/app-greynoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_actor=$click.value$&form.redirect=redirect
+              /app/SA-GreyNoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_actor=$click.value$&form.redirect=redirect
             ]]>
           </link>
         </drilldown>
@@ -223,7 +223,7 @@
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/app-greynoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_tag=$click.value$&form.redirect=redirect
+              /app/SA-GreyNoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_tag=$click.value$&form.redirect=redirect
             ]]>
           </link>
         </drilldown>
@@ -256,7 +256,7 @@
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/app-greynoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_asn=$click.value$&form.redirect=redirect
+              /app/SA-GreyNoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_asn=$click.value$&form.redirect=redirect
             ]]>
           </link>
         </drilldown>

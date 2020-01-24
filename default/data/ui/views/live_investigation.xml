@@ -96,7 +96,7 @@
         <drilldown>
           <link target="_blank">
               <![CDATA[
-                /app/app-greynoise/noise_ip_addresses?form.tkn_ip_address=$row.IP Address$
+                /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=$row.IP Address$
               ]]>
           </link>
         </drilldown>

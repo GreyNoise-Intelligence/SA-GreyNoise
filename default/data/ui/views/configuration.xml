@@ -1,4 +1,4 @@
 <?xml version="1.0"?>
-<view template="app-greynoise:templates/base.html" type="html" isDashboard="False">
+<view template="SA-GreyNoise:templates/base.html" type="html" isDashboard="False">
     <label>Configuration</label>
 </view>

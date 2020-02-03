@@ -9,6 +9,8 @@ import requests
 import structlog
 
 from greynoise.__version__ import __version__
+from greynoise.api.analyzer import Analyzer
+from greynoise.api.filter import Filter
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise.util import configure_logging, load_config, validate_ip
 
@@ -29,7 +31,6 @@ class GreyNoise(object):
     """
 
     NAME = "GreyNoise"
-    BASE_URL = "https://enterprise.api.greynoise.io"
     API_VERSION = "v2"
     EP_GNQL = "experimental/gnql"
     EP_GNQL_STATS = "experimental/gnql/stats"
@@ -74,18 +75,31 @@ class GreyNoise(object):
             octet=r"(?:(?:25[0-5])|(?:2[0-4]\d)|(?:1?\d?\d))"
         )
     )
-    FILTER_TEXT_CHUNK_SIZE = 10000
 
-    def __init__(self, api_key=None, timeout=None, use_cache=True):
-        if api_key is None or timeout is None:
+    def __init__(
+        self,
+        api_key=None,
+        api_server=None,
+        timeout=None,
+        use_cache=True,
+        integration_name=None,
+    ):
+        if any(
+            configuration_value is None
+            for configuration_value in (api_key, timeout, api_server)
+        ):
             config = load_config()
             if api_key is None:
                 api_key = config["api_key"]
+            if api_server is None:
+                api_server = config["api_server"]
             if timeout is None:
                 timeout = config["timeout"]
         self.api_key = api_key
+        self.api_server = api_server
         self.timeout = timeout
         self.use_cache = use_cache
+        self.integration_name = integration_name
         self.session = requests.Session()
 
     def _request(self, endpoint, params=None, json=None, method="get"):
@@ -106,13 +120,22 @@ class GreyNoise(object):
         """
         if params is None:
             params = {}
+
+        user_agent_parts = ["GreyNoise/{}".format(__version__)]
+        if self.integration_name:
+            user_agent_parts.append("({})".format(self.integration_name))
         headers = {
-            "User-Agent": "GreyNoise/{}".format(__version__),
+            "User-Agent": " ".join(user_agent_parts),
             "key": self.api_key,
         }
-        url = "/".join([self.BASE_URL, self.API_VERSION, endpoint])
+        url = "/".join([self.api_server, self.API_VERSION, endpoint])
         LOGGER.debug(
-            "Sending API request...", url=url, method=method, params=params, json=json
+            "Sending API request...",
+            url=url,
+            method=method,
+            headers=headers,
+            params=params,
+            json=json,
         )
         request_method = getattr(self.session, method)
         response = request_method(
@@ -138,11 +161,23 @@ class GreyNoise(object):
 
         return body
 
+    def analyze(self, text):
+        """Aggregate stats related to IP addresses from a given text.
+
+        :param text: Text input
+        :type text: file-like | str
+        :return: Aggregated stats for all the IP addresses found.
+        :rtype: dict
+
+        """
+        analyzer = Analyzer(self)
+        return analyzer.analyze(text)
+
     def filter(self, text, noise_only=False):
         """Filter lines that contain IP addresses from a given text.
 
         :param text: Text input
-        :type text: str
+        :type text: file-like | str
         :param noise_only:
             If set, return only lines that contain IP addresses classified as noise,
             otherwise, return lines that contain IP addresses not classified as noise.
@@ -151,83 +186,9 @@ class GreyNoise(object):
         :rtype: iterable
 
         """
-        chunks = more_itertools.chunked(text, self.FILTER_TEXT_CHUNK_SIZE)
-        for chunk in chunks:
-            yield self._filter_chunk(chunk, noise_only)
-
-    def _filter_chunk(self, text, noise_only):
-        """Filter chunk of lines that contain IP addresses from a given text.
-
-        :param text: Text input
-        :type text: str
-        :param noise_only:
-            If set, return only lines that contain IP addresses classified as noise,
-            otherwise, return lines that contain IP addresses not classified as noise.
-        :type noise_only: bool
-        :return: Filtered line
-
-        """
-        text_ip_addresses = set()
-        for input_line in text:
-            text_ip_addresses.update(self.IPV4_REGEX.findall(input_line))
-
-        noise_ip_addresses = {
-            result["ip"] for result in self.quick(text_ip_addresses) if result["noise"]
-        }
-
-        def all_ip_addresses_noisy(line):
-            """Select lines that contain IP addresses and all of them are noisy.
-
-            :param line: Line being processed.
-            :type line: str
-            :return: True if line contains IP addresses and all of them are noisy.
-            :rtype: bool
-
-            """
-            line_ip_addresses = self.IPV4_REGEX.findall(line)
-            return line_ip_addresses and all(
-                line_ip_address in noise_ip_addresses
-                for line_ip_address in line_ip_addresses
-            )
-
-        def add_markup(match):
-            """Add markup to surround IP address value with proper tag.
-
-            :param match: IP address match
-            :type match: re.Match
-            :return: IP address with markup
-            :rtype: str
-
-            """
-            ip_address = match.group(0)
-            if ip_address in noise_ip_addresses:
-                tag = "noise"
-            else:
-                tag = "not-noise"
-
-            return "<{tag}>{ip_address}</{tag}>".format(ip_address=ip_address, tag=tag)
-
-        if noise_only:
-            line_matches = all_ip_addresses_noisy
-        else:
-
-            def line_matches(line):
-                """Match all lines that contain either text or non-noisy lines.
-
-                :param line: Line being processed.
-                :type line: str
-                :return: True if line matches as expected.
-                :rtype: bool
-
-                """
-                return not all_ip_addresses_noisy(line)
-
-        filtered_lines = [
-            self.IPV4_REGEX.subn(add_markup, input_line)[0]
-            for input_line in text
-            if line_matches(input_line)
-        ]
-        return "".join(filtered_lines)
+        filter = Filter(self)
+        for filtered_chunk in filter.filter(text, noise_only=noise_only):
+            yield filtered_chunk
 
     def interesting(self, ip_address):
         """Report an IP as "interesting".
@@ -309,9 +270,7 @@ class GreyNoise(object):
         if isinstance(ip_addresses, str):
             ip_addresses = [ip_addresses]
 
-        LOGGER.debug(
-            "Getting noise status for %s...", ip_addresses, ip_addresses=ip_addresses
-        )
+        LOGGER.debug("Getting noise status...", ip_addresses=ip_addresses)
         ip_addresses = [
             ip_address
             for ip_address in ip_addresses
@@ -366,11 +325,8 @@ class GreyNoise(object):
             )
         return results
 
-    def stats(self, query, count=None):
+    def stats(self, query):
         """Run GNQL stats query."""
-        LOGGER.debug("Running GNQL stats query: %s...", query, query=query, count=count)
-        params={"query": query}
-        if count is not None:
-            params["count"] = count
-        response = self._request(self.EP_GNQL_STATS, params=params)
+        LOGGER.debug("Running GNQL stats query: %s...", query, query=query)
+        response = self._request(self.EP_GNQL_STATS, params={"query": query})
         return response

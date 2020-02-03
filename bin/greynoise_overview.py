@@ -76,7 +76,7 @@ class OverviewCommand(GeneratingCommand):
 
                 for key, value in queries.items():
                     logger.debug("Fetching records for classification: {}".format(key))
-                    stats_data = api_client.stats(value, None)
+                    stats_data = api_client.stats(value)
                     if stats_data.get("stats"):
                         self.handle_stats(stats_data.get("stats"), key)
                     else:

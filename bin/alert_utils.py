@@ -42,7 +42,7 @@ class AlertBase(ModularAction):
         api_key = get_api_key(self.session_key, self.logger)
         if not api_key:
             self._handle_alert_exit(1)
-        return GreyNoise(api_key=api_key, timeout=120)
+        return GreyNoise(api_key=api_key, timeout=120, integration_name="Splunk")
     
     def handle_results(self):
         """

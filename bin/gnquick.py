@@ -83,7 +83,7 @@ class GNQuickCommand(EventingCommand):
             logger.info("Started retrieving results")
             try:
                 logger.debug("Initiating to fetch noise status for IP address(es): {}".format(str(ip_addresses)))
-                api_client = GreyNoise(api_key=api_key, timeout=120)
+                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name="Splunk")
                 # Opting timout 120 seconds for the requests
                 noise_status = api_client.quick(ip_addresses)
                 logger.info("Retrieved results successfully")
@@ -176,7 +176,7 @@ class GNQuickCommand(EventingCommand):
                         THREADS = 1
                         USE_CACHE = True
                     
-                    api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE)
+                    api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name="Splunk")
 
                     # When no records found, batch will return {0:([],[])}
                     if len(list(chunk_dict.values())[0][0]) >= 1:

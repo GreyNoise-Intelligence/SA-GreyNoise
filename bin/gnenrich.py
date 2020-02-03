@@ -94,7 +94,7 @@ class GNEnrichCommand(EventingCommand):
                     USE_CACHE = True
                     
                 # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE)
+                api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name="Splunk")
 
                 if len(chunk_dict) > 0:    
                     for event in event_generator.get_all_events(api_client, 'enrich', ip_field, chunk_dict, logger, threads=THREADS):

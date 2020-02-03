@@ -41,7 +41,7 @@ class IPContextCommand(BaseCommandHandler):
 
             logger.info("Initiating to fetch context information for ip: {}".format(str(ip_address)))
             # Opting default timout 60 seconds for the request
-            api_client = GreyNoise(api_key=api_key, timeout=60)
+            api_client = GreyNoise(api_key=api_key, timeout=60, integration_name="Splunk")
             context_info = api_client.ip(ip_address)
             logger.info("Successfully retrieved the context information for ip={}".format(str(ip_address)))
 

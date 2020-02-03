@@ -163,7 +163,7 @@ class GNFilterCommand(EventingCommand):
                     USE_CACHE = True
 
                 # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE)
+                api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name="Splunk")
                 
                 # When no records found, batch will return {0:([],[])}
                 if len(list(chunk_dict.values())[0][0]) >= 1:

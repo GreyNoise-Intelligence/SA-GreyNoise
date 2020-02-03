@@ -63,7 +63,7 @@ class GNStatsCommand(BaseCommandHandler):
 
         logger.info("Fetching aggregate statistics for query: {}, count: {}".format(str(query), count))
         # Opting timout 120 seconds for the requests
-        api_client = GreyNoise(api_key=api_key, timeout=240)
+        api_client = GreyNoise(api_key=api_key, timeout=240, integration_name="Splunk")
         # If count is not passed explicitely to the command by the user, then it will have the value None
         stats_data = api_client.stats(query, count)
         logger.info("Successfully retrieved response for the aggregate statistics for query: {}, count: {}".format(str(query), count))

@@ -71,7 +71,7 @@ def response_scroller(api_client, logger, query, result_size):
             logger.debug("Last page of the GreyNoise query results detected, completing the search...")
             completion_flag = True
 
-@Configuration()
+@Configuration(type="events")
 class GNQueryCommand(BaseCommandHandler):
     """
     Generating command that returns the results of the GreyNoise query,

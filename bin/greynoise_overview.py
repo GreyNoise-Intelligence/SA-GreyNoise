@@ -7,7 +7,7 @@ from greynoise import GreyNoise
 
 import utility
 
-@Configuration()
+@Configuration(type="events")
 class OverviewCommand(GeneratingCommand):
     """
     This command fetches the statistics from the greynoise

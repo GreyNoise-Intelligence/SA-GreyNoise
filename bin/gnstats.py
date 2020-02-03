@@ -10,7 +10,7 @@ from base_command_handler import BaseCommandHandler
 import event_generator
 import validator
 
-@Configuration()
+@Configuration(type="events")
 class GNStatsCommand(BaseCommandHandler):
     """
     Generating command that returns aggregate statistics for the top organizations, actors, 

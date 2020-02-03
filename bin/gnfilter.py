@@ -3,6 +3,7 @@ import time
 import traceback
 
 import app_greynoise_declare
+import six
 from splunklib.searchcommands import dispatch, EventingCommand, Configuration, Option
 from splunklib.binding import HTTPError
 from greynoise import GreyNoise
@@ -45,7 +46,9 @@ def event_filter(chunk_index, result, records_dict, ip_field, noise_events, meth
         else:
             # Successful execution of the API call
             if ip_field in record and record[ip_field] != '':
-                if record[ip_field] in ip_lookup:
+
+                # Check if the IP field is not an iterable to avoid any error while referencing ip in ip_lookup
+                if isinstance(record[ip_field], six.string_types) and record[ip_field] in ip_lookup:
                     if ip_lookup[record[ip_field]]['noise'] == noise_events:
                         yield event_generator.make_valid_event(method, ip_lookup[record[ip_field]], True, record)
                 else:

@@ -113,7 +113,7 @@
                         {
                             "required": false,
                             "type": "text",
-                            "label": "Other fields",
+                            "label": "Other Fields",
                             "field": "other_ip_fields", 
                             "defaultValue": "", 
                             "options": {
@@ -230,8 +230,8 @@
     }, 
     "meta": {
         "displayName": "GreyNoise App for Splunk", 
-        "version": "2.0.0", 
-        "restRoot": "SA-GreyNoise", 
+        "version": "2.0.1", 
+        "restRoot": "app_greynoise", 
         "name": "SA-GreyNoise", 
         "apiVersion": "3.0.0"
     }

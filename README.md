@@ -1,10 +1,12 @@
 # GreyNoise App for Splunk #
 
+This is an app powered by the Splunk Add-on Builder.
+
 # OVERVIEW #
 GreyNoise Splunk app provides multiple dashboards to effectively analyse and visualize the contextual and statistical data provided by GreyNoise. It also includes custom commands and alert actions which can be used along with Splunk searches to leverage GreyNoise APIs for custom use cases. It periodically scans the Splunk deployment through saved search to indicate the noise IPs in the complete Splunk deployment. Along with this, the workflow action provided can be used to obtain live context information of any CIM compliant field containing an IP address.
 
  - Author: GreyNoise Intelligence Inc
- - Version: 2.0.0
+ - Version: 2.0.1
  - Creates Index: False
  - Has index-time operation: True
  - Implements summarization: False
@@ -26,9 +28,23 @@ Search Head Cluster
  - In case of *Search Head Clustering*, make sure that the `GreyNoise Setup` and `Scan Deployment` is configured on only single search head. In such cases, the configuration will not be visible on other search heads. In case if user wants to configure the `Logging` (default is INFO), user can configure individually on every search head. This is recommended.
  - If user wants to replicate the configuration settings, follow these steps:
     - On search head deployer, extract the app at `$SPLUNK_HOME$/etc/shcluster/apps`.
-    - Create stanza `shclustering` at path `$SPLUNK_HOME$/etc/shcluster/apps/app-greynoise/local/server.conf` and add following information to the stanza: `conf_replication_include.app_greynoise_settings = true`
+    - Create stanza `shclustering` at path `$SPLUNK_HOME$/etc/shcluster/apps/SA-GreyNoise/local/server.conf` and add following information to the stanza: `conf_replication_include.app_greynoise_settings = true`
     - Push the bundle to search head.
     - Configure the API key and log level. See CONFIGURATION section for details. Following these steps will replicate the configuration on all search heads.
+
+# UPGRADING FROM VERSION 1.1.3#
+Follow the below steps to upgrade the app to the latest version:
+
+ - Disable all the saved searches which uses alert actions and custom commands of GreyNoise.
+ - Backup your current app/configurations outside of the Splunk install path.
+ - To upgrade the app from the UI, follow the steps in the INSTALLATION section below. Ensure that `Upgrade app.` checkbox is selected before clicking on the Upload button.
+ - After Splunk restart, navigate to Apps -> Manage Apps. 
+ - Find out `GreyNoise App for Splunk`, and click on the corresponding `Edit Properties` link in the `Action` column.
+ - Select `Yes` radio button corresponding to `Visible` option.
+ - Click on `Save` button.
+ - Follow the steps mentioned in CONFIGURATION section to reconfigure the app.
+
+*Note: Upgrade is only supported from UI and not supported from the backend.* 
 
 # INSTALLATION #
 Follow the below-listed steps to install an app from the bundle:
@@ -40,7 +56,7 @@ Follow the below-listed steps to install an app from the bundle:
  - Select Upload and follow the prompts.
  - Restart the Splunk to complete the installation.
 
-Note: This app contains Adaptive Response Actions, which can be used along with Splunk Enterprise Security. To use these alert actions on the Splunk instance without Splunk Enterprise Security, kindly install `Splunk Common Information Model (CIM)`.
+*Note: This app contains Adaptive Response Actions, which can be used along with Splunk Enterprise Security. To use these alert actions on the Splunk instance without Splunk Enterprise Security, kindly install `Splunk Common Information Model (CIM)`.*
 
 # CONFIGURATION #
 The app can be configured in the following way:
@@ -134,7 +150,7 @@ To uninstall app, user can follow below steps:
 
  - SSH to the Splunk instance 
  - Go to folder apps($SPLUNK_HOME/etc/apps) 
- - Remove the app-greynoise folder from apps directory 
+ - Remove the SA-GreyNoise folder from apps directory 
  - Restart Splunk
 
 # TROUBLESHOOTING #
@@ -185,7 +201,6 @@ The third party library and its license information is as follows:
  - six.py version 1.13.0 https://pypi.org/project/six/ (LICENSE https://github.com/benjaminp/six/blob/1.13.0/LICENSE)
  - daterangepicker.css and daterangepicker.min.js version 3.14.1 (LICENSE https://www.daterangepicker.com/#license)
  - moment.min.js version 2.18.1 (LICENSE https://github.com/moment/momentjs.com/blob/master/LICENSE)
-
 
 # COPYRIGHT #
 

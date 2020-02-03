@@ -8,7 +8,7 @@ from greynoise import GreyNoise
 from base_command_handler import BaseCommandHandler
 import event_generator
 
-@Configuration()
+@Configuration(type="events")
 class IPContextCommand(BaseCommandHandler):
     """
     Generating command that returns the context information of an IP address,

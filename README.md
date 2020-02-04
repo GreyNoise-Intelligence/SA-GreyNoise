@@ -204,4 +204,4 @@ The third party library and its license information is as follows:
 
 # COPYRIGHT #
 
- - Copyright (C) 2019 GreyNoise Intelligence Inc. All Rights Reserved.
+ - Copyright (C) 2020 GreyNoise Intelligence Inc. All Rights Reserved.

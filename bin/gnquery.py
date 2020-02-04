@@ -34,7 +34,7 @@ def response_scroller(api_client, logger, query, result_size):
             size = remaining_chunk_size
             logger.debug("Size for the GNQL query is configured to {}".format(size))
 
-        api_response = api_client.query(query=query, size=size, scroll=scroll, integration_name="Splunk")
+        api_response = api_client.query(query=query, size=size, scroll=scroll)
 
         if api_response.get('count', None):
             # If this is the last page of API response, the scroll will not be present

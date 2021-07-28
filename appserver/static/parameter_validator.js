@@ -26,8 +26,8 @@ require([
 
     if(last_7_days=="true")
     {
-        var start_date =  moment.utc().subtract(6, 'days')
-        var end_date =  moment.utc()
+        start_date =  moment.utc().subtract(6, 'days')
+        end_date =  moment.utc()
         // Setting the token to null so that on reload it will not auto run the process_inputs
         tokens.set("form.last_7_days", null);
         tokensSub.set("last_7_days", null)

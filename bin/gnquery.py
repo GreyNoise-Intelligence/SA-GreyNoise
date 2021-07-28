@@ -1,8 +1,8 @@
-import re
+import re # noqa # pylint: disable=unused-import
 import sys
-import traceback
+import traceback # noqa # pylint: disable=unused-import
 
-import app_greynoise_declare
+import app_greynoise_declare # noqa # pylint: disable=unused-import
 from splunklib.searchcommands import dispatch, Configuration, Option
 from greynoise import GreyNoise
 
@@ -10,10 +10,9 @@ from base_command_handler import BaseCommandHandler
 import event_generator
 import validator
 
+
 def response_scroller(api_client, logger, query, result_size):
-    """
-    Use the api_client instance of GreyNoise SDK to fetch the query results and traverse through the results if the result set is too large.
-    """
+    """Uses api_client instance of GreyNoise SDK to fetch query results and traverse them if result set is too large."""
     # This will keep the count of how many events are remaining to be sent to Splunk
     remaining_chunk_size = result_size
     completion_flag = False
@@ -22,7 +21,7 @@ def response_scroller(api_client, logger, query, result_size):
     while not completion_flag:
         event_count = 0
         size = None
-        
+
         # Avoid the extra call if expected number of events are already retrieved
         if remaining_chunk_size == 0:
             logger.debug("No GreyNoise query results remaining to be sent, completing the search...")
@@ -40,7 +39,7 @@ def response_scroller(api_client, logger, query, result_size):
             # If this is the last page of API response, the scroll will not be present
             scroll = api_response.get('scroll', None)
             api_data = api_response.get('data', [])
-            
+
             for ip_data in api_data:
                 if event_count == 0 and remaining_chunk_size == result_size:
                     yield event_generator.make_valid_event('query', ip_data, True)
@@ -54,7 +53,8 @@ def response_scroller(api_client, logger, query, result_size):
                     break
 
             remaining_chunk_size = remaining_chunk_size - event_count
-            logger.debug("Statistics: Remaining chunk size: {} : Events written:{}".format(remaining_chunk_size, event_count))
+            logger.debug("Statistics: Remaining chunk size: {} : Events written:{}".format(
+                remaining_chunk_size, event_count))
         else:
             message = api_response.get('message', '')
             query = api_response.get('query', '')
@@ -65,24 +65,27 @@ def response_scroller(api_client, logger, query, result_size):
             }
             yield event_generator.make_invalid_event('query', event, True)
             exit(1)
-        
+
         # If we are on the last page of the results, scroll will not be present.
         if scroll is None:
             logger.debug("Last page of the GreyNoise query results detected, completing the search...")
             completion_flag = True
 
+
 @Configuration(type="events")
 class GNQueryCommand(BaseCommandHandler):
     """
+    gnquery - Generating Command.
+
     Generating command that returns the results of the GreyNoise query,
     Data pulled from /v2/experimental/gnql using GreyNoise Python SDK
 
     **Syntax**::
     `| gnquery query="classification:malicious" result_size="50"`
     `| gnquery query="classification:benign"
-    
+
     **Description**::
-    The `gnquery` command uses the `GNQL query` provided in `query` parameter to return GreyNoise 
+    The `gnquery` command uses the `GNQL query` provided in `query` parameter to return GreyNoise
     query results using method :method:`query` from GreyNoise Python SDK.
     The optional parameter `result_size` can be used to limit number of the results retrieved.
     """
@@ -100,7 +103,12 @@ class GNQueryCommand(BaseCommandHandler):
     )
 
     def do_generate(self, api_key, logger):
+        """
+        Method to fetch the api response and process and send the response with extractions in the Splunk.
 
+        :param api_key: GreyNoise API Key.
+        :logger: logger object.
+        """
         query = self.query
         result_size = self.result_size
 
@@ -110,11 +118,11 @@ class GNQueryCommand(BaseCommandHandler):
             logger.error("Parameter query should not be empty.")
             self.write_error("Parameter query should not be empty.")
             exit(1)
-        
+
         # Strip the spaces from the parameter value if given
         if result_size:
             result_size = result_size.strip()
-        
+
         # Validating the given parameters
         try:
             result_size = validator.Integer(option_name='result_size', minimum=1).validate(result_size)
@@ -125,10 +133,11 @@ class GNQueryCommand(BaseCommandHandler):
             exit(1)
 
         # Opting timeout of 240 seconds for the request
-        api_client = GreyNoise(api_key=api_key, timeout=240)
+        api_client = GreyNoise(api_key=api_key, timeout=240, integration_name="Splunk App 2.1.0")
 
-        logger.info("Fetching results for GNQL query: {}, requested number of results: {}".format(str(query), str(result_size)))
-        
+        logger.info("Fetching results for GNQL query: {}, requested number of results: {}".format(
+            str(query), str(result_size)))
+
         # Keep generating the events till result_size is not reached or all the query results are sent to Splunk
         for event in response_scroller(api_client, logger, query, result_size):
             yield event
@@ -136,6 +145,8 @@ class GNQueryCommand(BaseCommandHandler):
         logger.info("Succcessfully retrieved results for the GreyNoise query: {}".format(str(query)))
 
     def __init__(self):
+        """Initialize custom command class."""
         super(GNQueryCommand, self).__init__()
+
 
 dispatch(GNQueryCommand, sys.argv, sys.stdin, sys.stdout, __name__)

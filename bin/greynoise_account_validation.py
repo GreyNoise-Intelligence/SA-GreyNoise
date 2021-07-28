@@ -1,9 +1,9 @@
 import os
-import traceback
+import traceback # noqa # pylint: disable=unused-import
 import json
 
 import app_greynoise_declare
-from solnlib import conf_manager
+from solnlib import conf_manager # noqa # pylint: disable=unused-import
 import splunk.admin as admin
 import splunk.rest as rest
 import splunk.clilib.cli_common
@@ -11,7 +11,6 @@ import splunklib.client as client
 from splunklib.binding import HTTPError
 from splunktaucclib.rest_handler.endpoint.validator import Validator
 from splunktaucclib.rest_handler.endpoint import (
-    field,
     validator
 )
 
@@ -20,32 +19,41 @@ from saved_search_utils import is_api_configured, handle_macros, compare_paramet
 
 APP_NAME = app_greynoise_declare.ta_name
 
+
 class GetSessionKey(admin.MConfigHandler):
+    """Class to get session key."""
+
     def __init__(self):
+        """Initialize session key."""
         self.session_key = self.getSessionKey()
 
+
 class GreyNoiseAPIValidation(Validator):
+    """Validate the api key of the GreyNoise account."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the parameters."""
         super(GreyNoiseAPIValidation, self).__init__(*args, **kwargs)
         self._validator = validator
         self._args = args
         self._kwargs = kwargs
         self.path = os.path.abspath(__file__)
         self.session_key_obj = GetSessionKey()
-        self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context= "api_validation")
+        self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context="api_validation")
 
     def validate(self, value, data):
+        """Validate the api key entered by user on the Configuration Page and enable the saved search."""
         try:
             # Validate API Key
             self.logger.debug("Validating API key.")
             status, msg = validate_api_key(data.get('api_key'))
             if not status:
-               raise Exception(msg)
+                raise Exception(msg)
             self.logger.info("API key validated.")
-            
+
             # Get Conf file for obtaining parameters
             conf = get_conf_file(self.session_key_obj.session_key, file='app_greynoise_settings', app=APP_NAME)
-            
+
             # Retrieve job_id_overview
             parameters = conf.get("scan_deployment", {})
             job_id_overview = parameters.get("job_id_overview", None)
@@ -57,13 +65,13 @@ class GreyNoiseAPIValidation(Validator):
 
             # Retrive saved search
             overview_savedsearch = service.saved_searches["greynoise_overview"]
-            
+
             # Enable and execute saved search when setting app for first time
             if not job_id_overview:
                 self.logger.debug("Setting up the saved search for the first time in absence of job_id.")
                 # Update the API key in the conf file so that the custom commands can execute
                 conf.update("parameters", {'api_key': data.get('api_key')}, ['api_key'])
-                
+
                 # Retrive saved search
                 overview_savedsearch_once = service.saved_searches["greynoise_overview_once"]
 
@@ -81,14 +89,16 @@ class GreyNoiseAPIValidation(Validator):
                 self.logger.debug("Re-enabled the Overview saved search.")
         except HTTPError:
             self.logger.error("Error while retrieving Saved Search. Please "
-             "check if the saved searches {} and {} exists.".format("greynoise_overview_once", "greynoise_overview"))
+                              "check if the saved searches {} and {} exists.".format(
+                                  "greynoise_overview_once", "greynoise_overview"))
             self.put_msg("Error while retrieving Saved Search. Kindly check greynoise_main.log for more details.")
             return False
         except Exception as e:
             try:
                 msg
-            except:
+            except Exception:
                 msg = "Unrecognized error: {}".format(str(e))
+            self.logger.error(msg)
             self.put_msg(msg)
             return False
         else:
@@ -96,19 +106,20 @@ class GreyNoiseAPIValidation(Validator):
 
 
 class GreyNoiseScanDeployment(Validator):
+    """Class to enable the scan deployment."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the parameters."""
         super(GreyNoiseScanDeployment, self).__init__(*args, **kwargs)
         self._validator = validator
         self._args = args
         self._kwargs = kwargs
         self.path = os.path.abspath(__file__)
         self.session_key_obj = GetSessionKey()
-        self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context= "scan_deployment")
-    
+        self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context="scan_deployment")
+
     def get_kvstore_status(self):
-        """
-        Get kv store status
-        """
+        """Get kv store status."""
         _, content = rest.simpleRequest("/services/kvstore/status",
                                         sessionKey=self.session_key_obj.session_key,
                                         method="GET",
@@ -116,9 +127,9 @@ class GreyNoiseScanDeployment(Validator):
                                         raiseAllErrors=True)
         data = json.loads(content)["entry"]
         return data[0]["content"]["current"].get("status")
-        
 
     def validate(self, value, data):
+        """Method to enable/disable the scan deployment saved search based on the input in Scan Deployment Page."""
         # Retrieve App Name
         try:
             # Get Conf object of apps settings
@@ -127,7 +138,7 @@ class GreyNoiseScanDeployment(Validator):
             try:
                 if not is_api_configured(conf):
                     msg = "Configure the API key to use this feature"
-                    raise Exception()
+                    raise Exception(msg)
             except HTTPError as e:
                 self.logger.error(str(e))
                 self.put_msg(str(e))
@@ -150,7 +161,7 @@ class GreyNoiseScanDeployment(Validator):
                     if status != "ready":
                         message = "KV store is not in ready state. Make sure it is enabled."
                         make_error_message(message, self.session_key_obj.session_key, self.logger)
-                except:
+                except Exception:
                     self.logger.error("Could not retrieve the status of KV store.")
                 # Enable the scheduled saved search
                 self.logger.debug("Initiating user action to enable the saved search.")
@@ -162,13 +173,14 @@ class GreyNoiseScanDeployment(Validator):
                     try:
                         handle_macros(data, service)
                     except ValueError:
-                        msg = "The field names in \"Other fields\" parameter only supports underscore, digits, alphabets, and hyphen"
-                        raise Exception()
-                    
+                        msg = ("The field names in \"Other fields\" parameter "
+                               "only supports underscore, digits, alphabets, and hyphen")
+                        raise Exception(msg)
+
                     self.logger.info("Enabling saved search.")
                     # Enable the scheduled saved search
                     scan_deployment_savedsearch.enable()
-                    
+
                     dispatch_again = compare_parameters(data, conf.get("scan_deployment", {}))
 
                     if bool(int(force_enable_ss)) or dispatch_again:
@@ -178,7 +190,8 @@ class GreyNoiseScanDeployment(Validator):
                             job_details.delete()
                         except Exception:
                             pass
-                        # Modify properties and run the saved search in case of job_id_scan_deployment is not present in conf file.
+                        # Modify properties and run the saved search in case of job_id_scan_deployment
+                        # is not present in conf file.
                         start_time = data.get("scan_start_time", "NOW")
                         if start_time != "NOW":
                             scan_deployment_savedsearch_once = service.saved_searches["greynoise_scan_deployment_once"]
@@ -198,7 +211,7 @@ class GreyNoiseScanDeployment(Validator):
                             job_details = service.job(job_id_scan_deployment)
                             status = job_details.state().content['dispatchState']
 
-                            if status is 'PAUSED':
+                            if status == 'PAUSED':
                                 # unpause the search in case of savedsearch job is paused by someone
                                 job_details.unpause()
                                 return True
@@ -206,8 +219,9 @@ class GreyNoiseScanDeployment(Validator):
                                 return True
                         except Exception:
                             pass
-                        
-                        # Modify properties and run the saved search in case of job_id_scan_deployment is not present in conf file.
+
+                        # Modify properties and run the saved search in case of job_id_scan_deployment
+                        # is not present in conf file.
                         start_time = data.get("scan_start_time", "NOW")
                         if start_time != "NOW":
                             scan_deployment_savedsearch_once = service.saved_searches["greynoise_scan_deployment_once"]
@@ -227,13 +241,15 @@ class GreyNoiseScanDeployment(Validator):
                     try:
                         handle_macros(data, service)
                     except ValueError:
-                        msg = "The field names in \"Other fields\" parameter only supports underscore, digits, alphabets, and hyphen"
-                        raise Exception()
+                        msg = ("The field names in \"Other fields\" parameter "
+                               "only supports underscore, digits, alphabets, and hyphen")
+                        raise Exception(msg)
 
                     # Enable the scheduled saved search
                     scan_deployment_savedsearch.enable()
-                    
-                    # Modify properties and run the saved search in case of job_id_scan_deployment is not present in conf file.
+
+                    # Modify properties and run the saved search in case of job_id_scan_deployment
+                    # is not present in conf file.
                     start_time = data.get("scan_start_time", "NOW")
                     if start_time != "NOW":
                         scan_deployment_savedsearch_once = service.saved_searches["greynoise_scan_deployment_once"]
@@ -263,14 +279,16 @@ class GreyNoiseScanDeployment(Validator):
                 self.logger.info("Saved search disabled successfully.")
         except HTTPError:
             self.logger.error("Error while retrieving Saved Search. Please "
-             "check if the saved searches {} and {} exists.".format("greynoise_scan_deployment_once", "greynoise_scan_deployment"))
+                              "check if the saved searches {} and {} exists.".format(
+                                  "greynoise_scan_deployment_once", "greynoise_scan_deployment"))
             self.put_msg("Error while retrieving Saved Search. Kindly check greynoise_main.log for more details.")
             return False
         except Exception as e:
             try:
                 msg
-            except:
+            except Exception:
                 msg = "Unrecognized error: {}".format(str(e))
+            self.logger.error(msg)
             self.put_msg(msg)
             return False
         else:

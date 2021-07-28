@@ -19,15 +19,21 @@ if not structlog.is_configured():
 LOGGER = structlog.get_logger()
 
 
+def initialize_cache(cache_max_size, cache_ttl):
+    """A function to initialize cache"""
+    cache = cachetools.TTLCache(maxsize=cache_max_size, ttl=cache_ttl)
+    return cache
+
+
 class GreyNoise(object):
 
     """GreyNoise API client.
-
     :param api_key: Key use to access the API.
     :type api_key: str
     :param timeout: API requests timeout in seconds.
     :type timeout: int
-
+    :param proxy: Add URL for proxy to redirect lookups
+    :type proxy: str
     """
 
     NAME = "GreyNoise"
@@ -37,6 +43,10 @@ class GreyNoise(object):
     EP_INTERESTING = "interesting/{ip_address}"
     EP_NOISE_MULTI = "noise/multi/quick"
     EP_NOISE_CONTEXT = "noise/context/{ip_address}"
+    EP_COMMUNITY_IP = "v3/community/{ip_address}"
+    EP_META_METADATA = "meta/metadata"
+    EP_PING = "ping"
+    EP_RIOT = "riot/{ip_address}"
     EP_NOT_IMPLEMENTED = "request/{subcommand}"
     UNKNOWN_CODE_MESSAGE = "Code message unknown: {}"
     CODE_MESSAGES = {
@@ -61,12 +71,10 @@ class GreyNoise(object):
             "IP was classified as noise, but has not been observed "
             "engaging in Internet-wide scans or attacks in over 60 days"
         ),
+        "0x09": "IP was found in RIOT",
+        "0x10": "IP has been observed by the GreyNoise sensor network and is in RIOT",
+        "404": "IP is Invalid",
     }
-
-    CACHE_MAX_SIZE = 1000
-    CACHE_TTL = 3600
-    IP_QUICK_CHECK_CACHE = cachetools.TTLCache(maxsize=CACHE_MAX_SIZE, ttl=CACHE_TTL)
-    IP_CONTEXT_CACHE = cachetools.TTLCache(maxsize=CACHE_MAX_SIZE, ttl=CACHE_TTL)
 
     IP_QUICK_CHECK_CHUNK_SIZE = 1000
 
@@ -81,12 +89,16 @@ class GreyNoise(object):
         api_key=None,
         api_server=None,
         timeout=None,
+        proxy=None,
         use_cache=True,
         integration_name=None,
+        cache_max_size=None,
+        cache_ttl=None,
+        offering=None,
     ):
         if any(
             configuration_value is None
-            for configuration_value in (api_key, timeout, api_server)
+            for configuration_value in (api_key, timeout, api_server, proxy, offering)
         ):
             config = load_config()
             if api_key is None:
@@ -95,16 +107,33 @@ class GreyNoise(object):
                 api_server = config["api_server"]
             if timeout is None:
                 timeout = config["timeout"]
+            if proxy is None:
+                proxy = config["proxy"]
+            if offering is None:
+                offering = config["offering"]
         self.api_key = api_key
         self.api_server = api_server
         self.timeout = timeout
+        self.proxy = proxy
         self.use_cache = use_cache
         self.integration_name = integration_name
         self.session = requests.Session()
+        self.offering = offering
+
+        if cache_ttl is None or not isinstance(cache_ttl, int):
+            cache_ttl = 3600
+        self.cache_ttl = cache_ttl
+
+        if cache_max_size is None or not isinstance(cache_max_size, int):
+            cache_max_size = 1000
+        self.cache_max_size = cache_max_size
+
+        if use_cache:
+            self.ip_quick_check_cache = initialize_cache(cache_max_size, cache_ttl)
+            self.ip_context_cache = initialize_cache(cache_max_size, cache_ttl)
 
     def _request(self, endpoint, params=None, json=None, method="get"):
         """Handle the requesting of information from the API.
-
         :param endpoint: Endpoint to send the request to
         :type endpoint: str
         :param params: Request parameters
@@ -116,7 +145,6 @@ class GreyNoise(object):
         :returns: Response's JSON payload
         :rtype: dict
         :raises RequestFailure: when HTTP status code is not 2xx
-
         """
         if params is None:
             params = {}
@@ -128,7 +156,13 @@ class GreyNoise(object):
             "User-Agent": " ".join(user_agent_parts),
             "key": self.api_key,
         }
-        url = "/".join([self.api_server, self.API_VERSION, endpoint])
+        if self.offering.lower() == "community":
+            url = "/".join([self.api_server, endpoint])
+        elif endpoint == self.EP_PING:
+            url = "/".join([self.api_server, endpoint])
+        else:
+            url = "/".join([self.api_server, self.API_VERSION, endpoint])
+
         LOGGER.debug(
             "Sending API request...",
             url=url,
@@ -136,11 +170,23 @@ class GreyNoise(object):
             headers=headers,
             params=params,
             json=json,
+            proxy=self.proxy,
         )
         request_method = getattr(self.session, method)
-        response = request_method(
-            url, headers=headers, timeout=self.timeout, params=params, json=json
-        )
+        if self.proxy:
+            proxies = {protocol: self.proxy for protocol in ("http", "https")}
+            response = request_method(
+                url,
+                headers=headers,
+                timeout=self.timeout,
+                params=params,
+                json=json,
+                proxies=proxies,
+            )
+        else:
+            response = request_method(
+                url, headers=headers, timeout=self.timeout, params=params, json=json
+            )
         content_type = response.headers.get("Content-Type", "")
         if "application/json" in content_type:
             body = response.json()
@@ -156,74 +202,87 @@ class GreyNoise(object):
 
         if response.status_code == 429:
             raise RateLimitError()
-        if response.status_code >= 400:
+        if response.status_code >= 400 and response.status_code != 404:
             raise RequestFailure(response.status_code, body)
 
         return body
 
     def analyze(self, text):
         """Aggregate stats related to IP addresses from a given text.
-
         :param text: Text input
         :type text: file-like | str
         :return: Aggregated stats for all the IP addresses found.
         :rtype: dict
-
         """
-        analyzer = Analyzer(self)
-        return analyzer.analyze(text)
+        if self.offering == "community":
+            response = [
+                {"message": "Quick Lookup not supported with Community offering"}
+            ]
+            return response
+        else:
+            analyzer = Analyzer(self)
+            return analyzer.analyze(text)
 
-    def filter(self, text, noise_only=False):
+    def filter(self, text, noise_only=False, riot_only=False):
         """Filter lines that contain IP addresses from a given text.
-
         :param text: Text input
         :type text: file-like | str
         :param noise_only:
             If set, return only lines that contain IP addresses classified as noise,
             otherwise, return lines that contain IP addresses not classified as noise.
         :type noise_only: bool
+        :param riot_only:
+            If set, return only lines that contain IP addresses in RIOT,
+            otherwise, return lines that contain IP addresses not in RIOT.
+        :type riot_only: bool
         :return: Iterator that yields lines in chunks
         :rtype: iterable
-
         """
         filter = Filter(self)
-        for filtered_chunk in filter.filter(text, noise_only=noise_only):
+        for filtered_chunk in filter.filter(
+            text, noise_only=noise_only, riot_only=riot_only
+        ):
             yield filtered_chunk
 
     def interesting(self, ip_address):
         """Report an IP as "interesting".
-
         :param ip_address: IP address to report as "interesting".
         :type ip_address: str
-
         """
-        LOGGER.debug(
-            "Reporting interesting IP: %s...", ip_address, ip_address=ip_address
-        )
-        validate_ip(ip_address)
+        if self.offering == "community":
+            response = {
+                "message": "Interesting report not supported with Community offering"
+            }
+            return response
+        else:
+            LOGGER.debug(
+                "Reporting interesting IP: %s...", ip_address, ip_address=ip_address
+            )
+            validate_ip(ip_address)
 
-        endpoint = self.EP_INTERESTING.format(ip_address=ip_address)
-        response = self._request(endpoint, method="post")
-        return response
+            endpoint = self.EP_INTERESTING.format(ip_address=ip_address)
+            response = self._request(endpoint, method="post")
+            return response
 
     def ip(self, ip_address):
         """Get context associated with an IP address.
-
         :param ip_address: IP address to use in the look-up.
         :type ip_address: str
         :return: Context for the IP address.
         :rtype: dict
-
         """
         LOGGER.debug("Getting context for %s...", ip_address, ip_address=ip_address)
         validate_ip(ip_address)
 
-        endpoint = self.EP_NOISE_CONTEXT.format(ip_address=ip_address)
+        if self.offering.lower() == "community":
+            endpoint = self.EP_COMMUNITY_IP.format(ip_address=ip_address)
+        else:
+            endpoint = self.EP_NOISE_CONTEXT.format(ip_address=ip_address)
         if self.use_cache:
-            cache = self.IP_CONTEXT_CACHE
+            cache = self.ip_context_cache
             response = (
                 cache[ip_address]
-                if ip_address in self.IP_CONTEXT_CACHE
+                if ip_address in self.ip_context_cache
                 else cache.setdefault(ip_address, self._request(endpoint))
             )
         else:
@@ -236,10 +295,8 @@ class GreyNoise(object):
 
     def not_implemented(self, subcommand_name):
         """Send request for a not implemented CLI subcommand.
-
         :param subcommand_name: Name of the CLI subcommand
         :type subcommand_name: str
-
         """
         endpoint = self.EP_NOT_IMPLEMENTED.format(subcommand=subcommand_name)
         response = self._request(endpoint)
@@ -247,86 +304,158 @@ class GreyNoise(object):
 
     def query(self, query, size=None, scroll=None):
         """Run GNQL query."""
-        LOGGER.debug(
-            "Running GNQL query: %s...", query, query=query, size=size, scroll=scroll
-        )
-        params = {"query": query}
-        if size is not None:
-            params["size"] = size
-        if scroll is not None:
-            params["scroll"] = scroll
-        response = self._request(self.EP_GNQL, params=params)
-        return response
+        if self.offering == "community":
+            response = {"message": "GNQL not supported with Community offering"}
+            return response
+        else:
+            LOGGER.debug(
+                "Running GNQL query: %s...",
+                query,
+                query=query,
+                size=size,
+                scroll=scroll,
+            )
+            params = {"query": query}
+            if size is not None:
+                params["size"] = size
+            if scroll is not None:
+                params["scroll"] = scroll
+            response = self._request(self.EP_GNQL, params=params)
+            return response
 
-    def quick(self, ip_addresses):
+    def quick(self, ip_addresses, include_invalid=False):  # noqa: C901
         """Get activity associated with one or more IP addresses.
-
         :param ip_addresses: One or more IP addresses to use in the look-up.
         :type ip_addresses: str | list
         :return: Bulk status information for IP addresses.
         :rtype: dict
-
+        :param include_invalid: True or False
+        :type include_invalid: bool
         """
-        if isinstance(ip_addresses, str):
-            ip_addresses = [ip_addresses]
-
-        LOGGER.debug("Getting noise status...", ip_addresses=ip_addresses)
-        ip_addresses = [
-            ip_address
-            for ip_address in ip_addresses
-            if validate_ip(ip_address, strict=False)
-        ]
-
-        if self.use_cache:
-            cache = self.IP_QUICK_CHECK_CACHE
-            # Keep the same ordering as in the input
-            ordered_results = OrderedDict(
-                (ip_address, cache.get(ip_address)) for ip_address in ip_addresses
-            )
-            api_ip_addresses = [
-                ip_address
-                for ip_address, result in ordered_results.items()
-                if result is None
+        if self.offering == "community":
+            response = [
+                {"message": "Quick Lookup not supported with Community offering"}
             ]
-            if api_ip_addresses:
-                api_results = []
+            return response
+        else:
+            if isinstance(ip_addresses, str):
+                ip_addresses = ip_addresses.split(",")
+
+            LOGGER.debug("Getting noise status...", ip_addresses=ip_addresses)
+
+            valid_ip_addresses = [
+                ip_address
+                for ip_address in ip_addresses
+                if validate_ip(ip_address, strict=False)
+            ]
+
+            if self.use_cache:
+                cache = self.ip_quick_check_cache
+                # Keep the same ordering as in the input
+                ordered_results = OrderedDict(
+                    (ip_address, cache.get(ip_address))
+                    for ip_address in valid_ip_addresses
+                )
+                api_ip_addresses = [
+                    ip_address
+                    for ip_address, result in ordered_results.items()
+                    if result is None
+                ]
+                if api_ip_addresses:
+                    api_results = []
+                    chunks = more_itertools.chunked(
+                        api_ip_addresses, self.IP_QUICK_CHECK_CHUNK_SIZE
+                    )
+                    for chunk in chunks:
+                        api_result = self._request(
+                            self.EP_NOISE_MULTI, json={"ips": chunk}
+                        )
+                        if isinstance(api_result, list):
+                            api_results.extend(api_result)
+                        else:
+                            api_results.append(api_result)
+
+                    for api_result in api_results:
+                        ip_address = api_result["ip"]
+                        ordered_results[ip_address] = cache.setdefault(
+                            ip_address, api_result
+                        )
+                results = list(ordered_results.values())
+
+            else:
+                results = []
                 chunks = more_itertools.chunked(
-                    api_ip_addresses, self.IP_QUICK_CHECK_CHUNK_SIZE
+                    valid_ip_addresses, self.IP_QUICK_CHECK_CHUNK_SIZE
                 )
                 for chunk in chunks:
-                    api_result = self._request(self.EP_NOISE_MULTI, json={"ips": chunk})
-                    if isinstance(api_result, list):
-                        api_results.extend(api_result)
+                    result = self._request(self.EP_NOISE_MULTI, json={"ips": chunk})
+                    if isinstance(result, list):
+                        results.extend(result)
                     else:
-                        api_results.append(api_result)
+                        results.append(result)
 
-                for api_result in api_results:
-                    ip_address = api_result["ip"]
-                    ordered_results[ip_address] = cache.setdefault(
-                        ip_address, api_result
-                    )
-            results = list(ordered_results.values())
-        else:
-            results = []
-            chunks = more_itertools.chunked(
-                ip_addresses, self.IP_QUICK_CHECK_CHUNK_SIZE
-            )
-            for chunk in chunks:
-                result = self._request(self.EP_NOISE_MULTI, json={"ips": chunk})
-                if isinstance(result, list):
-                    results.extend(result)
-                else:
-                    results.append(result)
+            [
+                results.append({"ip": ip, "noise": False, "code": "404"})
+                for ip in ip_addresses
+                if ip not in valid_ip_addresses and include_invalid
+            ]
 
-        for result in results:
-            code = result["code"]
-            result["code_message"] = self.CODE_MESSAGES.get(
-                code, self.UNKNOWN_CODE_MESSAGE.format(code)
-            )
-        return results
+            for result in results:
+                code = result["code"]
+                result["code_message"] = self.CODE_MESSAGES.get(
+                    code, self.UNKNOWN_CODE_MESSAGE.format(code)
+                )
+            return results
 
-    def stats(self, query):
+    def stats(self, query, count=None):
         """Run GNQL stats query."""
-        LOGGER.debug("Running GNQL stats query: %s...", query, query=query)
-        response = self._request(self.EP_GNQL_STATS, params={"query": query})
+        if self.offering == "community":
+            response = {"message": "Stats Query not supported with Community offering"}
+            return response
+        else:
+            LOGGER.debug("Running GNQL stats query: %s...", query, query=query)
+            params = {"query": query}
+            if count is not None:
+                params["count"] = count
+            response = self._request(self.EP_GNQL_STATS, params=params)
+            return response
+
+    def metadata(self):
+        """Get metadata."""
+        if self.offering == "community":
+            response = {
+                "message": "Metadata lookup not supported with Community offering"
+            }
+            return response
+        else:
+            LOGGER.debug("Getting metadata...")
+            response = self._request(self.EP_META_METADATA)
+            return response
+
+    def test_connection(self):
+        """Test the API connection and API key."""
+        LOGGER.debug("Testing access to GreyNoise API and for valid API Key")
+        response = self._request(self.EP_PING)
         return response
+
+    def riot(self, ip_address):
+        """Check if IP is in RIOT data set
+        :param ip_address: IP address to use in the look-up.
+        :type ip_address: str
+        :return: Context for the IP address.
+        :rtype: dict
+        """
+        if self.offering == "community":
+            response = {"message": "RIOT lookup not supported with Community offering"}
+            return response
+        else:
+            LOGGER.debug("Checking RIOT for %s...", ip_address, ip_address=ip_address)
+            validate_ip(ip_address)
+
+            endpoint = self.EP_RIOT.format(ip_address=ip_address)
+            response = self._request(endpoint)
+
+            if "ip" not in response:
+                response["ip"] = ip_address
+
+            return response

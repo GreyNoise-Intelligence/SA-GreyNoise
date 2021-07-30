@@ -1,20 +1,22 @@
 import sys
-import time
+import time # noqa # pylint: disable=unused-import
 import traceback
 
-import app_greynoise_declare
+import app_greynoise_declare # noqa # pylint: disable=unused-import
 import six
 from splunklib.searchcommands import dispatch, EventingCommand, Configuration, Option
 from splunklib.binding import HTTPError
 from greynoise import GreyNoise
+from greynoise.util import validate_ip
 
 import event_generator
 from greynoise_exceptions import APIKeyNotFoundError
 import utility
 import validator
 
+
 def event_filter(chunk_index, result, records_dict, ip_field, noise_events, method):
-    
+    """Method for filtering the events based on the noise status."""
     api_results = result['response']
     error_flag = True
     # Before yielding events, make the ip lookup dict which will have the following format:
@@ -24,13 +26,14 @@ def event_filter(chunk_index, result, records_dict, ip_field, noise_events, meth
         error_flag = False
         for event in api_results:
             ip_lookup[event['ip']] = event
-    
+
     for record in records_dict[0]:
 
         if error_flag:
             # Exception has occured while fetching the noise statuses from API
             if ip_field in record and record[ip_field] != '':
-                # These calls have been failed due to API failure, as this event have IP address value, considering them as noise
+                # These calls have been failed due to API failure,
+                # as this event have IP address value, considering them as noise
                 if noise_events:
                     event = {
                         'ip': record[ip_field],
@@ -55,11 +58,15 @@ def event_filter(chunk_index, result, records_dict, ip_field, noise_events, meth
                     # Meaning ip is either invalid or not returned by the API, which is case of `multi` method only
                     # Invalid IPs are considered as non-noise
                     if not noise_events:
-                        event = {
-                            'ip': record[ip_field],
-                            'error': 'IP address doesn\'t match the valid IP format'
-                        }
-                        yield event_generator.make_invalid_event(method, event, True, record)
+                        try:
+                            validate_ip(record[ip_field], strict=True)
+                        except ValueError as ve:
+                            error_msg = str(ve).split(":")
+                            event = {
+                                'ip': record[ip_field],
+                                'error': error_msg[0]
+                            }
+                            yield event_generator.make_invalid_event(method, event, True, record)
             else:
                 if not noise_events:
                     # Either the record is not having IP field or the value of the IP field is ''
@@ -67,10 +74,13 @@ def event_filter(chunk_index, result, records_dict, ip_field, noise_events, meth
                     # Considering this event as non-noisy
                     yield event_generator.make_invalid_event(method, {}, True, record)
 
+
 @Configuration()
 class GNFilterCommand(EventingCommand):
     """
-    Transforming command that returns events having noisy/not noisy IP addresses 
+    gnfilter - Transforming Command.
+
+    Transforming command that returns events having noisy/not noisy IP addresses
     as specified with noise_events parameter, defaults to true.
     Data pulled from: /v2/noise/multi/quick
 
@@ -79,7 +89,7 @@ class GNFilterCommand(EventingCommand):
 
     **Description**::
     The `gnfilter` command returns the events having noisy/not noisy IP addresses represented by `ip_field` parameter
-    using method :method:`quick` from GreyNoise Python SDK. 
+    using method :method:`quick` from GreyNoise Python SDK.
     """
 
     ip_field = Option(
@@ -92,28 +102,31 @@ class GNFilterCommand(EventingCommand):
     noise_events = Option(
         doc='''
         **Syntax:** **noise_events=***<true/false>*
-        **Description:** Flag specifying whether to return events having noisy IP or events having non-noisy IP addresses''',
+        **Description:** Flag specifying whether to return events having noisy IP or
+        events having non-noisy IP addresses''',
         name='noise_events', require=False, default="True"
     )
 
     def transform(self, records):
-
+        """Method that processes and yield event records to the Splunk events pipeline."""
         method = 'filter'
 
         # Setup logger
-        logger = utility.setup_logger(session_key=self._metadata.searchinfo.session_key, log_context=self._metadata.searchinfo.command)
+        logger = utility.setup_logger(
+            session_key=self._metadata.searchinfo.session_key, log_context=self._metadata.searchinfo.command)
 
         # Enter the mechanism only when the Search is complete and all the events are available
         if self.search_results_info and not self.metadata.preview:
-            
+
             EVENTS_PER_CHUNK = 1000
             THREADS = 3
             USE_CACHE = False
             ip_field = self.ip_field
             noise_events = self.noise_events
 
-            logger.info("Started filtering the IP address(es) present in field: {}, with noise_status: {}".format(str(ip_field), str(noise_events)))
-            
+            logger.info("Started filtering the IP address(es) present in field: {}, with noise_status: {}".format(
+                str(ip_field), str(noise_events)))
+
             try:
                 if ip_field:
                     ip_field = ip_field.strip()
@@ -136,7 +149,7 @@ class GNFilterCommand(EventingCommand):
                     message = str(e)
                 except HTTPError as e:
                     message = str(e)
-            
+
                 if message:
                     self.write_error(message)
                     logger.error("Error occured while retrieving API key, Error: {}".format(message))
@@ -158,35 +171,38 @@ class GNFilterCommand(EventingCommand):
                 # This means there are only 1000 or below IPs to call in the entire bunch of records
                 # Use one thread with single thread with caching mechanism enabled for the chunk
                 if len(chunk_dict) == 1:
-                    logger.info("Less then 1000 distinct IPs are present, optimizing the IP requests call to GreyNoise API...")
+                    logger.info(
+                        "Less then 1000 distinct IPs are present, optimizing the IP requests call to GreyNoise API...")
                     THREADS = 1
                     USE_CACHE = True
 
                 # Opting timout 120 seconds for the requests
                 api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name="Splunk")
-                
+
                 # When no records found, batch will return {0:([],[])}
                 if len(list(chunk_dict.values())[0][0]) >= 1:
-                    for chunk_index, result in event_generator.get_all_events(api_client, method, ip_field, chunk_dict, logger, threads=THREADS):
+                    for chunk_index, result in event_generator.get_all_events(
+                            api_client, method, ip_field, chunk_dict, logger, threads=THREADS):
                         # Pass the collected data to the event filter method
-                        for event in event_filter(chunk_index, result, chunk_dict[chunk_index], ip_field, noise_events, method):
+                        for event in event_filter(
+                                chunk_index, result, chunk_dict[chunk_index], ip_field, noise_events, method):
                             yield event
-                        
+
                         # Deleting the chunk with the events that are already indexed
                         del chunk_dict[chunk_index]
-                        
+
                     logger.info("Successfully sent all the results to the Splunk")
                 else:
                     logger.info("No events found, please increase the search timespan to have more search results.")
-                
-            except Exception as e:
+
+            except Exception:
                 logger.info("Exception occured while filtering events, Error: {}".format(traceback.format_exc()))
-                self.write_error("Exception occured while filtering the events based on noise status. See greynoise_main.log for more details.")
+                self.write_error("Exception occured while filtering the events based on noise status. "
+                                 "See greynoise_main.log for more details.")
 
     def __init__(self):
+        """Initialize custom command class."""
         super(GNFilterCommand, self).__init__()
 
+
 dispatch(GNFilterCommand, sys.argv, sys.stdin, sys.stdout, __name__)
-
-
-

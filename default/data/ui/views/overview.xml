@@ -124,7 +124,7 @@
   <row>
 
     <panel>
-      <html><p><i><b>Note:</b> The data presented in the below panels may lag by 30 minutes.</i></p></html>
+      <html><p><i><b>Note:</b> The data in the panels below are updated every 6 hours. For the most recent information, visit the Trends page of the GreyNoise Visualizer.</i></p></html>
       <input type="dropdown" token="tkn_classification" searchWhenChanged="true">
         <label>Classification</label>
         <choice value="*">All</choice>

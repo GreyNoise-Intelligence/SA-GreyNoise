@@ -222,7 +222,7 @@ def validate_api_key(api_key, logger=None):
         else:
             # Need to handle this, as splunklib is unable to handle the exception with
             # (400, {'error': 'error_reason'}) format
-            msg = ("The API call to the GreyNoise platform have been failed "
+            msg = ("The API call to the GreyNoise API has failed "
                    "with status_code: {} and error: {}").format(
                 response_code, response_message['error'] if isinstance(response_message, dict)
                 else response_message)

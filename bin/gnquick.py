@@ -1,17 +1,19 @@
 import sys
-import time # noqa # pylint: disable=unused-import
+import time  # noqa # pylint: disable=unused-import
 import traceback
 
-import app_greynoise_declare # noqa # pylint: disable=unused-import
+import app_greynoise_declare  # noqa # pylint: disable=unused-import
 from requests.exceptions import ConnectionError, RequestException
 from splunklib.binding import HTTPError
 from splunklib.searchcommands import dispatch, EventingCommand, Configuration, Option
 from greynoise import GreyNoise
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise.util import validate_ip
+from caching import Caching
 
 import event_generator
 from greynoise_exceptions import APIKeyNotFoundError
+from greynoise_constants import INTEGRATION_NAME
 import utility
 import validator
 
@@ -58,7 +60,7 @@ class GNQuickCommand(EventingCommand):
         ip_addresses = self.ip
         ip_field = self.ip_field
         api_key = ""
-        EVENTS_PER_CHUNK = 1000
+        EVENTS_PER_CHUNK = 5000
         THREADS = 3
         USE_CACHE = False
         logger = utility.setup_logger(
@@ -94,10 +96,38 @@ class GNQuickCommand(EventingCommand):
                 logger.debug("Initiating to fetch noise and RIOT status for IP address(es): {}".format(
                     str(ip_addresses)))
 
-                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name="Splunk")
-                # Opting timout 120 seconds for the requests
-                noise_status = api_client.quick(ip_addresses)
+                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+
+                # CACHING START
+                cache_enabled = Caching.get_cache_settings(self._metadata.searchinfo.session_key)
+                if int(cache_enabled) == 1:
+                    cache_client = Caching(self._metadata.searchinfo.session_key, logger, 'multi')
+                    cache_start = time.time()
+                    ips_not_in_cache, ips_in_cache = utility.get_ips_not_in_cache(cache_client, ip_addresses, logger)
+                    try:
+                        response = []
+                        if len(ips_in_cache) >= 1:
+                            response = cache_client.query_kv_store(ips_in_cache)
+                        if response is None:
+                            logger.debug("KVStore is not ready. Skipping caching mechanism.")
+                            noise_status = api_client.quick(ip_addresses)
+                        elif response == []:
+                            noise_status = utility.fetch_response_from_api(
+                                api_client.quick, cache_client, ip_addresses, logger)
+                        else:
+                            noise_status = utility.fetch_response_from_api(
+                                api_client.quick, cache_client, ips_not_in_cache, logger)
+                            noise_status.extend(response)
+                    except Exception:
+                        logger.debug(
+                            "An exception occurred while fetching response from cache.\n{}".format(
+                                traceback.format_exc()))
+                    logger.debug("Generating command with caching took {} seconds.".format(time.time() - cache_start))
+                else:
+                    # Opting timout 120 seconds for the requests
+                    noise_status = api_client.quick(ip_addresses)
                 logger.info("Retrieved results successfully")
+                # CACHING END
 
                 # Process the API response and send the noise and RIOT status information of IP with extractions
                 # to the Splunk, Using this flag to handle the field extraction issue in custom commands
@@ -205,14 +235,19 @@ class GNQuickCommand(EventingCommand):
                         THREADS = 1
                         USE_CACHE = True
 
-                    api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name="Splunk")
+                    api_client = GreyNoise(api_key=api_key, timeout=120,
+                                           use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
                     # When no records found, batch will return {0:([],[])}
+                    tot_time_start = time.time()
                     if len(list(chunk_dict.values())[0][0]) >= 1:
                         for event in event_generator.get_all_events(
-                                api_client, 'multi', ip_field, chunk_dict, logger, threads=THREADS):
+                                self._metadata.searchinfo.session_key, api_client, 'multi', ip_field, chunk_dict,
+                                logger, threads=THREADS):
                             yield event
                     else:
                         logger.info("No events found, please increase the search timespan to have more search results.")
+                    tot_time_end = time.time()
+                    logger.debug("Total execution time => {}".format(tot_time_end - tot_time_start))
                 except Exception:
                     logger.info(
                         "Exception occured while adding the noise and RIOT status to the events, Error: {}".format(

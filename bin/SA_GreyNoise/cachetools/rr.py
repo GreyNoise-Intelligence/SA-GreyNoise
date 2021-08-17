@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import random
 
 from .cache import Cache
@@ -31,6 +29,6 @@ class RRCache(Cache):
         try:
             key = self.__choice(list(self))
         except IndexError:
-            raise KeyError('%s is empty' % self.__class__.__name__)
+            raise KeyError("%s is empty" % type(self).__name__) from None
         else:
             return (key, self.pop(key))

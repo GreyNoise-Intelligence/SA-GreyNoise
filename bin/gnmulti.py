@@ -1,14 +1,15 @@
 import sys
-import time # noqa # pylint: disable=unused-import
+import time  # noqa # pylint: disable=unused-import
 import traceback
 
-import app_greynoise_declare # noqa # pylint: disable=unused-import
+import app_greynoise_declare  # noqa # pylint: disable=unused-import
 from splunklib.searchcommands import dispatch, EventingCommand, Configuration, Option
 from splunklib.binding import HTTPError
 from greynoise import GreyNoise
 
 import event_generator
 from greynoise_exceptions import APIKeyNotFoundError
+from greynoise_constants import INTEGRATION_NAME
 import utility
 import validator
 
@@ -44,7 +45,7 @@ class GNMultiCommand(EventingCommand):
         # Enter the mechanism only when the Search is complete and all the events are available
         if self.search_results_info and not self.metadata.preview:
 
-            EVENTS_PER_CHUNK = 1000
+            EVENTS_PER_CHUNK = 5000
             THREADS = 3
             USE_CACHE = False
             ip_field = self.ip_field
@@ -100,13 +101,18 @@ class GNMultiCommand(EventingCommand):
                     USE_CACHE = True
 
                 # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name="Splunk")
+                api_client = GreyNoise(api_key=api_key, timeout=120,
+                                       use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
 
                 # When no records found, batch will return {0:([],[])}
                 if len(list(chunk_dict.values())[0][0]) >= 1:
+                    tot_time_start = time.time()
                     for event in event_generator.get_all_events(
-                            api_client, 'multi', ip_field, chunk_dict, logger, threads=THREADS):
+                            self._metadata.searchinfo.session_key, api_client, 'multi', ip_field, chunk_dict, logger,
+                            threads=THREADS):
                         yield event
+                    tot_time_end = time.time()
+                    logger.debug("Total execution time => {}".format(tot_time_end - tot_time_start))
 
                     logger.info("Successfully sent all the results to the Splunk")
                 else:

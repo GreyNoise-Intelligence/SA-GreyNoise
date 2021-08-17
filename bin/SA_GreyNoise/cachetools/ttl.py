@@ -1,18 +1,12 @@
-from __future__ import absolute_import
-
 import collections
-
-try:
-    from time import monotonic as default_timer
-except ImportError:
-    from time import time as default_timer
+import time
 
 from .cache import Cache
 
 
-class _Link(object):
+class _Link:
 
-    __slots__ = ('key', 'expire', 'next', 'prev')
+    __slots__ = ("key", "expire", "next", "prev")
 
     def __init__(self, key=None, expire=None):
         self.key = key
@@ -28,8 +22,7 @@ class _Link(object):
         next.prev = prev
 
 
-class _Timer(object):
-
+class _Timer:
     def __init__(self, timer):
         self.__timer = timer
         self.__nesting = 0
@@ -61,7 +54,7 @@ class _Timer(object):
 class TTLCache(Cache):
     """LRU Cache implementation with per-item time-to-live (TTL) value."""
 
-    def __init__(self, maxsize, ttl, timer=default_timer, getsizeof=None):
+    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
         Cache.__init__(self, maxsize, getsizeof)
         self.__root = root = _Link()
         root.prev = root.next = root
@@ -150,7 +143,7 @@ class TTLCache(Cache):
     def currsize(self):
         with self.__timer as time:
             self.expire(time)
-            return super(TTLCache, self).currsize
+            return super().currsize
 
     @property
     def timer(self):
@@ -204,17 +197,11 @@ class TTLCache(Cache):
             try:
                 key = next(iter(self.__links))
             except StopIteration:
-                raise KeyError('%s is empty' % self.__class__.__name__)
+                raise KeyError("%s is empty" % type(self).__name__) from None
             else:
                 return (key, self.pop(key))
 
-    if hasattr(collections.OrderedDict, 'move_to_end'):
-        def __getlink(self, key):
-            value = self.__links[key]
-            self.__links.move_to_end(key)
-            return value
-    else:
-        def __getlink(self, key):
-            value = self.__links.pop(key)
-            self.__links[key] = value
-            return value
+    def __getlink(self, key):
+        value = self.__links[key]
+        self.__links.move_to_end(key)
+        return value

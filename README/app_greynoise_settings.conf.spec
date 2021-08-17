@@ -13,3 +13,8 @@ enable_ss =
 force_enable_ss = 
 job_id_overview = 
 job_id_scan_deployment =
+
+[caching]
+enable_caching =
+ttl =
+purge_cache =

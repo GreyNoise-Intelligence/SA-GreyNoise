@@ -10,6 +10,7 @@ from cim_actions import ModularAction
 from greynoise import GreyNoise
 import six
 
+from greynoise_constants import INTEGRATION_NAME
 from utility import get_log_level, get_api_key
 
 
@@ -40,7 +41,7 @@ class AlertBase(ModularAction):
         api_key = get_api_key(self.session_key, self.logger)
         if not api_key:
             self._handle_alert_exit(1)
-        return GreyNoise(api_key=api_key, timeout=120, integration_name="Splunk")
+        return GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
 
     def handle_results(self):
         """Handle the events and return the ip addresses."""

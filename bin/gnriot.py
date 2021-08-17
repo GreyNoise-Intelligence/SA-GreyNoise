@@ -1,8 +1,8 @@
 import sys
-import time # noqa # pylint: disable=unused-import
+import time  # noqa # pylint: disable=unused-import
 import traceback
 
-import app_greynoise_declare # noqa # pylint: disable=unused-import
+import app_greynoise_declare  # noqa # pylint: disable=unused-import
 from requests.exceptions import ConnectionError, RequestException
 from splunklib.binding import HTTPError
 from splunklib.searchcommands import dispatch, EventingCommand, Configuration, Option
@@ -11,6 +11,7 @@ from greynoise.exceptions import RateLimitError, RequestFailure
 
 import event_generator
 from greynoise_exceptions import APIKeyNotFoundError
+from greynoise_constants import INTEGRATION_NAME
 import utility
 import validator
 
@@ -89,9 +90,11 @@ class GNRiotCommand(EventingCommand):
             logger.info("Started retrieving results")
             try:
                 logger.debug("Initiating to fetch RIOT information for IP address: {}".format(str(ip_address)))
-                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name="Splunk App 2.1.0")
+                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
                 # Opting timout 120 seconds for the requests
-                riot_information = api_client.riot(ip_address)
+                session_key = self._metadata.searchinfo.session_key
+                riot_information = utility.get_response_for_generating(
+                    session_key, api_client, ip_address, 'greynoise_riot', logger)
                 logger.info("Retrieved results successfully")
 
                 # Process the API response and send the riot information of IP with extractions to the Splunk
@@ -184,12 +187,13 @@ class GNRiotCommand(EventingCommand):
                         USE_CACHE = True
 
                     api_client = GreyNoise(
-                        api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name="Splunk App 2.1.0")
+                        api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
 
                     # When no records found, batch will return {0:([],[])}
                     if len(chunk_dict) > 0:
                         for event in event_generator.get_all_events(
-                                api_client, 'greynoise_riot', ip_field, chunk_dict, logger, threads=THREADS):
+                                self._metadata.searchinfo.session_key, api_client, 'greynoise_riot', ip_field,
+                                chunk_dict, logger, threads=THREADS):
                             yield event
 
                         logger.info("Successfully sent all the results to the Splunk")

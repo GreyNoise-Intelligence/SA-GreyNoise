@@ -1,8 +1,8 @@
 import sys
-import time # noqa # pylint: disable=unused-import
+import time  # noqa # pylint: disable=unused-import
 import traceback
 
-import app_greynoise_declare # noqa # pylint: disable=unused-import
+import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import six
 from splunklib.searchcommands import dispatch, EventingCommand, Configuration, Option
 from splunklib.binding import HTTPError
@@ -11,6 +11,7 @@ from greynoise.util import validate_ip
 
 import event_generator
 from greynoise_exceptions import APIKeyNotFoundError
+from greynoise_constants import INTEGRATION_NAME
 import utility
 import validator
 
@@ -177,12 +178,14 @@ class GNFilterCommand(EventingCommand):
                     USE_CACHE = True
 
                 # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name="Splunk")
+                api_client = GreyNoise(api_key=api_key, timeout=120,
+                                       use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
 
                 # When no records found, batch will return {0:([],[])}
                 if len(list(chunk_dict.values())[0][0]) >= 1:
                     for chunk_index, result in event_generator.get_all_events(
-                            api_client, method, ip_field, chunk_dict, logger, threads=THREADS):
+                            self._metadata.searchinfo.session_key, api_client, method, ip_field, chunk_dict, logger,
+                            threads=THREADS):
                         # Pass the collected data to the event filter method
                         for event in event_filter(
                                 chunk_index, result, chunk_dict[chunk_index], ip_field, noise_events, method):

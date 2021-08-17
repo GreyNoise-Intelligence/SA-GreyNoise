@@ -6,10 +6,9 @@
 Structured logging for Python.
 """
 
-from __future__ import absolute_import, division, print_function
 
-from structlog import dev, processors, stdlib, threadlocal
-from structlog._base import BoundLoggerBase
+from structlog import dev, processors, stdlib, testing, threadlocal, types
+from structlog._base import BoundLoggerBase, get_context
 from structlog._config import (
     configure,
     configure_once,
@@ -21,22 +20,29 @@ from structlog._config import (
     wrap_logger,
 )
 from structlog._generic import BoundLogger
+from structlog._log_levels import make_filtering_bound_logger
 from structlog._loggers import (
+    BytesLogger,
+    BytesLoggerFactory,
     PrintLogger,
     PrintLoggerFactory,
-    ReturnLogger,
-    ReturnLoggerFactory,
 )
 from structlog.exceptions import DropEvent
+from structlog.testing import ReturnLogger, ReturnLoggerFactory
 
 
 try:
     from structlog import twisted
-except ImportError:  # pragma: nocover
-    twisted = None
+except ImportError:
+    twisted = None  # type: ignore
+
+try:
+    from structlog import contextvars
+except ImportError:
+    contextvars = None  # type: ignore
 
 
-__version__ = "19.2.0"
+__version__ = "21.1.0"
 
 __title__ = "structlog"
 __description__ = "Structured Logging for Python"
@@ -46,12 +52,14 @@ __author__ = "Hynek Schlawack"
 __email__ = "hs@ox.cx"
 
 __license__ = "MIT or Apache License, Version 2.0"
-__copyright__ = "Copyright (c) 2013 {0}".format(__author__)
+__copyright__ = "Copyright (c) 2013 " + __author__
 
 
 __all__ = [
     "BoundLogger",
     "BoundLoggerBase",
+    "BytesLogger",
+    "BytesLoggerFactory",
     "DropEvent",
     "PrintLogger",
     "PrintLoggerFactory",
@@ -59,15 +67,20 @@ __all__ = [
     "ReturnLoggerFactory",
     "configure",
     "configure_once",
+    "contextvars",
     "dev",
     "getLogger",
     "get_config",
+    "get_context",
     "get_logger",
     "is_configured",
+    "make_filtering_bound_logger",
     "processors",
     "reset_defaults",
     "stdlib",
+    "testing",
     "threadlocal",
     "twisted",
+    "types",
     "wrap_logger",
 ]

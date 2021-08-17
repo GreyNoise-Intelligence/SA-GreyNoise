@@ -1,14 +1,15 @@
 import sys
-import time # noqa # pylint: disable=unused-import
+import time  # noqa # pylint: disable=unused-import
 import traceback
 
-import app_greynoise_declare # noqa # pylint: disable=unused-import
+import app_greynoise_declare  # noqa # pylint: disable=unused-import
 from splunklib.searchcommands import dispatch, EventingCommand, Configuration, Option
 from splunklib.binding import HTTPError
 from greynoise import GreyNoise
 
 import event_generator
 from greynoise_exceptions import APIKeyNotFoundError
+from greynoise_constants import INTEGRATION_NAME
 import utility
 import validator
 
@@ -101,11 +102,13 @@ class GNEnrichCommand(EventingCommand):
                     USE_CACHE = True
 
                 # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name="Splunk")
+                api_client = GreyNoise(api_key=api_key, timeout=120,
+                                       use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
 
                 if len(chunk_dict) > 0:
                     for event in event_generator.get_all_events(
-                            api_client, 'enrich', ip_field, chunk_dict, logger, threads=THREADS):
+                            self._metadata.searchinfo.session_key, api_client, 'enrich', ip_field, chunk_dict, logger,
+                            threads=THREADS):
                         yield event
 
                     logger.info("Successfully sent all the results to the Splunk")

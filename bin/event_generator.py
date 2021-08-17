@@ -1,25 +1,17 @@
 """This file helps custom commands generate events by passing simple API responses to it."""
-import sys
-from app_greynoise_declare import ta_name as APP_NAME, ta_lib_name as APP_LIB_NAME
+from app_greynoise_declare import ta_name as APP_NAME, ta_lib_name as APP_LIB_NAME  # noqa # pylint: disable=unused-import
+from caching import Caching
 from functools import partial
 try:
     from itertools import izip
 except Exception:
     # For Python 3.x
     izip = zip
-import threading # noqa # pylint: disable=unused-import
+import threading  # noqa # pylint: disable=unused-import
 import time
 import traceback
 
-from splunk.clilib.bundle_paths import make_splunkhome_path
-if sys.version_info[0] == 2:
-    # Import the package from python2 directory when using python 2
-    sys.path.append(make_splunkhome_path(['etc', 'apps', APP_NAME, 'bin', APP_LIB_NAME, 'python2_lib']))
-    from python2_lib.concurrent.futures import ThreadPoolExecutor
-else:
-    # Import the package from python3 directory when using python 3
-    sys.path.append(make_splunkhome_path(['etc', 'apps', APP_NAME, 'bin', APP_LIB_NAME, 'python3_lib']))
-    from python3_lib.concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 import six
 
@@ -27,12 +19,74 @@ from requests.exceptions import ConnectionError, RequestException
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise.util import validate_ip
 
-from utility import get_dict, nested_dict_iter
+from utility import get_dict, nested_dict_iter, get_ips_not_in_cache, fetch_response_from_api
 
 GENERATING_COMMAND_METHODS = ['ip', 'quick', 'query', 'stats', 'riot']
 
 
-def pull_data_from_api(fetch_method, logger, params, api_sleep_timer=3):
+def exception_handler(method):
+    """Decorator method for handling exceptions in Greynoise API calls."""
+
+    def wrapper(*args, **kwargs):
+        try:
+            response = method(*args, **kwargs)
+            return response
+        except ValueError as e:
+            kwargs['logger'].debug(
+                "Either the event doesn't have ip_field or value of IP address present in event is "
+                "either invalid or non-routable, parameter passed to API: '{}'".format(kwargs['params']))
+            msg = str(e).split(":")
+            return {
+                'message': 'error',
+                'response': msg[0]
+            }
+        except RateLimitError as e:
+            kwargs['logger'].error("Rate limit error occured. Exception: {}".format(str(e)))
+            return {
+                'message': 'error',
+                'response': 'Rate-limit error occured while retrieving information from GreyNoise API'
+            }
+        except RequestFailure as e:
+            response_code, response_message = e.args
+            # Need to handle this, as splunklib is unable to handle the exception with
+            # (400, {'error': 'error_reason'}) format
+            msg = ("The API call to the GreyNoise platform have been failed "
+                   "with status_code: {} and error: {}").format(
+                response_code, response_message['error'] if isinstance(response_message, dict)
+                else response_message)
+            kwargs['logger'].error("{}".format(str(msg)))
+            return {
+                'message': 'error',
+                'response': 'Request failure occured while retrieving information from GreyNoise API'
+            }
+        except ConnectionError as e:
+            kwargs['logger'].error(
+                "Error while connecting to the Server. Please check your connection and try again. Exception: {}"
+                            .format(str(e)))
+            return {
+                'message': 'error',
+                'response': 'Connection error occured while retrieving information from GreyNoise API'
+            }
+        except RequestException as e:
+            kwargs['logger'].error(
+                "There was an ambiguous exception that occurred while handling your Request. Please try again. "
+                "Exception: {}".format(str(e)))
+            return {
+                'message': 'error',
+                'response': 'Request exception occured while retrieving information from GreyNoise API'
+            }
+        except Exception:
+            kwargs['logger'].error("Exception: {} ".format(str(traceback.format_exc())))
+            return {
+                'message': 'error',
+                'response': 'Exception occured while retrieving information from GreyNoise API'
+            }
+
+    return wrapper
+
+
+@exception_handler
+def pull_data_from_api_other(fetch_method, cache_enabled, cache, ip, logger, params, api_sleep_timer=3):
     """
     Pull the data from the GreyNoise SDK and return it.
 
@@ -43,68 +97,70 @@ def pull_data_from_api(fetch_method, logger, params, api_sleep_timer=3):
     :return: dict having `message` denoting the API response status,
     `response` denoting  the API response or exception in case.
     """
-    try:
-        # Putting the sleep time before the request to avoid connection errors from the GreyNoise Server
-        time.sleep(api_sleep_timer)
+    time.sleep(api_sleep_timer)
+    if int(cache_enabled) == 1:
+        if ip in params:
+            response = fetch_response_from_api(fetch_method, cache, ip, logger)
+        else:
+            response = cache.query_kv_store([ip])
+            if response is None or response == []:
+                # Handles the scenario where cache is cleared or disabled during the code execution
+                response = fetch_method(ip)
+    else:
+        response = fetch_method(ip)
 
+    return {
+        'message': 'ok',
+        'response': response
+    }
+
+
+@exception_handler
+def pull_data_from_api_multi(fetch_method, cache_enabled, cache, params, logger, api_sleep_timer=3):
+    """
+    Pull the data from the GreyNoise SDK and return it.
+
+    :param fetch_method: API method to be called with the given params
+    :param logger: logger instance
+    :param params: parameters that needs to be passed with the GreyNoise SDK call
+    :param api_sleep_timer: Wait time in seconds before actual API call to avoid ConnectionError with GreyNoise server
+    :return: dict having `message` denoting the API response status,
+    `response` denoting  the API response or exception in case.
+    """
+    # Putting the sleep time before the request to avoid connection errors from the GreyNoise Server
+    time.sleep(api_sleep_timer)
+    if int(cache_enabled) == 1:
+        # CACHING START
+        try:
+            cached = []
+            if len(params) >= 1:
+                cached = cache.query_kv_store(params)
+            ips_from_cache = []
+            if cached is None:
+                logger.debug("Either KVStore is not ready or cache is empty. Skipping caching mechanism.")
+                response = fetch_method(params)
+            else:
+                for each in cached:
+                    ips_from_cache.append(each['ip'])
+                final_ips = [each for each in params if each not in ips_from_cache]
+                response = []
+                # When the cache does not have response for every ip address
+                if len(params) > len(ips_from_cache):
+                    response = fetch_response_from_api(fetch_method, cache, final_ips, logger)
+                response.extend(cached)
+        except Exception:
+            logger.error("An exception occurred while caching: {}".format(traceback.format_exc()))
+            response = fetch_method(params)
+        # CACHING END
+    else:
         response = fetch_method(params)
-        return {
-            'message': 'ok',
-            'response': response
-        }
-    except ValueError as e:
-        logger.debug(
-            "Either the event doesn't have ip_field or value of IP address present in event is "
-            "either invalid or non-routable, parameter passed to API: '{}'".format(params))
-        msg = str(e).split(":")
-        return {
-            'message': 'error',
-            'response': msg[0]
-        }
-    except RateLimitError as e:
-        logger.error("Rate limit error occured. Exception: {}".format(str(e)))
-        return {
-            'message': 'error',
-            'response': 'Rate-limit error occured while retrieving information from GreyNoise API'
-        }
-    except RequestFailure as e:
-        response_code, response_message = e.args
-        # Need to handle this, as splunklib is unable to handle the exception with
-        # (400, {'error': 'error_reason'}) format
-        msg = ("The API call to the GreyNoise platform have been failed "
-               "with status_code: {} and error: {}").format(
-            response_code, response_message['error'] if isinstance(response_message, dict)
-            else response_message)
-        logger.error("{}".format(str(msg)))
-        return {
-            'message': 'error',
-            'response': 'Request failure occured while retrieving information from GreyNoise API'
-        }
-    except ConnectionError as e:
-        logger.error(
-            "Error while connecting to the Server. Please check your connection and try again. Exception: {}".format(
-                str(e)))
-        return {
-            'message': 'error',
-            'response': 'Connection error occured while retrieving information from GreyNoise API'
-        }
-    except RequestException as e:
-        logger.error(
-            "There was an ambiguous exception that occurred while handling your Request. Please try again. "
-            "Exception: {}".format(str(e)))
-        return {
-            'message': 'error',
-            'response': 'Request exception occured while retrieving information from GreyNoise API'
-        }
-    except Exception:
-        logger.error("Exception: {} ".format(str(traceback.format_exc())))
-        return {
-            'message': 'error',
-            'response': 'Exception occured while retrieving information from GreyNoise API'
-        }
+    return {
+        'message': 'ok',
+        'response': response
+    }
 
 
-def get_all_events(api_client, method, ip_field, chunk_dict, logger, threads=3):
+def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger, threads=3):
     """
     Driver method for the transforming commands that use the threading mechanism to retrieve data from GreyNoise SDK.
 
@@ -116,6 +172,16 @@ def get_all_events(api_client, method, ip_field, chunk_dict, logger, threads=3):
     :param threads: number of threads to use
     :return: dict
     """
+    if method != 'filter':
+        cache_enabled = Caching.get_cache_settings(session_key)
+        if int(cache_enabled) == 1:
+            cache = Caching(session_key, logger, method)
+        else:
+            cache = None
+    else:
+        cache_enabled = 0
+        cache = None
+
     if method in ['ip', 'enrich']:
         fetch_method = api_client.ip
     elif method == 'greynoise_riot':
@@ -130,19 +196,30 @@ def get_all_events(api_client, method, ip_field, chunk_dict, logger, threads=3):
         # Doing this to pass the multiple arguments to method used in map method
         if method == 'enrich' or method == 'greynoise_riot':
             ips = []
-            for ip_list in list(chunk_dict.values()):
-                try:
-                    ips.append(ip_list[1][0])
-                except IndexError:
-                    # That means the particular record does not have any IP address or has blank IP address
-                    # It will not instantiate the unnecessary API call as this will not match with the regex itself.
-                    ips.append('')
+            if int(cache_enabled) == 1:
+                for ip_list in list(chunk_dict.values()):
+                    try:
+                        ips.append(ip_list[1][0])
+                    except IndexError:
+                        # That means the particular record does not have any IP address or has blank IP address
+                        # It will not instantiate the unnecessary API call as this will not match with the regex itself.
+                        ips.append('')
+                ips_not_in_cache, ips_in_cache = get_ips_not_in_cache(cache, ips, logger)
+            else:
+                for ip_list in list(chunk_dict.values()):
+                    try:
+                        ips.append(ip_list[1][0])
+                    except IndexError:
+                        # That means the particular record does not have any IP address or has blank IP address
+                        # It will not instantiate the unnecessary API call as this will not match with the regex itself.
+                        ips.append('')
 
             # Setting the API sleep timer to 0 as context endpoint does not return Connection Errors after some requests
-            pull_data = partial(pull_data_from_api, fetch_method, logger, api_sleep_timer=0)
+            pull_data = partial(pull_data_from_api_other, fetch_method, cache_enabled, cache,
+                                logger=logger, params=ips_not_in_cache, api_sleep_timer=0)
             results = executor.map(pull_data, ips)
         else:
-            pull_data = partial(pull_data_from_api, fetch_method, logger)
+            pull_data = partial(pull_data_from_api_multi, fetch_method, cache_enabled, cache, logger=logger)
             # Default API sleep timer will be of 3 seconds for each request here
             results = executor.map(pull_data, [ip_list[1] for ip_list in list(chunk_dict.values())])
 
@@ -210,7 +287,15 @@ def event_processor(records_dict, result, method, ip_field, logger):
     # Loading the response to avoid loading it each time
     # This will either have API response for the chunk or
     # the exception message denoting exception occured while fetching the data
-    api_results = result['response']
+    if result['response'] != []:
+        if type(result['response'][0]) == list:
+            api_results = []
+            for each in result['response'][0]:
+                api_results.append(each)
+        else:
+            api_results = result['response']
+    else:
+        api_results = result['response']
     error_flag = True
     # Before yielding events, make the ip lookup dict which will have the following format:
     # {<ip-address>: <API response for that IP address>}
@@ -384,7 +469,7 @@ def batch(iterable, ip_field, events_per_chunk, logger, optimize_requests=True):
                 list(ip_set)
             )
 
-            if not len(all_unique_ips) > 1001:
+            if not len(all_unique_ips) > 5001:
                 all_unique_ips.update(ip_set)
 
             chunk_index = chunk_index + 1
@@ -395,10 +480,10 @@ def batch(iterable, ip_field, events_per_chunk, logger, optimize_requests=True):
     if len(records) > 0:
         chunk_dict[chunk_index] = (records, list(ip_set))
 
-        if not len(all_unique_ips) > 1000:
+        if not len(all_unique_ips) > 5000:
             all_unique_ips.update(ip_set)
 
-    if optimize_requests and len(all_unique_ips) <= 1000:
+    if optimize_requests and len(all_unique_ips) <= 5000:
         all_records = []
         # Return records in only one chunk if the deployment less then 1000 unique IP addresses
         for records, _ in list(chunk_dict.values()):

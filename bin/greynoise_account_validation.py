@@ -1,6 +1,7 @@
 import os
 import traceback  # noqa # pylint: disable=unused-import
 import json
+import time
 
 import app_greynoise_declare
 from solnlib import conf_manager  # noqa # pylint: disable=unused-import
@@ -16,6 +17,7 @@ from splunktaucclib.rest_handler.endpoint import (
 
 from utility import validate_api_key, get_conf_file, setup_logger, make_error_message
 from saved_search_utils import is_api_configured, handle_macros, compare_parameters, DATE, TIME_MAP
+from greynoise_constants import MAX_RETRIES, BACKOFF_FACTOR
 
 APP_NAME = app_greynoise_declare.ta_name
 
@@ -95,6 +97,35 @@ class PurgeHandler(Validator):
         self.session_key_obj = GetSessionKey()
         self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context="api_validation")
 
+    # Decorator
+    def retry(method):
+        """Retry mechanism to avoid connection errors."""
+
+        def wrapper(self, *args, **kwargs):
+            retry_count = 0
+            while True:
+                try:
+                    response = method(self, *args, **kwargs)
+                    break
+                except Exception as ex:
+                    if retry_count >= MAX_RETRIES:
+                        raise ex
+
+                    retry_count += 1
+                    if retry_count == 1:
+                        self.logger.warning('Method="{}()" Args="{}" Kwargs="{}" Error="{}"'.format(
+                            method.__name__, args, kwargs, ex))
+
+                    # Exponential backoff
+                    delay = (BACKOFF_FACTOR) * (2 ** retry_count - 1)
+                    time.sleep(delay)
+
+                    self.logger.info('RetryCount={} RetryAfterSecond={}'.format(retry_count, delay))
+
+            return response
+        return wrapper
+
+    @retry
     def cache_purge_helper(self):
         """Method to purge all caches."""
         caches = ['multi', 'context', 'riot']
@@ -102,7 +133,7 @@ class PurgeHandler(Validator):
             response_status, response_content = rest.simpleRequest(
                 "/servicesNS/nobody/" + str(APP_NAME) + "/storage/collections/data/" + each,
                 sessionKey=self.session_key_obj.session_key, method='DELETE', getargs={"output_mode": "json"},
-                raiseAllErrors=True)
+                raiseAllErrors=True, timeout=180)
 
     def validate(self, value, data):
         """Method to call all purge helpers."""

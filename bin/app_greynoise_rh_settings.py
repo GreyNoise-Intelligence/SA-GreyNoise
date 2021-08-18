@@ -7,13 +7,13 @@ from splunktaucclib.rest_handler.endpoint import (
     RestModel,
     MultipleModel,
 )
+import splunk.rest as rest
 from splunktaucclib.rest_handler import admin_external, util
 from splunk_aoblib.rest_migration import ConfigMigrationHandler
 
-from greynoise_account_validation import GreyNoiseAPIValidation, GreyNoiseScanDeployment
+from greynoise_account_validation import GreyNoiseAPIValidation, GreyNoiseScanDeployment, PurgeHandler, EnableCachingHandler, TtlHandler
 
 util.remove_http_proxy_env_vars()
-
 
 fields_logging = [
     field.RestField(
@@ -37,6 +37,29 @@ fields_parameters = [
     )
 ]
 model_parameters = RestModel(fields_parameters, name='parameters')
+
+fields_caching = [
+    field.RestField(
+        'enable_caching',
+        required=False,
+        encrypted=False,
+        validator=EnableCachingHandler()
+    ),
+    field.RestField(
+        'ttl',
+        required=False,
+        encrypted=False,
+        default='24',
+        validator=TtlHandler()
+    ),
+    field.RestField(
+        'purge_cache',
+        required=False,
+        encrypted=False,
+        validator=PurgeHandler()
+    ),
+]
+model_caching = RestModel(fields_caching, name='caching')
 
 fields_scan_deployment = [
     field.RestField(
@@ -95,7 +118,8 @@ endpoint = MultipleModel(
     models=[
         model_logging, 
         model_parameters,
-        model_scan_deployment
+        model_scan_deployment,
+        model_caching
     ],
 )
 

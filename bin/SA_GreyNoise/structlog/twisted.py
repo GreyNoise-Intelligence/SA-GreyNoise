@@ -9,12 +9,11 @@ networking engine.
 See also :doc:`structlog's Twisted support <twisted>`.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import json
 import sys
 
-from six import PY2, string_types
+from typing import Any, Callable, Dict, Optional, Sequence, TextIO, Tuple
+
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.python.log import ILogObserver, textFromEventDict
@@ -24,11 +23,12 @@ from ._base import BoundLoggerBase
 from ._config import _BUILTIN_DEFAULT_PROCESSORS
 from ._utils import until_not_interrupted
 from .processors import JSONRenderer as GenericJSONRenderer
+from .types import EventDict, WrappedLogger
 
 
 class BoundLogger(BoundLoggerBase):
     """
-    Twisted-specific version of :class:`structlog.BoundLogger`.
+    Twisted-specific version of `structlog.BoundLogger`.
 
     Works exactly like the generic one except that it takes advantage of
     knowing the logging methods in advance.
@@ -41,20 +41,20 @@ class BoundLogger(BoundLoggerBase):
 
     """
 
-    def msg(self, event=None, **kw):
+    def msg(self, event: Optional[str] = None, **kw: Any) -> Any:
         """
         Process event and call ``log.msg()`` with the result.
         """
         return self._proxy_to_logger("msg", event, **kw)
 
-    def err(self, event=None, **kw):
+    def err(self, event: Optional[str] = None, **kw: Any) -> Any:
         """
         Process event and call ``log.err()`` with the result.
         """
         return self._proxy_to_logger("err", event, **kw)
 
 
-class LoggerFactory(object):
+class LoggerFactory:
     """
     Build a Twisted logger when an *instance* is called.
 
@@ -63,7 +63,7 @@ class LoggerFactory(object):
     >>> configure(logger_factory=LoggerFactory())
     """
 
-    def __call__(self, *args):
+    def __call__(self, *args: Any) -> WrappedLogger:
         """
         Positional arguments are silently ignored.
 
@@ -78,43 +78,49 @@ class LoggerFactory(object):
 _FAIL_TYPES = (BaseException, Failure)
 
 
-def _extractStuffAndWhy(eventDict):
+def _extractStuffAndWhy(eventDict: EventDict) -> Tuple[Any, Any, EventDict]:
     """
     Removes all possible *_why*s and *_stuff*s, analyzes exc_info and returns
-    a tuple of `(_stuff, _why, eventDict)`.
+    a tuple of ``(_stuff, _why, eventDict)``.
 
     **Modifies** *eventDict*!
     """
     _stuff = eventDict.pop("_stuff", None)
     _why = eventDict.pop("_why", None)
     event = eventDict.pop("event", None)
+
     if isinstance(_stuff, _FAIL_TYPES) and isinstance(event, _FAIL_TYPES):
         raise ValueError("Both _stuff and event contain an Exception/Failure.")
+
     # `log.err('event', _why='alsoEvent')` is ambiguous.
-    if _why and isinstance(event, string_types):
+    if _why and isinstance(event, str):  # type: ignore
         raise ValueError("Both `_why` and `event` supplied.")
+
     # Two failures are ambiguous too.
     if not isinstance(_stuff, _FAIL_TYPES) and isinstance(event, _FAIL_TYPES):
         _why = _why or "error"
         _stuff = event
-    if isinstance(event, string_types):
+
+    if isinstance(event, str):
         _why = event
+
     if not _stuff and sys.exc_info() != (None, None, None):
         _stuff = Failure()
+
     # Either we used the error ourselves or the user supplied one for
     # formatting.  Avoid log.err() to dump another traceback into the log.
     if isinstance(_stuff, BaseException) and not isinstance(_stuff, Failure):
         _stuff = Failure(_stuff)
-    if PY2:
-        sys.exc_clear()
+
     return _stuff, _why, eventDict
 
 
-class ReprWrapper(object):
+class ReprWrapper:
     """
-    Wrap a string and return it as the __repr__.
+    Wrap a string and return it as the ``__repr__``.
 
-    This is needed for log.err() that calls repr() on _stuff:
+    This is needed for ``twisted.python.log.err`` that calls `repr` on
+    ``_stuff``:
 
     >>> repr("foo")
     "'foo'"
@@ -124,44 +130,49 @@ class ReprWrapper(object):
     Note the extra quotes in the unwrapped example.
     """
 
-    def __init__(self, string):
+    def __init__(self, string: str) -> None:
         self.string = string
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """
-        Check for equality, actually just for tests.
+        Check for equality, just for tests.
         """
         return (
             isinstance(other, self.__class__) and self.string == other.string
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.string
 
 
 class JSONRenderer(GenericJSONRenderer):
     """
-    Behaves like :class:`structlog.processors.JSONRenderer` except that it
-    formats tracebacks and failures itself if called with `err()`.
+    Behaves like `structlog.processors.JSONRenderer` except that it
+    formats tracebacks and failures itself if called with ``err()``.
 
     .. note::
 
-        This ultimately means that the messages get logged out using `msg()`,
-        and *not* `err()` which renders failures in separate lines.
+        This ultimately means that the messages get logged out using ``msg()``,
+        and *not* ``err()`` which renders failures in separate lines.
 
         Therefore it will break your tests that contain assertions using
         `flushLoggedErrors <https://twistedmatrix.com/documents/
         current/api/twisted.trial.unittest.SynchronousTestCase.html
         #flushLoggedErrors>`_.
 
-    *Not* an adapter like :class:`EventAdapter` but a real formatter.  Nor does
-    it require to be adapted using it.
+    *Not* an adapter like `EventAdapter` but a real formatter.  Also does *not*
+    require to be adapted using it.
 
-    Use together with a :class:`JSONLogObserverWrapper`-wrapped Twisted logger
-    like :func:`plainJSONStdOutLogger` for pure-JSON logs.
+    Use together with a `JSONLogObserverWrapper`-wrapped Twisted logger like
+    `plainJSONStdOutLogger` for pure-JSON logs.
     """
 
-    def __call__(self, logger, name, eventDict):
+    def __call__(  # type: ignore
+        self,
+        logger: WrappedLogger,
+        name: str,
+        eventDict: EventDict,
+    ) -> Tuple[Sequence[Any], Dict[str, Any]]:
         _stuff, _why, eventDict = _extractStuffAndWhy(eventDict)
         if name == "err":
             eventDict["event"] = _why
@@ -173,7 +184,9 @@ class JSONRenderer(GenericJSONRenderer):
         return (
             (
                 ReprWrapper(
-                    GenericJSONRenderer.__call__(self, logger, name, eventDict)
+                    GenericJSONRenderer.__call__(  # type: ignore
+                        self, logger, name, eventDict
+                    )
                 ),
             ),
             {"_structlog": True},
@@ -181,32 +194,31 @@ class JSONRenderer(GenericJSONRenderer):
 
 
 @implementer(ILogObserver)
-class PlainFileLogObserver(object):
+class PlainFileLogObserver:
     """
     Write only the the plain message without timestamps or anything else.
 
     Great to just print JSON to stdout where you catch it with something like
     runit.
 
-    :param file file: File to print to.
-
+    :param file: File to print to.
 
     .. versionadded:: 0.2.0
     """
 
-    def __init__(self, file):
+    def __init__(self, file: TextIO) -> None:
         self._write = file.write
         self._flush = file.flush
 
-    def __call__(self, eventDict):
+    def __call__(self, eventDict: EventDict) -> None:
         until_not_interrupted(self._write, textFromEventDict(eventDict) + "\n")
         until_not_interrupted(self._flush)
 
 
 @implementer(ILogObserver)
-class JSONLogObserverWrapper(object):
+class JSONLogObserverWrapper:
     """
-    Wrap a log *observer* and render non-:class:`JSONRenderer` entries to JSON.
+    Wrap a log *observer* and render non-`JSONRenderer` entries to JSON.
 
     :param ILogObserver observer: Twisted log observer to wrap.  For example
         :class:`PlainFileObserver` or Twisted's stock `FileLogObserver
@@ -216,10 +228,10 @@ class JSONLogObserverWrapper(object):
     .. versionadded:: 0.2.0
     """
 
-    def __init__(self, observer):
+    def __init__(self, observer: Any) -> None:
         self._observer = observer
 
-    def __call__(self, eventDict):
+    def __call__(self, eventDict: EventDict) -> str:
         if "_structlog" not in eventDict:
             eventDict["message"] = (
                 json.dumps(
@@ -230,14 +242,15 @@ class JSONLogObserverWrapper(object):
                 ),
             )
             eventDict["_structlog"] = True
+
         return self._observer(eventDict)
 
 
-def plainJSONStdOutLogger():
+def plainJSONStdOutLogger() -> JSONLogObserverWrapper:
     """
     Return a logger that writes only the message to stdout.
 
-    Transforms non-:class:`~structlog.twisted.JSONRenderer` messages to JSON.
+    Transforms non-`JSONRenderer` messages to JSON.
 
     Ideal for JSONifying log entries from Twisted plugins and libraries that
     are outside of your control::
@@ -250,15 +263,15 @@ def plainJSONStdOutLogger():
         {"event": "Starting factory <twisted.web.server.Site ...>", ...}
         ...
 
-    Composes :class:`PlainFileLogObserver` and :class:`JSONLogObserverWrapper`
-    to a usable logger.
+    Composes `PlainFileLogObserver` and `JSONLogObserverWrapper` to a usable
+    logger.
 
     .. versionadded:: 0.2.0
     """
     return JSONLogObserverWrapper(PlainFileLogObserver(sys.stdout))
 
 
-class EventAdapter(object):
+class EventAdapter:
     """
     Adapt an ``event_dict`` to Twisted logging system.
 
@@ -266,22 +279,28 @@ class EventAdapter(object):
     <https://twistedmatrix.com/documents/current/
     api/twisted.python.log.html#err>`_ behave as expected.
 
-    :param callable dictRenderer: Renderer that is used for the actual
-        log message.  Please note that structlog comes with a dedicated
-        :class:`JSONRenderer`.
+    :param dictRenderer: Renderer that is used for the actual log message.
+        Please note that structlog comes with a dedicated `JSONRenderer`.
 
-    **Must** be the last processor in the chain and requires a `dictRenderer`
+    **Must** be the last processor in the chain and requires a *dictRenderer*
     for the actual formatting as an constructor argument in order to be able to
     fully support the original behaviors of ``log.msg()`` and ``log.err()``.
     """
 
-    def __init__(self, dictRenderer=None):
+    def __init__(
+        self,
+        dictRenderer: Optional[
+            Callable[[WrappedLogger, str, EventDict], str]
+        ] = None,
+    ) -> None:
         """
         :param dictRenderer: A processor used to format the log message.
         """
         self._dictRenderer = dictRenderer or _BUILTIN_DEFAULT_PROCESSORS[-1]
 
-    def __call__(self, logger, name, eventDict):
+    def __call__(
+        self, logger: WrappedLogger, name: str, eventDict: EventDict
+    ) -> Any:
         if name == "err":
             # This aspires to handle the following cases correctly:
             #   - log.err(failure, _why='event', **kw)
@@ -289,6 +308,7 @@ class EventAdapter(object):
             #   - log.err(_stuff=failure, _why='event', **kw)
             _stuff, _why, eventDict = _extractStuffAndWhy(eventDict)
             eventDict["event"] = _why
+
             return (
                 (),
                 {

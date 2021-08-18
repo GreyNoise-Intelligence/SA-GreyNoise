@@ -7,6 +7,7 @@ from splunklib.searchcommands import dispatch, Configuration, Option
 from greynoise import GreyNoise
 
 from base_command_handler import BaseCommandHandler
+from greynoise_constants import INTEGRATION_NAME
 import event_generator
 import validator
 
@@ -133,7 +134,7 @@ class GNQueryCommand(BaseCommandHandler):
             exit(1)
 
         # Opting timeout of 240 seconds for the request
-        api_client = GreyNoise(api_key=api_key, timeout=240, integration_name="Splunk App 2.1.0")
+        api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
 
         logger.info("Fetching results for GNQL query: {}, requested number of results: {}".format(
             str(query), str(result_size)))

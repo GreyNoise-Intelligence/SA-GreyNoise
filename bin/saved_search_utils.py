@@ -68,7 +68,7 @@ def compare_parameters(data, conf_data):
         data_other_ip_fields = get_unique_set(data.get("other_ip_fields"))
         data_all_fields = data_other_ip_fields.union(data_all_fields)
     if conf_data.get("other_ip_fields", None):
-        conf_other_ip_fields = get_unique_set(data.get("other_ip_fields"))
+        conf_other_ip_fields = get_unique_set(conf_data.get("other_ip_fields"))
         conf_all_fields = conf_other_ip_fields.union(conf_all_fields)
 
     if data_all_fields > conf_all_fields:
@@ -104,6 +104,16 @@ def get_macro_string(data):
     return ','.join(str(s) for s in data)
 
 
+def get_macro_string_with_quotes(data):
+    """
+    Returns formatted String from data.
+
+    :param data:
+    :return string:
+    """
+    return ','.join("'{0}'".format(s) for s in data)
+
+
 def handle_macros(data, service):
     """
     Gets the parameters and updates the corresponding macros.
@@ -122,6 +132,7 @@ def handle_macros(data, service):
     if "all" in all_fields:
         all_fields = set(CIM_IP_FIELDS)
 
+    all_cim_fields_string = get_macro_string(all_fields)
     # If no other fields are present cim fields will be all fields itself
     if data.get("other_ip_fields"):
         other_ip_fields = get_unique_set(data.get("other_ip_fields"))
@@ -129,6 +140,9 @@ def handle_macros(data, service):
         for field in other_ip_fields:
             field_name_validator.validate(field)
         all_fields = other_ip_fields.union(all_fields)
+        other_ip_fields_string = get_macro_string_with_quotes(other_ip_fields)
+        all_cim_fields_string = f'{all_cim_fields_string},{other_ip_fields_string}'
 
     all_fields_string = get_macro_string(all_fields)
     service.post("properties/macros/greynoise_fields", definition=all_fields_string)
+    service.post("properties/macros/greynoise_other_fields", definition=all_cim_fields_string)

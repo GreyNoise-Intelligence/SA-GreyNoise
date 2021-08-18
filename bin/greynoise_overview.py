@@ -6,6 +6,7 @@ from splunklib.searchcommands import dispatch, GeneratingCommand, Configuration
 from greynoise import GreyNoise
 
 import utility
+from greynoise_constants import INTEGRATION_NAME
 
 
 @Configuration(type="events")
@@ -68,7 +69,7 @@ class OverviewCommand(GeneratingCommand):
                     exit(1)
 
                 # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=240, integration_name="Splunk")
+                api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
 
                 queries = {
                     "malicious": "classification:malicious last_seen:today",

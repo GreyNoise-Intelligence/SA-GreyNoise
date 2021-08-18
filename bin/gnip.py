@@ -6,7 +6,9 @@ from splunklib.searchcommands import dispatch, Configuration, Option
 from greynoise import GreyNoise
 
 from base_command_handler import BaseCommandHandler
+from greynoise_constants import INTEGRATION_NAME
 import event_generator
+from utility import get_response_for_generating
 
 
 @Configuration(type="events")
@@ -49,8 +51,9 @@ class IPContextCommand(BaseCommandHandler):
 
             logger.info("Initiating to fetch context information for ip: {}".format(str(ip_address)))
             # Opting default timout 60 seconds for the request
-            api_client = GreyNoise(api_key=api_key, timeout=60, integration_name="Splunk")
-            context_info = api_client.ip(ip_address)
+            api_client = GreyNoise(api_key=api_key, timeout=60, integration_name=INTEGRATION_NAME)
+            session_key = self._metadata.searchinfo.session_key
+            context_info = get_response_for_generating(session_key, api_client, ip_address, 'ip', logger)
             logger.info("Successfully retrieved the context information for ip={}".format(str(ip_address)))
 
             # Process the API response and send the context information of IP with extractions in the Splunk

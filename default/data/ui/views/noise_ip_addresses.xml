@@ -1,4 +1,4 @@
-<form isDashboard="true">
+<form isDashboard="true" version="1.1">
   <label>Noise IP Addresses</label>
   <fieldset submitButton="false">
 
@@ -26,6 +26,30 @@
         <unset token="tkn_ip_for_request"></unset>
       </change>
     </input>
+
+    <input type="dropdown" token="tkn_riot" searchWhenChanged="true">
+      <label>RIOT status</label>
+      <choice value="*">All</choice>
+      <choice value="1">True</choice>
+      <choice value="0">False</choice>
+      <default>*</default>
+      <change>
+        <condition label="All">
+          <set token="tkn_riot">(RIOT=* OR NOT RIOT="*")</set>
+        </condition>
+        <condition label="True">
+          <set token="tkn_riot">RIOT=1</set>
+        </condition>
+        <condition label="False">
+          <set token="tkn_riot">RIOT=0</set>
+        </condition>
+      </change>
+      <!-- Reset token tkn_ip_for_request on any change in inputs
+      to disable the existing IP riot drilldown panel -->
+      <change>
+        <unset token="tkn_ip_for_request"></unset>
+      </change>
+    </input>
   </fieldset>
 
   <row>
@@ -34,12 +58,13 @@
         <search>
           <query>
             | inputlookup gn_scan_deployment_ip_lookup where (_key=$tkn_ip_address$)
-            | search noise=$tkn_noise$
+            | search noise=$tkn_noise$ AND $tkn_riot$
             | eval noise = if(noise=="1", "True", if(noise=="0", "False", "NA"))
+            | eval RIOT = if(RIOT=="1", "True", if(RIOT=="0", "False", ""))
             | rename _key as IP, noise as Noise, last_checked as "Last Checked"
             | eval "Check Live Status" = "Check Live Status"
             | lookup gn_code_mapping local=true code OUTPUT code_message as "Code Message"
-            | table IP, Noise, "Code Message", "Last Checked", "Check Live Status"
+            | table IP, Noise, RIOT, "Code Message", "Last Checked", "Check Live Status"
           </query>
           <earliest>0</earliest>
           <latest></latest>
@@ -67,6 +92,15 @@
             </link>
           </condition>
 
+          <condition field="RIOT">
+            <unset token="tkn_ip_for_request"></unset>
+            <link target="_blank">
+              <![CDATA[
+                /app/SA-GreyNoise/live_investigation?form.tkn_ip_address=$row.IP$&form.redirect=redirect&form.last_7_days=true
+              ]]>
+            </link>
+          </condition>
+
           <!-- No drill down for Last Checked field -->
           <condition field="Last Checked"></condition>
           
@@ -83,16 +117,33 @@
   <row>
     <panel depends="$tkn_ip_for_request$">
       <single>
-        <title>Current status of IP: $tkn_ip_for_request$</title>
+        <title>Current Noise status of IP: $tkn_ip_for_request$</title>
         <search>
           <query>
             | gnquick ip="$tkn_ip_for_request$"
             | eval last_checked=strftime(time(), "%Y-%m-%d %T")
             | eval _key = ip
             | eval noise = if(noise=1, 1, if(noise=0, 0, "Could not retrieve noise status"))
+            | eval RIOT = if(riot=1, 1, if(riot=0, 0, "Could not retrieve RIOT status"))
             | outputlookup gn_scan_deployment_ip_lookup append=true
             | eval noise = if(noise=1, "True", if(noise=0, "False", "Could not retrieve noise status"))
             | table noise
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel depends="$tkn_ip_for_request$">
+      <single>
+        <title>Current RIOT status of IP: $tkn_ip_for_request$</title>
+        <search>
+          <query>
+            | gnquick ip="$tkn_ip_for_request$"
+            | eval RIOT = if(riot=1, "True", if(riot=0, "False", "Could not retrieve RIOT status"))
+            | table RIOT
           </query>
           <earliest>0</earliest>
           <latest></latest>

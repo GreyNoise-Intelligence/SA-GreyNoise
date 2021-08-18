@@ -6,27 +6,27 @@
 Logger wrapper and helper class.
 """
 
-from __future__ import absolute_import, division, print_function
-
-from six import string_types
+from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple
 
 from structlog.exceptions import DropEvent
 
+from .types import BindableLogger, Context, Processor, WrappedLogger
 
-class BoundLoggerBase(object):
+
+class BoundLoggerBase:
     """
     Immutable context carrier.
 
     Doesn't do any actual logging; examples for useful subclasses are:
 
-        - the generic :class:`BoundLogger` that can wrap anything,
-        - :class:`structlog.twisted.BoundLogger`,
-        - and :class:`structlog.stdlib.BoundLogger`.
+    - the generic `BoundLogger` that can wrap anything,
+    - `structlog.stdlib.BoundLogger`.
+    - `structlog.twisted.BoundLogger`,
 
-    See also :doc:`custom-wrappers`.
+    See also `custom-wrappers`.
     """
 
-    _logger = None
+    _logger: WrappedLogger
     """
     Wrapped logger.
 
@@ -34,20 +34,25 @@ class BoundLoggerBase(object):
 
         Despite underscore available **read-only** to custom wrapper classes.
 
-        See also :doc:`custom-wrappers`.
+        See also `custom-wrappers`.
     """
 
-    def __init__(self, logger, processors, context):
+    def __init__(
+        self,
+        logger: WrappedLogger,
+        processors: Iterable[Processor],
+        context: Context,
+    ):
         self._logger = logger
         self._processors = processors
         self._context = context
 
-    def __repr__(self):
-        return "<{0}(context={1!r}, processors={2!r})>".format(
+    def __repr__(self) -> str:
+        return "<{}(context={!r}, processors={!r})>".format(
             self.__class__.__name__, self._context, self._processors
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         try:
             if self._context == other._context:
                 return True
@@ -56,14 +61,12 @@ class BoundLoggerBase(object):
         except AttributeError:
             return False
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
-    def bind(self, **new_values):
+    def bind(self, **new_values: Any) -> "BoundLoggerBase":
         """
         Return a new logger with *new_values* added to the existing ones.
-
-        :rtype: `self.__class__`
         """
         return self.__class__(
             self._logger,
@@ -71,100 +74,104 @@ class BoundLoggerBase(object):
             self._context.__class__(self._context, **new_values),
         )
 
-    def unbind(self, *keys):
+    def unbind(self, *keys: str) -> "BoundLoggerBase":
         """
         Return a new logger with *keys* removed from the context.
 
         :raises KeyError: If the key is not part of the context.
-
-        :rtype: `self.__class__`
         """
         bl = self.bind()
         for key in keys:
             del bl._context[key]
+
         return bl
 
-    def try_unbind(self, *keys):
+    def try_unbind(self, *keys: str) -> "BoundLoggerBase":
         """
-        Like :meth:`unbind`, but best effort:  missing keys are ignored.
-
-        :rtype: `self.__class__`
+        Like :meth:`unbind`, but best effort: missing keys are ignored.
 
         .. versionadded:: 18.2.0
         """
         bl = self.bind()
         for key in keys:
-            try:
-                del bl._context[key]
-            except KeyError:
-                pass
+            bl._context.pop(key, None)
+
         return bl
 
-    def new(self, **new_values):
+    def new(self, **new_values: Any) -> "BoundLoggerBase":
         """
-        Clear context and binds *initial_values* using :func:`bind`.
+        Clear context and binds *initial_values* using `bind`.
 
         Only necessary with dict implementations that keep global state like
-        those wrapped by :func:`structlog.threadlocal.wrap_dict` when threads
+        those wrapped by `structlog.threadlocal.wrap_dict` when threads
         are re-used.
-
-        :rtype: `self.__class__`
         """
         self._context.clear()
+
         return self.bind(**new_values)
 
     # Helper methods for sub-classing concrete BoundLoggers.
 
-    def _process_event(self, method_name, event, event_kw):
+    def _process_event(
+        self, method_name: str, event: Optional[str], event_kw: Dict[str, Any]
+    ) -> Tuple[Sequence[Any], Mapping[str, Any]]:
         """
-        Combines creates an `event_dict` and runs the chain.
+        Combines creates an ``event_dict`` and runs the chain.
 
         Call it to combine your *event* and *context* into an event_dict and
         process using the processor chain.
 
-        :param str method_name: The name of the logger method.  Is passed into
+        :param method_name: The name of the logger method.  Is passed into
             the processors.
         :param event: The event -- usually the first positional argument to a
             logger.
         :param event_kw: Additional event keywords.  For example if someone
             calls ``log.msg("foo", bar=42)``, *event* would to be ``"foo"``
             and *event_kw* ``{"bar": 42}``.
-        :raises: :class:`structlog.DropEvent` if log entry should be dropped.
-        :raises: :class:`ValueError` if the final processor doesn't return a
-            string, tuple, or a dict.
-        :rtype: `tuple` of `(*args, **kw)`
+
+        :raises: `structlog.DropEvent` if log entry should be dropped.
+        :raises: `ValueError` if the final processor doesn't return a
+            str, bytes, tuple, or a dict.
+
+        :returns: `tuple` of ``(*args, **kw)``
 
         .. note::
 
             Despite underscore available to custom wrapper classes.
 
-            See also :doc:`custom-wrappers`.
+            See also `custom-wrappers`.
 
         .. versionchanged:: 14.0.0
             Allow final processor to return a `dict`.
         """
-        event_dict = self._context.copy()
+        # We're typing it as Any, because processors can return more than an
+        # EventDict.
+        event_dict: Any = self._context.copy()
         event_dict.update(**event_kw)
+
         if event is not None:
             event_dict["event"] = event
         for proc in self._processors:
             event_dict = proc(self._logger, method_name, event_dict)
-        if isinstance(event_dict, string_types):
+
+        if isinstance(event_dict, (str, bytes)):
             return (event_dict,), {}
         elif isinstance(event_dict, tuple):
             # In this case we assume that the last processor returned a tuple
             # of ``(args, kwargs)`` and pass it right through.
-            return event_dict
+            return event_dict  # type: ignore
         elif isinstance(event_dict, dict):
             return (), event_dict
         else:
             raise ValueError(
-                "Last processor didn't return an appropriate value.  Allowed "
-                "return values are a dict, a tuple of (args, kwargs), or a "
-                "string."
+                "Last processor didn't return an appropriate value.  Valid "
+                "return values are a dict, a tuple of (args, kwargs), bytes, "
+                "or a str."
             )
 
-    def _proxy_to_logger(self, method_name, event=None, **event_kw):
+    def _proxy_to_logger(
+        self, method_name: str, event: Optional[str] = None, **event_kw: Any
+    ) -> Any:
         """
         Run processor chain on event & call *method_name* on wrapped logger.
 
@@ -172,7 +179,7 @@ class BoundLoggerBase(object):
         handling :exc:`structlog.DropEvent`, and finally calls *method_name* on
         :attr:`_logger` with the result.
 
-        :param str method_name: The name of the method that's going to get
+        :param method_name: The name of the method that's going to get
             called.  Technically it should be identical to the method the
             user called because it also get passed into processors.
         :param event: The event -- usually the first positional argument to a
@@ -185,10 +192,28 @@ class BoundLoggerBase(object):
 
             Despite underscore available to custom wrapper classes.
 
-            See also :doc:`custom-wrappers`.
+            See also `custom-wrappers`.
         """
         try:
             args, kw = self._process_event(method_name, event, event_kw)
             return getattr(self._logger, method_name)(*args, **kw)
         except DropEvent:
             return
+
+
+def get_context(bound_logger: BindableLogger) -> Context:
+    """
+    Return *bound_logger*'s context.
+
+    The type of *bound_logger* and the type returned depend on your
+    configuration.
+
+    :param bound_logger: The bound logger whose context you want.
+
+    :returns: The *actual* context from *bound_logger*. It is *not* copied
+        first.
+
+    .. versionadded:: 20.2
+    """
+    # This probably will get more complicated in the future.
+    return bound_logger._context

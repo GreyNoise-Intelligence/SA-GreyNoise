@@ -18,6 +18,8 @@ from greynoise.exceptions import RateLimitError, RequestFailure
 
 import fields
 from greynoise_exceptions import APIKeyNotFoundError
+from greynoise_constants import INTEGRATION_NAME
+from caching import Caching
 
 APP_NAME = app_greynoise_declare.ta_name
 
@@ -208,7 +210,7 @@ def validate_api_key(api_key, logger=None):
         logger.debug("Validating the api key...")
 
     try:
-        api_client = GreyNoise(api_key=api_key, timeout=120, integration_name="Splunk")
+        api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
         api_client.test_connection()
         return (True, 'API key is valid')
 
@@ -235,3 +237,109 @@ def validate_api_key(api_key, logger=None):
         return (False, 'API key not validated, Error: {}'.format(msg))
     except Exception as e:
         return (False, 'API key not validated, Error: {}'.format(str(e)))
+
+
+def chunkgen(iterable, chunk_size=1000):
+    """
+    Method to split an iterable into n-sized chunks.
+
+    :return: chunk generator
+    """
+    iterable = iter(iterable)
+    while True:
+        result = []
+        for i in range(chunk_size):
+            try:
+                a = next(iterable)
+            except StopIteration:
+                break
+            else:
+                result.append(a)
+        if result:
+            yield result
+        else:
+            break
+
+
+def send_data_to_cache(cache, data, logger):
+    """
+    Utility method to send data from GreyNoise API to cache.
+
+    :param cache: object of class Caching.
+    :param data: dictionary of responses.
+    :param logger: logger object.
+    :return: result.
+    """
+    try:
+        res = cache.kvstore_insert(data)
+        return res
+    except Exception:
+        logger.error("An exception occurred while inserting data to cache {}".format(traceback.format_exc()))
+        return None
+
+
+def get_response_for_generating(session_key, api_client, ip, method, logger):
+    """
+    Method to fetch response from Cache or from GreyNoise API.
+
+    :param session_key:
+    :param api_client:
+    :param ip:
+    :param method:
+    :param logger:
+    :return: resposne
+    """
+    cache_enabled = Caching.get_cache_settings(session_key)
+    if method == 'ip':
+        fetch_method = api_client.ip
+    else:
+        fetch_method = api_client.riot
+    if int(cache_enabled) == 1:
+        cache = Caching(session_key, logger, method)
+        response = cache.query_kv_store([ip])
+        if response is None:
+            logger.debug("KVStore is not ready. Skipping caching mechanism.")
+            response = [fetch_method(ip)]
+        elif response == []:
+            response = [fetch_method(ip)]
+            send_data_to_cache(cache, response, logger)
+    else:
+        response = [fetch_method(ip)]
+    return response[0]
+
+
+def get_ips_not_in_cache(cache, ips, logger):
+    """
+    Method to fetch ips from cache and return the ips which are not present.
+
+    :param cache: Cache client object.
+    :param ips: List of ips to fetch response from cache.
+    :return: list of response(s), ips not in cache.
+    """
+    try:
+        ips_not_in_cache = []
+        for ipz in list(chunkgen(ips)):
+            cached = cache.query_kv_store(ipz, fetch_ips_only=True)
+            ips_from_cache = []
+            if cached is not None and len(cached) >= 1:
+                ips_from_cache.extend(cached)
+            ips_not_in_cache.extend(list(set(ipz) - set(ips_from_cache)))
+        return ips_not_in_cache, ips_from_cache
+    except Exception:
+        logger.debug("Couldn't fetch ips from cache.\n{}".format(traceback.format_exc()))
+        return []
+
+
+def fetch_response_from_api(fetch_method, cache, params, logger):
+    """
+    Method to fetch reponse from greynoise api and send responses to cache.
+
+    :param fetch_method: fetch method corresponding api endpoint
+    :param cache: cache object
+    :param params: ip(s) for which response is to be fetched
+    :param logger: logger object
+    :return: response from api
+    """
+    response = fetch_method(params)
+    send_data_to_cache(cache, response, logger)
+    return response

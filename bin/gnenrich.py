@@ -38,6 +38,8 @@ class GNEnrichCommand(EventingCommand):
         name='ip_field', require=True
     )
 
+    api_validation_flag = False
+
     def transform(self, records):
         """Method that processes and yield event records to the Splunk events pipeline."""
         # Setup logger
@@ -81,12 +83,14 @@ class GNEnrichCommand(EventingCommand):
                     exit(1)
 
                 # API key validation
-                api_key_validation, message = utility.validate_api_key(api_key, logger)
-                logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
-                if not api_key_validation:
-                    logger.info(message)
-                    self.write_error(message)
-                    exit(1)
+                if not self.api_validation_flag:
+                    api_key_validation, message = utility.validate_api_key(api_key, logger)
+                    logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
+                    self.api_validation_flag = True
+                    if not api_key_validation:
+                        logger.info(message)
+                        self.write_error(message)
+                        exit(1)
 
                 # divide the records in the form of dict of tuples having chunk_index as key
                 # {<index>: (<records>, <All the ips in records>)}

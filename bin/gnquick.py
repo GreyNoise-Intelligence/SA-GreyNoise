@@ -9,7 +9,6 @@ from splunklib.searchcommands import dispatch, EventingCommand, Configuration, O
 from greynoise import GreyNoise
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise.util import validate_ip
-from caching import Caching
 
 import event_generator
 from greynoise_exceptions import APIKeyNotFoundError
@@ -101,9 +100,9 @@ class GNQuickCommand(EventingCommand):
                 api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
 
                 # CACHING START
-                cache_enabled = Caching.get_cache_settings(self._metadata.searchinfo.session_key)
-                if int(cache_enabled) == 1:
-                    cache_client = Caching(self._metadata.searchinfo.session_key, logger, 'multi')
+                cache_enabled, cache_client = utility.get_caching(
+                    self._metadata.searchinfo.session_key, 'multi', logger)
+                if int(cache_enabled) == 1 and cache_client is not None:
                     cache_start = time.time()
                     ips_not_in_cache, ips_in_cache = utility.get_ips_not_in_cache(cache_client, ip_addresses, logger)
                     try:

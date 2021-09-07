@@ -17,7 +17,7 @@ from greynoise import GreyNoise
 from greynoise.exceptions import RateLimitError, RequestFailure
 
 import fields
-from greynoise_exceptions import APIKeyNotFoundError
+from greynoise_exceptions import APIKeyNotFoundError, CachingException
 from greynoise_constants import INTEGRATION_NAME
 from caching import Caching
 
@@ -278,6 +278,34 @@ def send_data_to_cache(cache, data, logger):
         return None
 
 
+def get_caching(session_key, method, logger):
+    """
+    Method to check cache is enabled or not and return cache object.
+
+    :param session_key: Splunk session key.
+    :param method: GreyNoise method name.
+    :param logger: logger object from calling method.
+
+    :returns: cache_enabled flag,cache object.
+    """
+    if method == 'filter':
+        cache_enabled = 0
+        cache = None
+    else:
+        cache_enabled = Caching.get_cache_settings(session_key)
+        try:
+            if int(cache_enabled) == 1:
+                cache = Caching(session_key, logger, method)
+            else:
+                cache = None
+        except CachingException as e:
+            logger.debug("An exception occurred while fetching/ looking up/ creating KVStore"
+                         " or while trying to create service object : {}".format(e))
+            cache = None
+            cache_enabled = 0
+    return cache_enabled, cache
+
+
 def get_response_for_generating(session_key, api_client, ip, method, logger):
     """
     Method to fetch response from Cache or from GreyNoise API.
@@ -289,13 +317,12 @@ def get_response_for_generating(session_key, api_client, ip, method, logger):
     :param logger:
     :return: resposne
     """
-    cache_enabled = Caching.get_cache_settings(session_key)
+    cache_enabled, cache = get_caching(session_key, method, logger)
     if method == 'ip':
         fetch_method = api_client.ip
     else:
         fetch_method = api_client.riot
-    if int(cache_enabled) == 1:
-        cache = Caching(session_key, logger, method)
+    if int(cache_enabled) == 1 and cache is not None:
         response = cache.query_kv_store([ip])
         if response is None:
             logger.debug("KVStore is not ready. Skipping caching mechanism.")
@@ -327,7 +354,7 @@ def get_ips_not_in_cache(cache, ips, logger):
         return ips_not_in_cache, ips_from_cache
     except Exception:
         logger.debug("Couldn't fetch ips from cache.\n{}".format(traceback.format_exc()))
-        return []
+        return [], []
 
 
 def fetch_response_from_api(fetch_method, cache, params, logger):

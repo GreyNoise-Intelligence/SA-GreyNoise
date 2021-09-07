@@ -1,4 +1,4 @@
-<form isDashboard="true">
+<form isDashboard="true" version="1.1">
   <label>Overview</label>
   <fieldset submitButton="false"></fieldset>
   <row>
@@ -25,7 +25,8 @@
         </drilldown>
       </single>
     </panel>
-
+  </row>
+  <row>
     <panel>
       <single>
         <title># of Noise IPs in the deployment</title>
@@ -70,6 +71,51 @@
       </single>
     </panel>
 
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title># of RIOT IPs in the deployment</title>
+        <search>
+          <query>
+            | inputlookup gn_scan_deployment_ip_lookup where (RIOT="1")
+            | stats count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+        <option name="drilldown">all</option>
+        <drilldown>
+          <link target="_blank">
+            <![CDATA[
+              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*&form.tkn_riot=1
+            ]]>
+          </link>
+        </drilldown>
+      </single>
+    </panel>
+
+    <panel>
+      <single>
+        <title>Percentage of RIOT IPs in the deployment</title>
+        <search>
+          <query>
+            | inputlookup gn_scan_deployment_ip_lookup
+            | stats count(eval(RIOT=1)) AS riot_ips, count(eval(RIOT=1 OR RIOT=0)) AS total_ips
+            | eval riot_percent=((riot_ips/total_ips)*100)
+            | eval riot_percent = if(riot_percent>0, riot_percent, 0)
+            | table riot_percent
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0.00</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="unit">%</option>
+      </single>
+    </panel>
   </row>
   <row>
     <panel>
@@ -124,7 +170,7 @@
   <row>
 
     <panel>
-      <html><p><i><b>Note:</b> The data presented in the below panels may lag by 30 minutes.</i></p></html>
+      <html><p><i><b>Note:</b> The data in the panels below are updated every 6 hours. For the most recent information, visit the Trends page of the GreyNoise Visualizer.</i></p></html>
       <input type="dropdown" token="tkn_classification" searchWhenChanged="true">
         <label>Classification</label>
         <choice value="*">All</choice>

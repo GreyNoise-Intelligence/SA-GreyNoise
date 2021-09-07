@@ -191,6 +191,50 @@
                 {
                     "entity": [
                         {
+                            "field":"enable_caching",
+                            "type":"checkbox",
+                            "label":"Enable Caching",
+                            "defaultValue": 1,
+                            "required":false,
+                            "help":"Select this checkbox to enable caching for all custom commands."
+                        },
+                        {
+                            "field":"ttl",
+                            "label":"Time to live",
+                            "type":"text",
+                            "required": false,
+                            "defaultValue": "24",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        72
+                                    ],
+                                    "errorMsg": "Time to live should be in a range of 1 to 72"
+                                },
+                                {
+                                    "pattern": "^\\d{1,2}$",
+                                    "errorMsg": "Time to live should be a valid integer only",
+                                    "type": "regex"
+                                }
+                            ],                          
+                            "help":"Enter a positive integer in the range 1-72 representing the caches' Time to live (in hours)."
+                        },
+                        {
+                            "field":"purge_cache",
+                            "label":"Purge Cache",
+                            "type":"checkbox",
+                            "required":false,
+                            "help":"Check this option to the purge the cache. After clicking the save button, the cache will be cleared."
+                        }
+                    ], 
+                    "title": "Caching", 
+                    "name": "caching"
+                },
+                {
+                    "entity": [
+                        {
                             "type": "singleSelect",
                             "label": "Log level", 
                             "field": "loglevel", 
@@ -230,7 +274,7 @@
     }, 
     "meta": {
         "displayName": "GreyNoise App for Splunk", 
-        "version": "2.0.1", 
+        "version": "2.1.0", 
         "restRoot": "app_greynoise", 
         "name": "SA-GreyNoise", 
         "apiVersion": "3.0.0"

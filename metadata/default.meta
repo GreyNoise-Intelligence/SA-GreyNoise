@@ -9,3 +9,12 @@ export = none
 
 [workflow_actions/greynoise_identify_noise]
 export = system
+
+[collections/riot]
+access = read : [ * ], write : [ * ]
+
+[collections/context]
+access = read : [ * ], write : [ * ]
+
+[collections/multi]
+access = read : [ * ], write : [ * ]

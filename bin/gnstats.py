@@ -1,28 +1,32 @@
 import sys
 import time
-import traceback
+import traceback # noqa # pylint: disable=unused-import
 
-import app_greynoise_declare
+import app_greynoise_declare # noqa # pylint: disable=unused-import
 from splunklib.searchcommands import dispatch, Configuration, Option
 from greynoise import GreyNoise
 
 from base_command_handler import BaseCommandHandler
+from greynoise_constants import INTEGRATION_NAME
 import event_generator
 import validator
+
 
 @Configuration(type="events")
 class GNStatsCommand(BaseCommandHandler):
     """
-    Generating command that returns aggregate statistics for the top organizations, actors, 
+    gnstats - Generating Command.
+
+    Generating command that returns aggregate statistics for the top organizations, actors,
     tags, ASNs, countries, classifications, and operating systems of all the results of a given GNQL query.
     Data pulled from /v2/experimental/gnql/stats using GreyNoise Python SDK
 
     **Syntax**::
-    `| gnstats query="classification: malicious" count="10"` 
+    `| gnstats query="classification: malicious" count="10"`
     `| gnquick query="classification: benign"`
 
     **Description**::
-    The `gnstats` command uses the `GNQL query` provided in `query` to return 
+    The `gnstats` command uses the `GNQL query` provided in `query` to return
     top aggregate statistics using method :method:`stats` from GreyNoise Python SDK.
     The optional parameter `count` can be used to specify how many aggregators needs to be retrieved.
     """
@@ -40,7 +44,12 @@ class GNStatsCommand(BaseCommandHandler):
     )
 
     def do_generate(self, api_key, logger):
+        """
+        Method to fetch the api response and process and send the response with extractions in the Splunk.
 
+        :param api_key: GreyNoise API Key.
+        :logger: logger object.
+        """
         query = self.query
         count = self.count
 
@@ -63,11 +72,12 @@ class GNStatsCommand(BaseCommandHandler):
 
         logger.info("Fetching aggregate statistics for query: {}, count: {}".format(str(query), count))
         # Opting timout 120 seconds for the requests
-        api_client = GreyNoise(api_key=api_key, timeout=240, integration_name="Splunk")
+        api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
         # If count is not passed explicitely to the command by the user, then it will have the value None
         stats_data = api_client.stats(query, count)
-        logger.info("Successfully retrieved response for the aggregate statistics for query: {}, count: {}".format(str(query), count))
-        
+        logger.info("Successfully retrieved response for the aggregate statistics for query: {}, count: {}".format(
+            str(query), count))
+
         if int(stats_data.get('count', -1)) >= 0:
             results = {}
             results['source'] = 'greynoise'
@@ -81,7 +91,8 @@ class GNStatsCommand(BaseCommandHandler):
             response = stats_data.get('message', None) or stats_data.get('error', None)
 
             if 'bad count' in response or 'bad query' in response:
-                logger.error("Invalid response retrieved from the GreyNoise API for query: {}, response: {}".format(str(query), str(response)))
+                logger.error("Invalid response retrieved from the GreyNoise API for query: {}, response: {}".format(
+                    str(query), str(response)))
                 if 'message' in response:
                     event = {
                         'message': response
@@ -93,8 +104,8 @@ class GNStatsCommand(BaseCommandHandler):
                 yield event_generator.make_invalid_event('stats', event, True)
 
     def __init__(self):
+        """Initialize custom command class."""
         super(GNStatsCommand, self).__init__()
 
+
 dispatch(GNStatsCommand, sys.argv, sys.stdin, sys.stdout, __name__)
-
-

@@ -8,3 +8,5 @@ code,code_message
 0x06,"This IP has been observed as noise, but this host belongs to a cloud provider where IPs can be cycled frequently"
 0x07,"This IP is invalid"
 0x08,"This IP was classified as noise, but has not been observed engaging in Internet-wide scans or attacks in over 60 days"
+0x09,"This IP was found in RIOT"
+0x10,"The IP has been observed by the GreyNoise sensor network and was found in RIOT"

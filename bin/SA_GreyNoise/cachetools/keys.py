@@ -1,8 +1,6 @@
 """Key functions for memoizing decorators."""
 
-from __future__ import absolute_import
-
-__all__ = ('hashkey', 'typedkey')
+__all__ = ("hashkey", "typedkey")
 
 
 class _HashedTuple(tuple):

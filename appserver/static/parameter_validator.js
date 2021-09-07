@@ -2,19 +2,20 @@ require(["splunkjs/mvc/utils"], function (SplunkUtil) {
     var app_name = SplunkUtil.getCurrentApp();  
     require.config({
         paths: {
+            'jquery_greynoise': '../app/'+app_name+'/jquery_greynoise',
             'datetime-range-picker': '../app/'+app_name+'/daterangepicker.min',
-            'moment': '../app/'+app_name+'/moment'
+            'moment_greynoise': '../app/'+app_name+'/moment'
         }
 });
 require([
-    'jquery',
+    'jquery_greynoise',
     'splunkjs/mvc',
     'splunkjs/mvc/searchmanager',
-    'moment',
+    'moment_greynoise',
     'datetime-range-picker',
     'splunkjs/mvc/simplexml/ready!'
 ], function ($, mvc, SearchManager, moment) {
-    
+
     // Get token models
     var tokens = mvc.Components.getInstance("default");
     var tokensSub = mvc.Components.getInstance("submitted");
@@ -26,8 +27,8 @@ require([
 
     if(last_7_days=="true")
     {
-        var start_date =  moment.utc().subtract(6, 'days')
-        var end_date =  moment.utc()
+        start_date =  moment.utc().subtract(6, 'days')
+        end_date =  moment.utc()
         // Setting the token to null so that on reload it will not auto run the process_inputs
         tokens.set("form.last_7_days", null);
         tokensSub.set("last_7_days", null)

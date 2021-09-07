@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import collections
 
 from .cache import Cache
@@ -14,7 +12,8 @@ class LRUCache(Cache):
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         value = cache_getitem(self, key)
-        self.__update(key)
+        if key in self:  # __missing__ may not store item
+            self.__update(key)
         return value
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
@@ -30,19 +29,12 @@ class LRUCache(Cache):
         try:
             key = next(iter(self.__order))
         except StopIteration:
-            raise KeyError('%s is empty' % self.__class__.__name__)
+            raise KeyError("%s is empty" % type(self).__name__) from None
         else:
             return (key, self.pop(key))
 
-    if hasattr(collections.OrderedDict, 'move_to_end'):
-        def __update(self, key):
-            try:
-                self.__order.move_to_end(key)
-            except KeyError:
-                self.__order[key] = None
-    else:
-        def __update(self, key):
-            try:
-                self.__order[key] = self.__order.pop(key)
-            except KeyError:
-                self.__order[key] = None
+    def __update(self, key):
+        try:
+            self.__order.move_to_end(key)
+        except KeyError:
+            self.__order[key] = None

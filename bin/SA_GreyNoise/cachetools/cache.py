@@ -1,9 +1,10 @@
-from __future__ import absolute_import
-
-from .abc import DefaultMapping
+from collections.abc import MutableMapping
 
 
-class _DefaultSize(object):
+class _DefaultSize:
+
+    __slots__ = ()
+
     def __getitem__(self, _):
         return 1
 
@@ -14,8 +15,10 @@ class _DefaultSize(object):
         return 1
 
 
-class Cache(DefaultMapping):
+class Cache(MutableMapping):
     """Mutable mapping to serve as a simple cache or cache base class."""
+
+    __marker = object()
 
     __size = _DefaultSize()
 
@@ -29,7 +32,7 @@ class Cache(DefaultMapping):
         self.__maxsize = maxsize
 
     def __repr__(self):
-        return '%s(%r, maxsize=%r, currsize=%r)' % (
+        return "%s(%r, maxsize=%r, currsize=%r)" % (
             self.__class__.__name__,
             list(self.__data.items()),
             self.__maxsize,
@@ -46,7 +49,7 @@ class Cache(DefaultMapping):
         maxsize = self.__maxsize
         size = self.getsizeof(value)
         if size > maxsize:
-            raise ValueError('value too large')
+            raise ValueError("value too large")
         if key not in self.__data or self.__size[key] < size:
             while self.__currsize + size > maxsize:
                 self.popitem()
@@ -74,6 +77,29 @@ class Cache(DefaultMapping):
 
     def __len__(self):
         return len(self.__data)
+
+    def get(self, key, default=None):
+        if key in self:
+            return self[key]
+        else:
+            return default
+
+    def pop(self, key, default=__marker):
+        if key in self:
+            value = self[key]
+            del self[key]
+        elif default is self.__marker:
+            raise KeyError(key)
+        else:
+            value = default
+        return value
+
+    def setdefault(self, key, default=None):
+        if key in self:
+            value = self[key]
+        else:
+            self[key] = value = default
+        return value
 
     @property
     def maxsize(self):

@@ -7,6 +7,8 @@ import app_greynoise_declare
 import splunk.clilib.cli_common
 import splunklib.client as client
 import splunk.rest as rest
+from splunklib.binding import HTTPError
+from greynoise_exceptions import CachingException
 
 APP_NAME = app_greynoise_declare.ta_name
 EPOCH = datetime.datetime.utcfromtimestamp(0)
@@ -36,28 +38,24 @@ class Caching(object):
         self.collection_name = command_map[command]
         self.logger = logger
         try:
-            self.kvstore_status = self._get_kvstore_status()
-        except Exception:
-            self.logger.error("An exception occurred while fetching KVStore status.\n {}".format(
-                traceback.format_exc()))
-            return None
-        try:
             service = client.connect(
                 port=self.mgmt_port, token=self.session_key, app=APP_NAME)
-        except Exception:
-            self.logger.error("An Exception occurred while trying to create service object: {}".format(
-                traceback.format_exc()))
-            return None
-        try:
             if self.collection_name in service.kvstore:
                 self.collection = service.kvstore[self.collection_name]
+                self.collection.data.query_by_id("item1")
             else:
-                self.logger.error("Collection {} does not exist. Please define one in collections.conf.")
-                return None
-        except Exception:
-            self.logger.error(
-                "Exception occurred while looking up/ creating KVStore: {}".format(traceback.format_exc()))
-            return None
+                self.logger.error(
+                    "Collection {} does not exist. Please define one in collections.conf.".format(self.collection_name))
+                raise CachingException("Collection {} does not exist.".format(self.collection_name))
+        except HTTPError as e:
+            if e.status == 404:
+                # self.collection.data.query_by_id("item1") purpose is to raise an error when kvstore is disabled.
+                # So, handling 404 error caused by it when kvstore is enabled.
+                pass
+            else:
+                raise CachingException(str(e))
+        except Exception as e:
+            raise CachingException(str(e))
 
     def _get_age(self):
         now = datetime.datetime.utcnow()
@@ -153,28 +151,25 @@ class Caching(object):
         :param ips: list of ip addresses.
         :returns: All querired response objects if present in the cache.
         """
-        if self.kvstore_status != "ready":
-            return None
-        else:
-            query_list = []
+        query_list = []
+        temp = {}
+        for each in ips:
+            temp["_key"] = each
+            query_list.append(temp)
             temp = {}
-            for each in ips:
-                temp["_key"] = each
-                query_list.append(temp)
-                temp = {}
-            response = []
-            try:
-                query = json.dumps({"$or": query_list})
-                partial_call = partial(self.collection.data.query, query=query)
-                if fetch_ips_only:
-                    res = partial_call(fields="_key")
-                    for each in res:
-                        response.append(each['_key'])
-                else:
-                    res = partial_call()
-                    for each in res:
-                        response.append(each['response'])
-                    self.logger.debug("Fetched {} ips from cache successfully.".format(len(response)))
-            except Exception:
-                self.logger.error("An exception occurred while querying KVStore: {}".format(traceback.format_exc()))
-            return response
+        response = []
+        try:
+            query = json.dumps({"$or": query_list})
+            partial_call = partial(self.collection.data.query, query=query)
+            if fetch_ips_only:
+                res = partial_call(fields="_key")
+                for each in res:
+                    response.append(each['_key'])
+            else:
+                res = partial_call()
+                for each in res:
+                    response.append(each['response'])
+                self.logger.debug("Fetched {} ips from cache successfully.".format(len(response)))
+        except Exception:
+            self.logger.error("An exception occurred while querying KVStore: {}".format(traceback.format_exc()))
+        return response

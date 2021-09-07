@@ -125,6 +125,8 @@ following way:
     - Time to live: Time period (in hours) to configure the cache’s time to live. Responses whose age is greater than the TTL, will be removed from the cache by a savedsearch which will run every hour.
     - Purge Cache: Checkbox to purge the cache of all responses.
 
+*Note: Configuration can only be done by admin but other custom commands can be used by admin and the users with list_storage_passwords capability.*
+
 # CUSTOM COMMANDS #
 The following commands are included as a part of the app:
 

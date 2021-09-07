@@ -1,6 +1,5 @@
 """This file helps custom commands generate events by passing simple API responses to it."""
 from app_greynoise_declare import ta_name as APP_NAME, ta_lib_name as APP_LIB_NAME  # noqa # pylint: disable=unused-import
-from caching import Caching
 from functools import partial
 try:
     from itertools import izip
@@ -19,7 +18,7 @@ from requests.exceptions import ConnectionError, RequestException
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise.util import validate_ip
 
-from utility import get_dict, nested_dict_iter, get_ips_not_in_cache, fetch_response_from_api
+from utility import get_dict, nested_dict_iter, get_ips_not_in_cache, fetch_response_from_api, get_caching
 
 GENERATING_COMMAND_METHODS = ['ip', 'quick', 'query', 'stats', 'riot']
 
@@ -34,7 +33,7 @@ def exception_handler(method):
         except ValueError as e:
             kwargs['logger'].debug(
                 "Either the event doesn't have ip_field or value of IP address present in event is "
-                "either invalid or non-routable, parameter passed to API: '{}'".format(kwargs['params']))
+                "either invalid or non-routable.")
             msg = str(e).split(":")
             return {
                 'message': 'error',
@@ -98,11 +97,11 @@ def pull_data_from_api_other(fetch_method, cache_enabled, cache, ip, logger, par
     `response` denoting  the API response or exception in case.
     """
     time.sleep(api_sleep_timer)
-    if int(cache_enabled) == 1:
+    if int(cache_enabled) == 1 and cache is not None:
         if ip in params:
             response = fetch_response_from_api(fetch_method, cache, ip, logger)
         else:
-            response = cache.query_kv_store([ip])
+            response = cache.query_kv_store([ip]) if ip != '' else None
             if response is None or response == []:
                 # Handles the scenario where cache is cleared or disabled during the code execution
                 response = fetch_method(ip)
@@ -129,7 +128,7 @@ def pull_data_from_api_multi(fetch_method, cache_enabled, cache, params, logger,
     """
     # Putting the sleep time before the request to avoid connection errors from the GreyNoise Server
     time.sleep(api_sleep_timer)
-    if int(cache_enabled) == 1:
+    if int(cache_enabled) == 1 and cache is not None:
         # CACHING START
         try:
             cached = []
@@ -172,15 +171,7 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
     :param threads: number of threads to use
     :return: dict
     """
-    if method != 'filter':
-        cache_enabled = Caching.get_cache_settings(session_key)
-        if int(cache_enabled) == 1:
-            cache = Caching(session_key, logger, method)
-        else:
-            cache = None
-    else:
-        cache_enabled = 0
-        cache = None
+    cache_enabled, cache = get_caching(session_key, method, logger)
 
     if method in ['ip', 'enrich']:
         fetch_method = api_client.ip
@@ -196,7 +187,8 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
         # Doing this to pass the multiple arguments to method used in map method
         if method == 'enrich' or method == 'greynoise_riot':
             ips = []
-            if int(cache_enabled) == 1:
+            ips_not_in_cache = []
+            if int(cache_enabled) == 1 and cache is not None:
                 for ip_list in list(chunk_dict.values()):
                     try:
                         ips.append(ip_list[1][0])
@@ -208,11 +200,12 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
             else:
                 for ip_list in list(chunk_dict.values()):
                     try:
-                        ips.append(ip_list[1][0])
+                        ips_not_in_cache.append(ip_list[1][0])
                     except IndexError:
                         # That means the particular record does not have any IP address or has blank IP address
                         # It will not instantiate the unnecessary API call as this will not match with the regex itself.
-                        ips.append('')
+                        ips_not_in_cache.append('')
+                ips = ips_not_in_cache
 
             # Setting the API sleep timer to 0 as context endpoint does not return Connection Errors after some requests
             pull_data = partial(pull_data_from_api_other, fetch_method, cache_enabled, cache,

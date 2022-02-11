@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
 # This file is dual licensed under the terms of the Apache License, Version
 # 2.0, and the MIT License.  See the LICENSE file in the root of this
 # repository for complete details.
@@ -26,6 +27,8 @@ class LogCapture:
     Class for capturing log messages in its entries list.
     Generally you should use `structlog.testing.capture_logs`,
     but you can use this class if you want to capture logs with other patterns.
+
+    :ivar List[structlog.types.EventDict] entries: The captured log entries.
 
     .. versionadded:: 20.1.0
     """

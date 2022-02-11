@@ -1,11 +1,11 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
 # This file is dual licensed under the terms of the Apache License, Version
 # 2.0, and the MIT License.  See the LICENSE file in the root of this
 # repository for complete details.
 
 """
-Structured logging for Python.
+Structured Logging for Python
 """
-
 
 from structlog import dev, processors, stdlib, testing, threadlocal, types
 from structlog._base import BoundLoggerBase, get_context
@@ -42,10 +42,12 @@ except ImportError:
     contextvars = None  # type: ignore
 
 
-__version__ = "21.1.0"
+__version__ = "21.5.0"
 
 __title__ = "structlog"
-__description__ = "Structured Logging for Python"
+# __doc__ is None when running with PYTHONOPTIMIZE=2 / -OO
+__description__ = (__doc__ or "").strip()
+
 __uri__ = "https://www.structlog.org/"
 
 __author__ = "Hynek Schlawack"

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
 # This file is dual licensed under the terms of the Apache License, Version
 # 2.0, and the MIT License.  See the LICENSE file in the root of this
 # repository for complete details.
@@ -7,11 +8,14 @@ Primitives to keep context global but thread (and greenlet) local.
 
 See `thread-local`.
 """
+
 import contextlib
 import threading
 import uuid
 
 from typing import Any, Dict, Generator, Iterator, Type, TypeVar
+
+import structlog
 
 from ._config import BoundLoggerLazyProxy
 from .types import BindableLogger, Context, EventDict, WrappedLogger
@@ -89,6 +93,9 @@ def tmp_bind(
 ) -> Generator[TLLogger, None, None]:
     """
     Bind *tmp_values* to *logger* & memorize current state. Rewind afterwards.
+
+    Only works with `structlog.threadlocal.wrap_dict`-based contexts.
+    Use :func:`~structlog.threadlocal.bound_threadlocal` for new code.
     """
     saved = as_immutable(logger)._context
     try:
@@ -169,6 +176,28 @@ class _ThreadLocalDictWrapper:
 _CONTEXT = threading.local()
 
 
+def get_threadlocal() -> Context:
+    """
+    Return a copy of the current thread-local context.
+
+    .. versionadded:: 21.2.0
+    """
+    return _get_context().copy()
+
+
+def get_merged_threadlocal(bound_logger: BindableLogger) -> Context:
+    """
+    Return a copy of the current thread-local context merged with the context
+    from *bound_logger*.
+
+    .. versionadded:: 21.2.0
+    """
+    ctx = _get_context().copy()
+    ctx.update(structlog.get_context(bound_logger))
+
+    return ctx
+
+
 def merge_threadlocal(
     logger: WrappedLogger, method_name: str, event_dict: EventDict
 ) -> EventDict:
@@ -181,7 +210,7 @@ def merge_threadlocal(
     .. versionadded:: 19.2.0
 
     .. versionchanged:: 20.1.0
-       This function used to be called ``merge_threalocal_context`` and that
+       This function used to be called ``merge_threadlocal_context`` and that
        name is still kept around for backward compatibility.
     """
     context = _get_context().copy()
@@ -227,6 +256,27 @@ def unbind_threadlocal(*keys: str) -> None:
     context = _get_context()
     for key in keys:
         context.pop(key, None)
+
+
+@contextlib.contextmanager
+def bound_threadlocal(**kw: Any) -> Generator[None, None, None]:
+    """
+    Bind *kw* to the current thread-local context. Unbind or restore *kw*
+    afterwards. Do **not** affect other keys.
+
+    Can be used as a context manager or decorator.
+
+    .. versionadded:: 21.4.0
+    """
+    context = get_threadlocal()
+    saved = {k: context[k] for k in context.keys() & kw.keys()}
+
+    bind_threadlocal(**kw)
+    try:
+        yield
+    finally:
+        unbind_threadlocal(*kw.keys())
+        bind_threadlocal(**saved)
 
 
 def _get_context() -> Context:

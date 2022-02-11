@@ -42,9 +42,11 @@ def configure_logging():
 
 def load_config():
     """Load configuration.
+
     :returns:
         Current configuration based on configuration file and environment variables.
     :rtype: dict
+
     """
     config_parser = ConfigParser(
         {key: str(value) for key, value in DEFAULT_CONFIG.items()}
@@ -125,8 +127,10 @@ def load_config():
 
 def save_config(config):
     """Save configuration.
+
     :param config: Data to be written to the configuration file.
     :type config:  dict
+
     """
     config_parser = ConfigParser()
     config_parser.add_section("greynoise")
@@ -144,13 +148,17 @@ def save_config(config):
         config_parser.write(config_file)
 
 
-def validate_ip(ip_address, strict=True):
+def validate_ip(ip_address, strict=True, print_warning=True):
     """Check if the IPv4 address is valid.
+
     :param ip_address: IPv4 address value to validate.
     :type ip_address: str
     :param strict: Whether to raise exception if validation fails.
     :type strict: bool
     :raises ValueError: When validation fails and strict is set to True.
+    :type print_warning: bool
+    :raises ValueError: By default, otherwise returns nothing
+
     """
     is_valid = False
 
@@ -158,8 +166,9 @@ def validate_ip(ip_address, strict=True):
         ipaddress.ip_address(ip_address)
         is_valid = True
     except ValueError:
-        error_message = "Invalid IP address: {!r}".format(ip_address)
-        LOGGER.warning(error_message, ip_address=ip_address)
+        if print_warning:
+            error_message = "Invalid IP address: {!r}".format(ip_address)
+            LOGGER.warning(error_message, ip_address=ip_address)
         if strict:
             raise ValueError(error_message)
         return False
@@ -169,8 +178,9 @@ def validate_ip(ip_address, strict=True):
         if is_routable:
             return True
         else:
-            error_message = "Non-Routable IP address: {!r}".format(ip_address)
-            LOGGER.warning(error_message, ip_address=ip_address)
+            if print_warning:
+                error_message = "Non-Routable IP address: {!r}".format(ip_address)
+                LOGGER.warning(error_message, ip_address=ip_address)
             if strict:
                 raise ValueError(error_message)
             return False

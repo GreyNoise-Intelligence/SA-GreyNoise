@@ -20,6 +20,7 @@ import fields
 from greynoise_exceptions import APIKeyNotFoundError, CachingException
 from greynoise_constants import INTEGRATION_NAME
 from caching import Caching
+from six.moves import range
 
 APP_NAME = app_greynoise_declare.ta_name
 

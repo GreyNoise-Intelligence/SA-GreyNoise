@@ -2,10 +2,13 @@ import base64
 import codecs
 import collections
 import csv
+import six
+from io import open
+from six.moves import range
 try:
     import http.client as http_client
 except ImportError:
-    import httplib as http_client  # noqa
+    import six.moves.http_client as http_client  # noqa
 import json
 import logging
 import logging.handlers
@@ -24,9 +27,9 @@ from splunk.util import mktimegm, normalizeBoolean
 
 # Python 2+3 basestring
 try:
-    basestring
+    six.string_types
 except NameError:
-    basestring = str
+    six.string_types = str
 
 # set the maximum allowable CSV field size
 #
@@ -37,7 +40,7 @@ csv.field_size_limit(10485760)
 
 
 def truthy_strint_from_dict(d, k):
-    return True if isinstance(d.get(k, None), (basestring, int)) and (d[k] or d[k] == 0) else False
+    return True if isinstance(d.get(k, None), (six.string_types, int)) and (d[k] or d[k] == 0) else False
 
 
 def default_dropexp(x):
@@ -283,7 +286,7 @@ class ModularAction(object):
         self.action_name = self.configuration.get('action_name') or action_name
 
         # use sid to determine action_mode
-        if isinstance(self.sid, basestring) and 'scheduler' in self.sid:
+        if isinstance(self.sid, six.string_types) and 'scheduler' in self.sid:
             self.action_mode = 'saved'
         else:
             self.action_mode = 'adhoc'
@@ -554,7 +557,7 @@ class ModularAction(object):
             # if key is MV
             mv_key = '__mv_{0}'.format(key)
             if (mv_key in result
-                    and isinstance(result[mv_key], basestring)  # string
+                    and isinstance(result[mv_key], six.string_types)  # string
                     and result[mv_key].startswith('$')  # prefix
                     and result[mv_key].endswith('$')):  # suffix
                 vals = parse_mv(result[mv_key])
@@ -566,12 +569,12 @@ class ModularAction(object):
 
             # iterate vals
             for v in vals:
-                if isinstance(v, basestring) and v:
+                if isinstance(v, six.string_types) and v:
                     # escape slashes
                     v = v.replace('\\', '\\\\')
                     # escape quotes
                     v = v.replace('"', '\\"')
-                elif isinstance(v, basestring) and len(vals) == 1:
+                elif isinstance(v, six.string_types) and len(vals) == 1:
                     continue
 
                 # check map

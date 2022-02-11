@@ -1,11 +1,7 @@
 """This file helps custom commands generate events by passing simple API responses to it."""
 from app_greynoise_declare import ta_name as APP_NAME, ta_lib_name as APP_LIB_NAME  # noqa # pylint: disable=unused-import
 from functools import partial
-try:
-    from itertools import izip
-except Exception:
-    # For Python 3.x
-    izip = zip
+from six.moves import zip
 import threading  # noqa # pylint: disable=unused-import
 import time
 import traceback
@@ -222,11 +218,11 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
         # and cognitive complexity that is not required for other transforming commands
         # Separating the logic for the filter method
         if method == 'filter':
-            for index, result in izip(list(chunk_dict.keys()), results):
+            for index, result in zip(list(chunk_dict.keys()), results):
                 logger.debug("Successfully retrieved response for chunk {}".format(index + 1))
                 yield index, result
         else:
-            for index, result in izip(list(chunk_dict.keys()), results):
+            for index, result in zip(list(chunk_dict.keys()), results):
                 logger.debug("Successfully retrieved response for chunk {}".format(index + 1))
                 for event in event_processor(chunk_dict[index], result, method, ip_field, logger):
                     yield event

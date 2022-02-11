@@ -19,6 +19,8 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
 
 # RELEASE NOTES (Version 2.1.1) #
  - Fixed JQuery 3.5.0 compatibility issue identified via Upgrade Readiness
+ - Fixed Python3 compatibility issue identified via Upgrade Readiness
+ - Update to use GreyNoise SDK 1.2.0
 
 # RELEASE NOTES (Version 2.1.0) #
  - Python2 and Splunk7.x support is dropped starting from this release, GreyNoise now only supports Splunk 8.x and Python3

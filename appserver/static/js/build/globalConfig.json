@@ -274,7 +274,7 @@
     }, 
     "meta": {
         "displayName": "GreyNoise App for Splunk", 
-        "version": "2.1.1",
+        "version": "2.1.0", 
         "restRoot": "app_greynoise", 
         "name": "SA-GreyNoise", 
         "apiVersion": "3.0.0"

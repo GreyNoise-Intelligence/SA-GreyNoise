@@ -22,6 +22,7 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
  - Fixed Python3 compatibility issue identified via Upgrade Readiness
  - Fixed missing explict definition for cache_maintenance script to use py3
  - Update to use GreyNoise SDK 1.2.0
+ - Updated splunklib to version 1.6.18
 
 # RELEASE NOTES (Version 2.1.0) #
  - Python2 and Splunk7.x support is dropped starting from this release, GreyNoise now only supports Splunk 8.x and Python3

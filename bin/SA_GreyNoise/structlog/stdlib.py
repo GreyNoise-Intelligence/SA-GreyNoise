@@ -10,6 +10,7 @@ See also :doc:`structlog's standard library support <standard-library>`.
 """
 
 import asyncio
+import functools
 import logging
 import sys
 
@@ -17,6 +18,7 @@ from functools import partial
 from typing import (
     Any,
     Callable,
+    Collection,
     Dict,
     Iterable,
     List,
@@ -43,6 +45,7 @@ __all__ = [
     "add_log_level_number",
     "add_log_level",
     "add_logger_name",
+    "ExtraAdder",
     "BoundLogger",
     "filter_by_level",
     "get_logger",
@@ -319,7 +322,7 @@ class BoundLogger(BoundLoggerBase):
         """
         Calls :meth:`logging.Logger.callHandlers` with unmodified arguments.
         """
-        self._logger.callHandlers(record)  # type: ignore
+        self._logger.callHandlers(record)
 
     def getEffectiveLevel(self) -> int:
         """
@@ -367,13 +370,6 @@ class AsyncBoundLogger:
     the processor chain (e.g. JSON serialization) and I/O won't block your
     whole application.
 
-    .. warning: Since the processor pipeline runs in a separate thread,
-        `structlog.contextvars.merge_contextvars` does **nothing** and should
-        be removed from you processor chain.
-
-        Instead it's merged within **this logger** before handing off log
-        processing to the thread.
-
     Only available for Python 3.7 and later.
 
     :ivar structlog.stdlib.BoundLogger sync_bl: The wrapped synchronous logger.
@@ -387,7 +383,7 @@ class AsyncBoundLogger:
 
     sync_bl: BoundLogger
 
-    # Blantant lie, we use a property for _context. Need this for Protocol
+    # Blatant lie, we use a property for _context. Need this for Protocol
     # though.
     _context: Context
 
@@ -426,7 +422,7 @@ class AsyncBoundLogger:
     def bind(self, **new_values: Any) -> "AsyncBoundLogger":
         return AsyncBoundLogger(
             # logger, processors and context are within sync_bl. These
-            # arguments are ignored if _sync_bl is passsed. *vroom vroom* over
+            # arguments are ignored if _sync_bl is passed. *vroom vroom* over
             # purity.
             logger=None,  # type: ignore
             processors=(),
@@ -477,8 +473,9 @@ class AsyncBoundLogger:
         """
         ctx = contextvars.copy_context()
 
-        await self._loop.run_in_executor(
-            self._executor, partial(ctx.run, partial(meth, event, *args, **kw))
+        await asyncio.get_running_loop().run_in_executor(
+            self._executor,
+            lambda: ctx.run(lambda: meth(event, *args, **kw)),
         )
 
     async def debug(self, event: str, *args: Any, **kw: Any) -> None:
@@ -598,7 +595,7 @@ class PositionalArgumentsFormatter:
             if len(args) == 1 and isinstance(args[0], dict) and args[0]:
                 args = args[0]
 
-            event_dict["event"] = event_dict["event"] % args
+            event_dict["event"] %= args
 
         if self.remove_positional_args and args is not None:
             del event_dict["positional_args"]
@@ -670,6 +667,69 @@ def add_logger_name(
     return event_dict
 
 
+_LOG_RECORD_KEYS = logging.LogRecord(
+    "name", 0, "pathname", 0, "msg", tuple(), None
+).__dict__.keys()
+
+
+class ExtraAdder:
+    """
+    Add extra attributes of `logging.LogRecord` objects to the event
+    dictionary.
+
+    This processor can be used for adding data passed in the ``extra``
+    parameter of the `logging` module's log methods to the event dictionary.
+
+    :param allow: An optional collection of attributes that, if present in
+        `logging.LogRecord` objects, will be copied to event dictionaries.
+
+        If ``allow`` is None all attributes of `logging.LogRecord` objects that
+        do not exist on a standard `logging.LogRecord` object will be copied to
+        event dictionaries.
+
+    .. versionadded:: 21.5.0
+    """
+
+    __slots__ = ["_copier"]
+
+    def __init__(self, allow: Optional[Collection[str]] = None) -> None:
+        self._copier: Callable[[EventDict, logging.LogRecord], None]
+        if allow is not None:
+            # The contents of allow is copied to a new list so that changes to
+            # the list passed into the constructor does not change the
+            # behaviour of this processor.
+            self._copier = functools.partial(self._copy_allowed, [*allow])
+        else:
+            self._copier = self._copy_all
+
+    def __call__(
+        self, logger: logging.Logger, name: str, event_dict: EventDict
+    ) -> EventDict:
+        record: Optional[logging.LogRecord] = event_dict.get("_record")
+        if record is not None:
+            self._copier(event_dict, record)
+        return event_dict
+
+    @classmethod
+    def _copy_all(
+        cls, event_dict: EventDict, record: logging.LogRecord
+    ) -> None:
+        for key, value in record.__dict__.items():
+            if key not in _LOG_RECORD_KEYS:
+                event_dict[key] = value
+
+    @classmethod
+    def _copy_allowed(
+        cls,
+        allow: Collection[str],
+        event_dict: EventDict,
+        record: logging.LogRecord,
+    ) -> None:
+        for key in allow:
+            if key in record.__dict__:
+                event_dict[key] = record.__dict__[key]
+
+
 def render_to_log_kwargs(
     _: logging.Logger, __: str, event_dict: EventDict
 ) -> EventDict:
@@ -688,46 +748,81 @@ def render_to_log_kwargs(
 
 class ProcessorFormatter(logging.Formatter):
     r"""
-    Call ``structlog`` processors on :`logging.LogRecord`\ s.
+    Call ``structlog`` processors on `logging.LogRecord`\s.
 
-    This `logging.Formatter` allows to configure :mod:`logging` to call
-    *processor* on ``structlog``-borne log entries (origin is determined solely
-    on the fact whether the ``msg`` field on the `logging.LogRecord` is
-    a dict or not).
+    This is an implementation of a `logging.Formatter` that can be used to
+    format log entries from both ``structlog`` and `logging`.
 
-    This allows for two interesting use cases:
+    Its static method `wrap_for_formatter` must be the final processor in
+    ``structlog``'s processor chain.
 
-    #. You can format non-``structlog`` log entries.
-    #. You can multiplex log records into multiple `logging.Handler`\ s.
+    Please refer to :ref:`processor-formatter` for examples.
 
-    Please refer to :doc:`standard-library` for examples.
-
-    :param processor: A ``structlog`` processor.
     :param foreign_pre_chain:
-        If not `None`, it is used as an iterable of processors that is applied
-        to non-``structlog`` log entries before *processor*.  If `None`,
-        formatting is left to :mod:`logging`. (default: `None`)
+        If not `None`, it is used as a processor chain that is applied to
+        **non**-``structlog`` log entries before the event dictionary is passed
+        to *processors*. (default: `None`)
+    :param processors:
+        A chain of ``structlog`` processors that is used to process **all** log
+        entries. The last one must render to a `str` which then gets passed on
+        to `logging` for output.
+
+        Compared to ``structlog``'s regular processor chains, there's a few
+        differences:
+
+        - The event dictionary contains two additional keys:
+
+          #. ``_record``: a `logging.LogRecord` that either was created using
+             `logging` APIs, **or** is a wrapped ``structlog`` log entry
+             created by `wrap_for_formatter`.
+          #. ``_from_structlog``: a `bool` that indicates whether or not
+             ``_record`` was created by a ``structlog`` logger.
+
+          Since you most likely don't want ``_record`` and
+          ``_from_structlog`` in your log files,  we've added
+          the static method `remove_processors_meta` to ``ProcessorFormatter``
+          that you can add just before your renderer.
+
+        - Since this is a `logging` *formatter*, raising `structlog.DropEvent`
+          will crash your application.
+
     :param keep_exc_info: ``exc_info`` on `logging.LogRecord`\ s is
         added to the ``event_dict`` and removed afterwards. Set this to
         ``True`` to keep it on the `logging.LogRecord`. (default: False)
-    :param keep_stack_info: Same as *keep_exc_info* except for Python 3's
-        ``stack_info``. (default: False)
+    :param keep_stack_info: Same as *keep_exc_info* except for ``stack_info``.
+        (default: False)
     :param logger: Logger which we want to push through the ``structlog``
         processor chain. This parameter is necessary for some of the
         processors like `filter_by_level`. (default: None)
     :param pass_foreign_args: If True, pass a foreign log record's
         ``args`` attribute to the ``event_dict`` under ``positional_args`` key.
         (default: False)
+    :param processor:
+        A single ``structlog`` processor used for rendering the event
+        dictionary before passing it off to `logging`. Must return a `str`.
+        The event dictionary does **not** contain ``_record`` and
+        ``_from_structlog``.
+
+        This parameter exists for historic reasons. Please consider using
+        *processors* instead.
+
+    :raises TypeError: If both or neither *processor* and *processors* are
+        passed.
 
     .. versionadded:: 17.1.0
     .. versionadded:: 17.2.0 *keep_exc_info* and *keep_stack_info*
     .. versionadded:: 19.2.0 *logger*
     .. versionadded:: 19.2.0 *pass_foreign_args*
+    .. versionadded:: 21.3.0 *processors*
+    .. deprecated:: 21.3.0
+       *processor* (singular) in favor of *processors* (plural). Removal is not
+       planned.
     """
 
     def __init__(
         self,
-        processor: Processor,
+        processor: Optional[Processor] = None,
+        processors: Optional[Sequence[Processor]] = (),
         foreign_pre_chain: Optional[Sequence[Processor]] = None,
         keep_exc_info: bool = False,
         keep_stack_info: bool = False,
@@ -739,7 +834,22 @@ class ProcessorFormatter(logging.Formatter):
         fmt = kwargs.pop("fmt", "%(message)s")
         super().__init__(*args, fmt=fmt, **kwargs)  # type: ignore
 
-        self.processor = processor
+        if processor and processors:
+            raise TypeError(
+                "The `processor` and `processors` arguments are mutually "
+                "exclusive."
+            )
+
+        self.processors: Sequence[Processor]
+        if processor is not None:
+            self.processors = (self.remove_processors_meta, processor)
+        elif processors:
+            self.processors = processors
+        else:
+            raise TypeError(
+                "Either `processor` or `processors` must be passed."
+            )
+
         self.foreign_pre_chain = foreign_pre_chain
         self.keep_exc_info = keep_exc_info
         self.keep_stack_info = keep_stack_info
@@ -770,10 +880,16 @@ class ProcessorFormatter(logging.Formatter):
             # processed by multiple logging formatters.  LogRecord.getMessage
             # would transform our dict into a str.
             ed = record.msg.copy()  # type: ignore
+            ed["_record"] = record
+            ed["_from_structlog"] = True
         else:
             logger = self.logger
             meth_name = record.levelname.lower()
-            ed = {"event": record.getMessage(), "_record": record}
+            ed = {
+                "event": record.getMessage(),
+                "_record": record,
+                "_from_structlog": False,
+            }
 
             if self.pass_foreign_args:
                 ed["positional_args"] = record.args
@@ -799,9 +915,10 @@ class ProcessorFormatter(logging.Formatter):
             for proc in self.foreign_pre_chain or ():
                 ed = proc(logger, meth_name, ed)
 
-            del ed["_record"]
+        for p in self.processors:
+            ed = p(logger, meth_name, ed)
 
-        record.msg = self.processor(logger, meth_name, ed)  # type: ignore
+        record.msg = ed
 
         return super().format(record)
 
@@ -819,3 +936,20 @@ class ProcessorFormatter(logging.Formatter):
         want to use `ProcessorFormatter` in your `logging` configuration.
         """
         return (event_dict,), {"extra": {"_logger": logger, "_name": name}}
+
+    @staticmethod
+    def remove_processors_meta(
+        _: WrappedLogger, __: str, event_dict: EventDict
+    ) -> EventDict:
+        """
+        Remove ``_record`` and ``_from_structlog`` from *event_dict*.
+
+        These keys are added to the event dictionary, before
+        `ProcessorFormatter`'s *processors* are run.
+
+        .. versionadded:: 21.3.0
+        """
+        del event_dict["_record"]
+        del event_dict["_from_structlog"]
+
+        return event_dict

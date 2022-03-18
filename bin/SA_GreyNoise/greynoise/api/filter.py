@@ -5,8 +5,10 @@ import more_itertools
 
 class Filter(object):
     """Filter lines that contain IP addresses from a given text.
+
     :param api: API client
     :type api: greynoise.api.GreyNoise
+
     """
 
     FILTER_TEXT_CHUNK_SIZE = 10000
@@ -16,6 +18,7 @@ class Filter(object):
 
     def filter(self, text, noise_only, riot_only):
         """Filter lines that contain IP addresses from a given text.
+
         :param text: Text input
         :type text: file-like | str
         :param noise_only:
@@ -28,6 +31,7 @@ class Filter(object):
         :type riot_only: bool
         :return: Iterator that yields lines in chunks
         :rtype: iterable
+
         """
         if isinstance(text, str):
             text = text.splitlines(True)
@@ -37,6 +41,7 @@ class Filter(object):
 
     def _filter_chunk(self, text, noise_only, riot_only):  # noqa: C901
         """Filter chunk of lines that contain IP addresses from a given text.
+
         :param text: Text input
         :type text: str
         :param noise_only:
@@ -48,6 +53,7 @@ class Filter(object):
             otherwise, return lines that contain IP addresses not in RIOT.
         :type riot_only: bool
         :return: Filtered line
+
         """
         text_ip_addresses = set()
         for input_line in text:
@@ -64,10 +70,12 @@ class Filter(object):
 
         def all_ip_addresses_noisy(line):
             """Select lines that contain IP addresses and all of them are noisy.
+
             :param line: Line being processed.
             :type line: str
             :return: True if line contains IP addresses and all of them are noisy.
             :rtype: bool
+
             """
             line_ip_addresses = self.api.IPV4_REGEX.findall(line)
             return line_ip_addresses and all(
@@ -77,10 +85,12 @@ class Filter(object):
 
         def all_ip_addresses_riot(line):
             """Select lines that contain IP addresses and all of them are in RIOT.
+
             :param line: Line being processed.
             :type line: str
             :return: True if line contains IP addresses and all of them are noisy.
             :rtype: bool
+
             """
             line_ip_addresses = self.api.IPV4_REGEX.findall(line)
             return line_ip_addresses and all(
@@ -90,10 +100,12 @@ class Filter(object):
 
         def add_markup(match):
             """Add markup to surround IP address value with proper tag.
+
             :param match: IP address match
             :type match: re.Match
             :return: IP address with markup
             :rtype: str
+
             """
             ip_address = match.group(0)
             if ip_address in noise_ip_addresses:
@@ -113,10 +125,12 @@ class Filter(object):
 
             def line_matches(line):
                 """Match all lines that contain either text or non-noisy lines.
+
                 :param line: Line being processed.
                 :type line: str
                 :return: True if line matches as expected.
                 :rtype: bool
+
                 """
                 return not all_ip_addresses_noisy(line) and not all_ip_addresses_riot(
                     line

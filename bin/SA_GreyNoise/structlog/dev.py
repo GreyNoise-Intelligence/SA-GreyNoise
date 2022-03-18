@@ -1,17 +1,28 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
 # This file is dual licensed under the terms of the Apache License, Version
 # 2.0, and the MIT License.  See the LICENSE file in the root of this
 # repository for complete details.
 
 """
 Helpers that make development with ``structlog`` more pleasant.
+
+See also the narrative documentation in `development`.
 """
 
 import sys
+import warnings
 
 from io import StringIO
-from typing import Any, Optional, Type, Union
+from typing import Any, Iterable, Optional, TextIO, Type, Union
 
-from .types import EventDict, Protocol, WrappedLogger
+from ._frames import _format_exception
+from .types import (
+    EventDict,
+    ExceptionFormatter,
+    ExcInfo,
+    Protocol,
+    WrappedLogger,
+)
 
 
 try:
@@ -19,8 +30,26 @@ try:
 except ImportError:
     colorama = None
 
+try:
+    import better_exceptions
+except ImportError:
+    better_exceptions = None
 
-__all__ = ["ConsoleRenderer"]
+try:
+    import rich
+
+    from rich.console import Console
+    from rich.traceback import Traceback
+except ImportError:
+    rich = None  # type: ignore
+
+
+__all__ = [
+    "ConsoleRenderer",
+    "plain_traceback",
+    "rich_traceback",
+    "better_traceback",
+]
 
 _IS_WINDOWS = sys.platform == "win32"
 
@@ -30,7 +59,7 @@ _EVENT_WIDTH = 30  # pad the event name to so many characters
 
 def _pad(s: str, length: int) -> str:
     """
-    Pads *s* to length *lenght*.
+    Pads *s* to length *length*.
     """
     missing = length - len(s)
 
@@ -38,8 +67,6 @@ def _pad(s: str, length: int) -> str:
 
 
 if colorama is not None:
-    _has_colorama = True
-
     RESET_ALL = colorama.Style.RESET_ALL
     BRIGHT = colorama.Style.BRIGHT
     DIM = colorama.Style.DIM
@@ -51,11 +78,27 @@ if colorama is not None:
     GREEN = colorama.Fore.GREEN
     RED_BACK = colorama.Back.RED
 else:
-    _has_colorama = False
+    # These are the same values as the colorama color codes. Redefining them
+    # here allows users to specify that they want color without having to
+    # install colorama, which is only supposed to be necessary in Windows.
+    RESET_ALL = "\033[0m"
+    BRIGHT = "\033[1m"
+    DIM = "\033[2m"
+    RED = "\033[31m"
+    BLUE = "\033[34m"
+    CYAN = "\033[36m"
+    MAGENTA = "\033[35m"
+    YELLOW = "\033[33m"
+    GREEN = "\033[32m"
+    RED_BACK = "\033[41m"
 
-    RESET_ALL = (
-        BRIGHT
-    ) = DIM = RED = BLUE = CYAN = MAGENTA = YELLOW = GREEN = RED_BACK = ""
+
+if _IS_WINDOWS:  # pragma: no cover
+    # On Windows, use colors by default only if colorama is installed.
+    _use_colors = colorama is not None
+else:
+    # On other OSes, use colors by default.
+    _use_colors = True
 
 
 class _Styles(Protocol):
@@ -114,17 +157,68 @@ class _PlainStyles:
     kv_value = ""
 
 
+def plain_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
+    """
+    "Pretty"-print *exc_info* to *sio* using our own plain formatter.
+
+    To be passed into `ConsoleRenderer`'s ``exception_formatter`` argument.
+
+    Used by default if neither ``rich`` not ``better-exceptions`` are present.
+
+    .. versionadded:: 21.2
+    """
+    sio.write("\n" + _format_exception(exc_info))
+
+
+def rich_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
+    """
+    Pretty-print *exc_info* to *sio* using the ``rich`` package.
+
+    To be passed into `ConsoleRenderer`'s ``exception_formatter`` argument.
+
+    Used by default if ``rich`` is installed.
+
+    .. versionadded:: 21.2
+    """
+    sio.write("\n")
+    Console(file=sio, color_system="truecolor").print(
+        Traceback.from_exception(*exc_info, show_locals=True)
+    )
+
+
+def better_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
+    """
+    Pretty-print *exc_info* to *sio* using the ``better-exceptions`` package.
+
+    To be passed into `ConsoleRenderer`'s ``exception_formatter`` argument.
+
+    Used by default if ``better-exceptions`` is installed and ``rich`` is
+    absent.
+
+    .. versionadded:: 21.2
+    """
+    sio.write("\n" + "".join(better_exceptions.format_exception(*exc_info)))
+
+
+if rich is not None:
+    default_exception_formatter = rich_traceback
+elif better_exceptions is not None:  # type: ignore
+    default_exception_formatter = better_traceback
+else:
+    default_exception_formatter = plain_traceback
+
+
 class ConsoleRenderer:
     """
     Render ``event_dict`` nicely aligned, possibly in colors, and ordered.
 
-    If ``event_dict`` contains an ``exception`` key (for example from
-    :func:`~structlog.processors.format_exc_info`), it will be rendered *after*
-    the log line.
+    If ``event_dict`` contains a true-ish ``exc_info`` key, it will be
+    rendered *after* the log line. If rich_ or better-exceptions_ are present,
+    in colors and with extra context.
 
     :param pad_event: Pad the event to this many characters.
-    :param colors: Use colors for a nicer output. The default is True if
-        colorama is present, otherwise False.
+    :param colors: Use colors for a nicer output. `True` by default if
+        colorama_ is installed.
     :param force_colors: Force colors even for non-tty destinations.
         Use this option if your logs are stored in a file that is meant
         to be streamed to the console.
@@ -137,10 +231,18 @@ class ConsoleRenderer:
         must be a dict from level names (strings) to colorama styles. The
         default can be obtained by calling
         `ConsoleRenderer.get_default_level_styles`
+    :param exception_formatter: A callable to render ``exc_infos``. If rich_
+        or better-exceptions_ are installed, they are used for pretty-printing
+        by default (rich_ taking precedence). You can also manually set it to
+        `plain_traceback`, `better_traceback`, `rich_traceback`, or implement
+        your own.
+    :param sort_keys: Whether to sort keys when formatting. `True` by default.
 
-    Requires the colorama_ package if *colors* is `True`.
+    Requires the colorama_ package if *colors* is `True` **on Windows**.
 
     .. _colorama: https://pypi.org/project/colorama/
+    .. _better-exceptions: https://pypi.org/project/better-exceptions/
+    .. _rich: https://pypi.org/project/rich/
 
     .. versionadded:: 16.0
     .. versionadded:: 16.1 *colors*
@@ -153,35 +255,50 @@ class ConsoleRenderer:
     .. versionchanged:: 19.2 Can be pickled now.
     .. versionchanged:: 20.1 ``colorama`` does not initialize lazily on Windows
        anymore because it breaks rendering.
-    .. versionchanged: 21.1 It is additionally possible to set the logger name
+    .. versionchanged:: 21.1 It is additionally possible to set the logger name
        using the ``logger_name`` key in the ``event_dict``.
+    .. versionadded:: 21.2 *exception_formatter*
+    .. versionchanged:: 21.2 `ConsoleRenderer` now handles the ``exc_info``
+       event dict key itself. Do **not** use the
+       `structlog.processors.format_exc_info` processor together with
+       `ConsoleRenderer` anymore! It will keep working, but you can't have
+       customize exception formatting and a warning will be raised if you ask
+       for it.
+    .. versionchanged:: 21.2 The colors keyword now defaults to True on
+       non-Windows systems, and either True or False in Windows depending on
+       whether colorama is installed.
+    .. versionadded:: 21.3.0 *sort_keys*
     """
 
     def __init__(
         self,
         pad_event: int = _EVENT_WIDTH,
-        colors: bool = _has_colorama,
+        colors: bool = _use_colors,
         force_colors: bool = False,
         repr_native_str: bool = False,
         level_styles: Optional[Styles] = None,
+        exception_formatter: ExceptionFormatter = default_exception_formatter,
+        sort_keys: bool = True,
     ):
-        self._force_colors = self._init_colorama = False
         styles: Styles
-        if colors is True:
-            if colorama is None:
-                raise SystemError(
-                    _MISSING.format(
-                        who=self.__class__.__name__ + " with `colors=True`",
-                        package="colorama",
-                    )
-                )
-
+        if colors:
             if _IS_WINDOWS:  # pragma: no cover
-                _init_colorama(self._force_colors)
-            else:
-                self._init_colorama = True
+                # On Windows, we can't do colorful output without colorama.
+                if colorama is None:
+                    classname = self.__class__.__name__
+                    raise SystemError(
+                        _MISSING.format(
+                            who=classname + " with `colors=True`",
+                            package="colorama",
+                        )
+                    )
+                # Colorama must be init'd on Windows, but must NOT be
+                # init'd on other OSes, because it can break colors.
                 if force_colors:
-                    self._force_colors = True
+                    colorama.deinit()
+                    colorama.init(strip=False)
+                else:
+                    colorama.init()
 
             styles = _ColorfulStyles
         else:
@@ -202,6 +319,8 @@ class ConsoleRenderer:
         )
 
         self._repr_native_str = repr_native_str
+        self._exception_formatter = exception_formatter
+        self._sort_keys = sort_keys
 
     def _repr(self, val: Any) -> str:
         """
@@ -220,10 +339,6 @@ class ConsoleRenderer:
         self, logger: WrappedLogger, name: str, event_dict: EventDict
     ) -> str:
 
-        # Initialize lazily to prevent import side-effects.
-        if self._init_colorama:
-            _init_colorama(self._force_colors)
-            self._init_colorama = False
         sio = StringIO()
 
         ts = event_dict.pop("timestamp", None)
@@ -272,6 +387,12 @@ class ConsoleRenderer:
 
         stack = event_dict.pop("stack", None)
         exc = event_dict.pop("exception", None)
+        exc_info = event_dict.pop("exc_info", None)
+
+        event_dict_keys: Iterable[str] = event_dict.keys()
+        if self._sort_keys:
+            event_dict_keys = sorted(event_dict_keys)
+
         sio.write(
             " ".join(
                 self._styles.kv_key
@@ -281,15 +402,26 @@ class ConsoleRenderer:
                 + self._styles.kv_value
                 + self._repr(event_dict[key])
                 + self._styles.reset
-                for key in sorted(event_dict.keys())
+                for key in event_dict_keys
             )
         )
 
         if stack is not None:
             sio.write("\n" + stack)
-            if exc is not None:
+            if exc_info or exc is not None:
                 sio.write("\n\n" + "=" * 79 + "\n")
-        if exc is not None:
+
+        if exc_info:
+            if not isinstance(exc_info, tuple):
+                exc_info = sys.exc_info()
+
+            self._exception_formatter(sio, exc_info)
+        elif exc is not None:
+            if self._exception_formatter is not plain_traceback:
+                warnings.warn(
+                    "Remove `format_exc_info` from your processor chain "
+                    "if you want pretty exceptions."
+                )
             sio.write("\n" + exc)
 
         return sio.getvalue()
@@ -325,14 +457,6 @@ class ConsoleRenderer:
             "debug": styles.level_debug,
             "notset": styles.level_notset,
         }
-
-
-def _init_colorama(force: bool) -> None:
-    if force:
-        colorama.deinit()
-        colorama.init(strip=False)
-    else:
-        colorama.init()
 
 
 _SENTINEL = object()

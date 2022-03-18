@@ -1,4 +1,4 @@
 
-INTEGRATION_NAME = "greynoise-splunk-app-v2.1.0"
+INTEGRATION_NAME = "greynoise-splunk-app-v2.1.1"
 BACKOFF_FACTOR = 30
 MAX_RETRIES = 3

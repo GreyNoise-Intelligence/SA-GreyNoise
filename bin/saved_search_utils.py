@@ -91,7 +91,7 @@ def get_unique_set(data):
     :param data:
     :return set:
     """
-    return set(filter(None, [x.strip() for x in data.split(",")]))
+    return set([_f for _f in [x.strip() for x in data.split(",")] if _f])
 
 
 def get_macro_string(data):

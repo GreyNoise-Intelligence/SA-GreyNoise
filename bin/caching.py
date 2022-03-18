@@ -9,6 +9,7 @@ import splunklib.client as client
 import splunk.rest as rest
 from splunklib.binding import HTTPError
 from greynoise_exceptions import CachingException
+from six.moves import range
 
 APP_NAME = app_greynoise_declare.ta_name
 EPOCH = datetime.datetime.utcfromtimestamp(0)

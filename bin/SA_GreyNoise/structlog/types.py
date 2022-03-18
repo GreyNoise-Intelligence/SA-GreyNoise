@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# This file is dual licensed under the terms of the Apache License, Version
+# 2.0, and the MIT License.  See the LICENSE file in the root of this
+# repository for complete details.
+
 """
 Type information used throughout ``structlog``.
 
@@ -17,6 +22,7 @@ from typing import (
     Mapping,
     MutableMapping,
     Optional,
+    TextIO,
     Tuple,
     Type,
     Union,
@@ -63,7 +69,7 @@ copy itself.
 
 Processor = Callable[
     [WrappedLogger, str, EventDict],
-    Union[Mapping[str, Any], str, bytes, Tuple[Any, ...]],
+    Union[Mapping[str, Any], str, bytes, bytearray, Tuple[Any, ...]],
 ]
 """
 A callable that is part of the processor chain.
@@ -81,11 +87,21 @@ An exception info tuple as returned by `sys.exc_info`.
 """
 
 
+ExceptionFormatter = Callable[[TextIO, ExcInfo], None]
+"""
+A callable that pretty-prints an `ExcInfo` into a file-like object.
+
+Used by `structlog.dev.ConsoleRenderer`.
+
+.. versionadded:: 21.2
+"""
+
+
 @runtime_checkable
 class BindableLogger(Protocol):
     """
-    Methods shared among all bound loggers and that are relied on by
-    ``structlog``.
+    **Protocol**: Methods shared among all bound loggers and that are relied on
+    by ``structlog``.
 
     .. versionadded:: 20.2
     """
@@ -107,10 +123,9 @@ class BindableLogger(Protocol):
 
 class FilteringBoundLogger(BindableLogger, Protocol):
     """
-    A `BindableLogger` that filters by a level.
+    **Protocol**: A `BindableLogger` that filters by a level.
 
-    Currently, the only way to instantiate one is using
-    `make_filtering_bound_logger`.
+    The only way to instantiate one is using `make_filtering_bound_logger`.
 
     .. versionadded:: 20.2.0
     """

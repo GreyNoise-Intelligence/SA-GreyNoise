@@ -200,8 +200,12 @@ class RestCredentials:
 
                     else:
                         # get clear password for the field
-                        data[field_name] = clear_password[field_name]
-                        encrypting[field_name] = clear_password[field_name]
+                        if clear_password and field_name in clear_password:
+                            data[field_name] = clear_password[field_name]
+                            encrypting[field_name] = clear_password[field_name]
+                        else:
+                            data[field_name] = ""
+                            encrypting[field_name] = ""
 
             if encrypting and clear_password != encrypting:
                 # update passwords.conf if password changed

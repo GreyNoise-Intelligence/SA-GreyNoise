@@ -340,6 +340,10 @@ class RestCredentials:
                         clear_password[k] = ""
                         need_write_back_pwd = True
                         continue
+                    elif existed_model["content"][k] == "********":
+                        # set existing as raw value, magic pattern is the old one so rewrite this item to fix it.
+                        existed_model["content"][k] = v
+                        need_write_magic_pwd = True
                     else:
                         need_write_magic_pwd = True
                         need_write_back_pwd = True

@@ -165,6 +165,8 @@ class TAConfManager:
             if k in self._keys:
                 if stanza.get(k) == self.encrypted_token:
                     return True
+                elif stanza.get(k) == "********":
+                    return True
         return False
 
     def _encrypt(self, stanza):
@@ -202,6 +204,9 @@ class TAConfManager:
         clear_password = None
         for key in self._keys:
             if key in stanza and stanza[key] == self.encrypted_token:
+                clear_password = self._cred_mgr.get_clear_password(stanza_name)
+                break
+            if key in stanza and stanza[key] == "********":
                 clear_password = self._cred_mgr.get_clear_password(stanza_name)
                 break
 

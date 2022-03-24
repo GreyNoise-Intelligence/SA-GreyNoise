@@ -145,6 +145,10 @@ class RestCredentials:
         for field_name in encrypted_field_names:
             if field_name in data and data[field_name]:
                 if data[field_name] != self.PASSWORD:
+                    # if the field in data and not empty and it's not new default, encrypted it
+                    encrypting[field_name] = data[field_name]
+                    data[field_name] = self.PASSWORD
+                elif data[field_name] != "********":
                     # if the field in data and not empty and it's not '*******', encrypted it
                     encrypting[field_name] = data[field_name]
                     data[field_name] = self.PASSWORD
@@ -197,7 +201,10 @@ class RestCredentials:
                         # add to dict to be encrypted, else treat it as unchanged
                         encrypting[field_name] = data[field_name]
                         data_need_write_to_conf[field_name] = self.PASSWORD
-
+                    elif data[field_name] != "********":
+                        # account for old style password
+                        encrypting[field_name] = data[field_name]
+                        data_need_write_to_conf[field_name] = self.PASSWORD
                     else:
                         # get clear password for the field
                         if clear_password and field_name in clear_password:
@@ -215,6 +222,11 @@ class RestCredentials:
             for field_name in encrypted_field_names:
                 if field_name in data and data[field_name]:
                     if data[field_name] != self.PASSWORD:
+                        # if the field exist in data and not equals to '*******'
+                        # add to dict to be encrypted
+                        encrypting[field_name] = data[field_name]
+                        data_need_write_to_conf[field_name] = self.PASSWORD
+                    elif data[field_name] != "********":
                         # if the field exist in data and not equals to '*******'
                         # add to dict to be encrypted
                         encrypting[field_name] = data[field_name]
@@ -418,6 +430,9 @@ class RestCredentials:
                 # ignore un-posted fields
                 continue
             if data[field.name] == self.PASSWORD:
+                # ignore already-encrypted fields
+                continue
+            if data[field.name] == "********":
                 # ignore already-encrypted fields
                 continue
             if data[field.name] != self.EMPTY_VALUE:

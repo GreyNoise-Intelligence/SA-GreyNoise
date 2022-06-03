@@ -6,7 +6,7 @@ This is an app powered by the Splunk Add-on Builder.
 GreyNoise Splunk app provides multiple dashboards to effectively analyse and visualize the contextual and statistical data provided by GreyNoise. It also includes custom commands and alert actions which can be used along with Splunk searches to leverage GreyNoise APIs for custom use cases. It periodically scans the Splunk deployment through saved search to indicate the noise and RIOT IPs in the complete Splunk deployment. Along with this, the workflow action provided can be used to obtain live context information of any CIM compliant field containing an IP address.
 
  - Author: GreyNoise Intelligence Inc
- - Version: 2.1.1
+ - Version: 2.1.2
  - Creates Index: False
  - Has index-time operation: True
  - Implements summarization: False
@@ -16,6 +16,10 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
  - Splunk Enterprise version: 8.2.x, 8.1.x, 8.0.x
  - OS: Platform independent
  - Vendor Products: GreyNoise API
+
+# RELEASE NOTES (Version 2.1.2) #
+ - Fixed issue where API key could not be entered on new installs
+ - IMPORTANT: GreyNoise API Key *must* be re-entered if upgrading from a previous version
 
 # RELEASE NOTES (Version 2.1.1) #
  - Fixed JQuery 3.5.0 compatibility issue identified via Upgrade Readiness
@@ -77,10 +81,10 @@ Search Head Cluster
 Follow the below steps to upgrade the app to the latest version:
 
  - Disable all the saved searches which uses alert actions and custom commands of GreyNoise.
- - Backup your current app/configurations outside of the Splunk install path.
+ - Backup your current app/configurations outside the Splunk install path.
  - To upgrade the app from the UI, follow the steps in the INSTALLATION section below. Ensure that `Upgrade app.` checkbox is selected before clicking on the Upload button.
  - Follow the steps mentioned in CONFIGURATION section to reconfigure the app.
- - If SCAN DEPLOYMENT feature was already configured before app upgradation then go to SCAN DEPLOYMENT tab inside the Configuration tab and Click on Save button to re-configure the scan deployment saved search in the backend.
+ - If SCAN DEPLOYMENT was configured before app upgrading then go to SCAN DEPLOYMENT tab inside the Configuration tab and Click on Save button to re-configure the scan deployment saved search in the backend.
 
 *Note: Upgrade is only supported from UI and not supported from the backend.* 
 

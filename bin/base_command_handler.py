@@ -28,6 +28,7 @@ class BaseCommandHandler(GeneratingCommand):
             try:
                 message = ''
                 api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
+                proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
             except APIKeyNotFoundError as e:
                 message = str(e)
             except HTTPError as e:
@@ -40,7 +41,7 @@ class BaseCommandHandler(GeneratingCommand):
 
             # This will call the do_generate method of the respective class from which this class was called
             # And generate the events
-            for event in self.do_generate(api_key, logger):
+            for event in self.do_generate(api_key, proxy, logger):
                 yield event
 
         except RateLimitError:
@@ -78,6 +79,6 @@ class BaseCommandHandler(GeneratingCommand):
                 "See greynoise_main.log for more details."
                 .format(custom_command=str(self._metadata.searchinfo.command)))
 
-    def do_generate(self, api_key, logger):
+    def do_generate(self, api_key, proxy, logger):
         """Method that yields records to the Splunk processing pipeline."""
         raise NotImplementedError()

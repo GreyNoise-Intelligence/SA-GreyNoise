@@ -62,6 +62,7 @@ class OverviewCommand(GeneratingCommand):
 
             try:
                 api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
+                proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
 
                 # Completing the search if the API key is not available.
                 if not api_key:
@@ -69,7 +70,7 @@ class OverviewCommand(GeneratingCommand):
                     exit(1)
 
                 # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
+                api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
 
                 queries = {
                     "malicious": "classification:malicious last_seen:today",

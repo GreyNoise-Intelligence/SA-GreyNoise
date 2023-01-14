@@ -103,7 +103,7 @@ class GNQueryCommand(BaseCommandHandler):
         default="50000", name='result_size', require=False
     )
 
-    def do_generate(self, api_key, logger):
+    def do_generate(self, api_key, proxy, logger):
         """
         Method to fetch the api response and process and send the response with extractions in the Splunk.
 
@@ -134,7 +134,7 @@ class GNQueryCommand(BaseCommandHandler):
             exit(1)
 
         # Opting timeout of 240 seconds for the request
-        api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
+        api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
 
         logger.info("Fetching results for GNQL query: {}, requested number of results: {}".format(
             str(query), str(result_size)))

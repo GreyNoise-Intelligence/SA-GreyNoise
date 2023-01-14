@@ -148,6 +148,7 @@ class GNFilterCommand(EventingCommand):
                 try:
                     message = ''
                     api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
+                    proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
                 except APIKeyNotFoundError as e:
                     message = str(e)
                 except HTTPError as e:
@@ -183,7 +184,7 @@ class GNFilterCommand(EventingCommand):
 
                 # Opting timout 120 seconds for the requests
                 api_client = GreyNoise(api_key=api_key, timeout=120,
-                                       use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
+                                       use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
 
                 # When no records found, batch will return {0:([],[])}
                 if len(list(chunk_dict.values())[0][0]) >= 1:

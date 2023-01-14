@@ -77,6 +77,7 @@ class GNQuickCommand(EventingCommand):
         try:
             message = ''
             api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
+            proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
         except APIKeyNotFoundError as e:
             message = str(e)
         except HTTPError as e:
@@ -97,7 +98,7 @@ class GNQuickCommand(EventingCommand):
                 logger.debug("Initiating to fetch noise and RIOT status for IP address(es): {}".format(
                     str(ip_addresses)))
 
-                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
 
                 # CACHING START
                 cache_enabled, cache_client = utility.get_caching(
@@ -218,7 +219,8 @@ class GNQuickCommand(EventingCommand):
 
                     # API key validation
                     if not self.api_validation_flag:
-                        api_key_validation, message = utility.validate_api_key(api_key, logger)
+                        proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
+                        api_key_validation, message = utility.validate_api_key(api_key, logger, proxy)
                         logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
                         self.api_validation_flag = True
                         if not api_key_validation:
@@ -239,7 +241,7 @@ class GNQuickCommand(EventingCommand):
                         USE_CACHE = True
 
                     api_client = GreyNoise(api_key=api_key, timeout=120,
-                                           use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
+                                           use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
                     # When no records found, batch will return {0:([],[])}
                     tot_time_start = time.time()
                     if len(list(chunk_dict.values())[0][0]) >= 1:

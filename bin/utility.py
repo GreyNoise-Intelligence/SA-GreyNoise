@@ -126,6 +126,22 @@ def get_api_key(session_key, logger):
     return api_key
 
 
+def get_proxy(session_key, logger):
+    """
+    Returns the proxy configured by the user from the Splunk enpoint, returns blank when no proxy is found.
+
+    :param session_key:
+    :return: proxy url
+    """
+    # Get configuration file from the helper method defined in utility
+    conf = get_conf_file(session_key, 'app_greynoise_settings')
+
+    param_stanza = conf.get("parameters", {})
+    proxy = param_stanza.get("proxy", None)
+
+    return proxy
+
+
 def make_error_message(message, session_key, logger):
     """
     Generates Splunk Error Message.
@@ -199,7 +215,7 @@ def nested_dict_iter(nested, prefix=''):
     return nester_method(api_response, prefix)
 
 
-def validate_api_key(api_key, logger=None):
+def validate_api_key(api_key, proxy=None, logger=None):
     """
     Validate the API key using the actual lightweight call to the GreyNoise API.
 
@@ -211,7 +227,7 @@ def validate_api_key(api_key, logger=None):
         logger.debug("Validating the api key...")
 
     try:
-        api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+        api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
         api_client.test_connection()
         return (True, 'API key is valid')
 

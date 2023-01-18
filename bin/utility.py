@@ -215,7 +215,7 @@ def nested_dict_iter(nested, prefix=''):
     return nester_method(api_response, prefix)
 
 
-def validate_api_key(api_key, proxy=None, logger=None):
+def validate_api_key(api_key, logger=None, proxy=None):
     """
     Validate the API key using the actual lightweight call to the GreyNoise API.
 

@@ -72,6 +72,7 @@ class GNEnrichCommand(EventingCommand):
                 try:
                     message = ''
                     api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
+                    proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
                 except APIKeyNotFoundError as e:
                     message = str(e)
                 except HTTPError as e:
@@ -107,7 +108,7 @@ class GNEnrichCommand(EventingCommand):
 
                 # Opting timout 120 seconds for the requests
                 api_client = GreyNoise(api_key=api_key, timeout=120,
-                                       use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
+                                       use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
 
                 if len(chunk_dict) > 0:
                     for event in event_generator.get_all_events(

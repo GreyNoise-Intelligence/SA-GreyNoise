@@ -74,6 +74,7 @@ class GNRiotCommand(EventingCommand):
         try:
             message = ''
             api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
+            proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
         except APIKeyNotFoundError as e:
             message = str(e)
         except HTTPError as e:
@@ -92,7 +93,7 @@ class GNRiotCommand(EventingCommand):
             logger.info("Started retrieving results")
             try:
                 logger.debug("Initiating to fetch RIOT information for IP address: {}".format(str(ip_address)))
-                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
                 # Opting timout 120 seconds for the requests
                 session_key = self._metadata.searchinfo.session_key
                 riot_information = utility.get_response_for_generating(

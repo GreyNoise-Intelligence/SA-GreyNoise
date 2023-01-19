@@ -43,7 +43,7 @@ class GNStatsCommand(BaseCommandHandler):
         name='count', require=False
     )
 
-    def do_generate(self, api_key, logger):
+    def do_generate(self, api_key, proxy, logger):
         """
         Method to fetch the api response and process and send the response with extractions in the Splunk.
 
@@ -72,7 +72,7 @@ class GNStatsCommand(BaseCommandHandler):
 
         logger.info("Fetching aggregate statistics for query: {}, count: {}".format(str(query), count))
         # Opting timout 120 seconds for the requests
-        api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
+        api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
         # If count is not passed explicitely to the command by the user, then it will have the value None
         stats_data = api_client.stats(query, count)
         logger.info("Successfully retrieved response for the aggregate statistics for query: {}, count: {}".format(

@@ -7,40 +7,38 @@
 Global state department.  Don't reload this module or everything breaks.
 """
 
+from __future__ import annotations
 
 import sys
 import warnings
 
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    Optional,
-    Sequence,
-    Type,
-    cast,
-)
+from typing import Any, Callable, Iterable, Sequence, Type, cast
 
 from ._log_levels import make_filtering_bound_logger
-from ._loggers import PrintLoggerFactory
+from ._output import PrintLoggerFactory
+from .contextvars import merge_contextvars
 from .dev import ConsoleRenderer, _use_colors, set_exc_info
 from .processors import StackInfoRenderer, TimeStamper, add_log_level
-from .types import BindableLogger, Context, Processor, WrappedLogger
+from .typing import BindableLogger, Context, Processor, WrappedLogger
 
 
 """
-.. note::
+   Any changes to these defaults must be reflected in:
 
-   Any changes to these defaults must be reflected in `getting-started`.
+   - `getting-started`.
+   - structlog.stdlib.recreate_defaults()'s docstring.
 """
 _BUILTIN_DEFAULT_PROCESSORS: Sequence[Processor] = [
+    merge_contextvars,
     add_log_level,
     StackInfoRenderer(),
     set_exc_info,
-    TimeStamper(fmt="%Y-%m-%d %H:%M.%S", utc=False),
+    TimeStamper(fmt="%Y-%m-%d %H:%M:%S", utc=False),
     ConsoleRenderer(
-        colors=_use_colors and sys.stdout is not None and sys.stdout.isatty()
+        colors=_use_colors
+        and sys.stdout is not None
+        and hasattr(sys.stdout, "isatty")
+        and sys.stdout.isatty()
     ),
 ]
 _BUILTIN_DEFAULT_CONTEXT_CLASS = cast(Type[Context], dict)
@@ -56,7 +54,7 @@ class _Configuration:
 
     is_configured: bool = False
     default_processors: Iterable[Processor] = _BUILTIN_DEFAULT_PROCESSORS[:]
-    default_context_class: Type[Context] = _BUILTIN_DEFAULT_CONTEXT_CLASS
+    default_context_class: type[Context] = _BUILTIN_DEFAULT_CONTEXT_CLASS
     default_wrapper_class: Any = _BUILTIN_DEFAULT_WRAPPER_CLASS
     logger_factory: Callable[
         ..., WrappedLogger
@@ -72,22 +70,22 @@ Global defaults used when arguments to `wrap_logger` are omitted.
 
 def is_configured() -> bool:
     """
-    Return whether ``structlog`` has been configured.
+    Return whether *structlog* has been configured.
 
-    If `False`, ``structlog`` is running with builtin defaults.
+    If `False`, *structlog* is running with builtin defaults.
 
     .. versionadded: 18.1
     """
     return _CONFIG.is_configured
 
 
-def get_config() -> Dict[str, Any]:
+def get_config() -> dict[str, Any]:
     """
     Get a dictionary with the current configuration.
 
     .. note::
 
-       Changes to the returned dictionary do *not* affect ``structlog``.
+       Changes to the returned dictionary do *not* affect *structlog*.
 
     .. versionadded: 18.1
     """
@@ -106,7 +104,7 @@ def get_logger(*args: Any, **initial_values: Any) -> Any:
 
     >>> from structlog import get_logger
     >>> log = get_logger(y=23)
-    >>> log.msg("hello", x=42)
+    >>> log.info("hello", x=42)
     y=23 x=42 event='hello'
 
     :param args: *Optional* positional arguments that are passed unmodified to
@@ -140,12 +138,12 @@ stick out like a sore thumb in frameworks like Twisted or Zope.
 
 def wrap_logger(
     logger: WrappedLogger,
-    processors: Optional[Iterable[Processor]] = None,
-    wrapper_class: Optional[Type[BindableLogger]] = None,
-    context_class: Optional[Type[Context]] = None,
-    cache_logger_on_first_use: Optional[bool] = None,
-    logger_factory_args: Optional[Iterable[Any]] = None,
-    **initial_values: Any
+    processors: Iterable[Processor] | None = None,
+    wrapper_class: type[BindableLogger] | None = None,
+    context_class: type[Context] | None = None,
+    cache_logger_on_first_use: bool | None = None,
+    logger_factory_args: Iterable[Any] | None = None,
+    **initial_values: Any,
 ) -> Any:
     """
     Create a new bound logger for an arbitrary *logger*.
@@ -183,11 +181,11 @@ def wrap_logger(
 
 
 def configure(
-    processors: Optional[Iterable[Processor]] = None,
-    wrapper_class: Optional[Type[BindableLogger]] = None,
-    context_class: Optional[Type[Context]] = None,
-    logger_factory: Optional[Callable[..., WrappedLogger]] = None,
-    cache_logger_on_first_use: Optional[bool] = None,
+    processors: Iterable[Processor] | None = None,
+    wrapper_class: type[BindableLogger] | None = None,
+    context_class: type[Context] | None = None,
+    logger_factory: Callable[..., WrappedLogger] | None = None,
+    cache_logger_on_first_use: bool | None = None,
 ) -> None:
     """
     Configures the **global** defaults.
@@ -198,8 +196,7 @@ def configure(
     Can be called several times, keeping an argument at `None` leaves it
     unchanged from the current setting.
 
-    After calling for the first time, `is_configured` starts returning
-    `True`.
+    After calling for the first time, `is_configured` starts returning `True`.
 
     Use `reset_defaults` to undo your changes.
 
@@ -207,13 +204,15 @@ def configure(
     :param wrapper_class: Class to use for wrapping loggers instead of
         `structlog.BoundLogger`.  See `standard-library`, :doc:`twisted`, and
         `custom-wrappers`.
-    :param context_class: Class to be used for internal context keeping.
-    :param logger_factory: Factory to be called to create a new
-        logger that shall be wrapped.
-    :param cache_logger_on_first_use: `wrap_logger` doesn't return an
-        actual wrapped logger but a proxy that assembles one when it's first
-        used.  If this option is set to `True`, this assembled logger is
-        cached.  See `performance`.
+    :param context_class: Class to be used for internal context keeping. The
+        default is a `dict` and since dictionaries are ordered as of Python
+        3.6, there's few reasons to change this option.
+    :param logger_factory: Factory to be called to create a new logger that
+        shall be wrapped.
+    :param cache_logger_on_first_use: `wrap_logger` doesn't return an actual
+        wrapped logger but a proxy that assembles one when it's first used.  If
+        this option is set to `True`, this assembled logger is cached.  See
+        `performance`.
 
     .. versionadded:: 0.3.0
         *cache_logger_on_first_use*
@@ -227,17 +226,17 @@ def configure(
     if context_class is not None:
         _CONFIG.default_context_class = context_class
     if logger_factory is not None:
-        _CONFIG.logger_factory = logger_factory  # type: ignore
+        _CONFIG.logger_factory = logger_factory
     if cache_logger_on_first_use is not None:
         _CONFIG.cache_logger_on_first_use = cache_logger_on_first_use
 
 
 def configure_once(
-    processors: Optional[Iterable[Processor]] = None,
-    wrapper_class: Optional[Type[BindableLogger]] = None,
-    context_class: Optional[Type[Context]] = None,
-    logger_factory: Optional[Callable[..., WrappedLogger]] = None,
-    cache_logger_on_first_use: Optional[bool] = None,
+    processors: Iterable[Processor] | None = None,
+    wrapper_class: type[BindableLogger] | None = None,
+    context_class: type[Context] | None = None,
+    logger_factory: Callable[..., WrappedLogger] | None = None,
+    cache_logger_on_first_use: bool | None = None,
 ) -> None:
     """
     Configures if structlog isn't configured yet.
@@ -269,7 +268,7 @@ def reset_defaults() -> None:
     _CONFIG.default_processors = _BUILTIN_DEFAULT_PROCESSORS[:]
     _CONFIG.default_wrapper_class = _BUILTIN_DEFAULT_WRAPPER_CLASS
     _CONFIG.default_context_class = _BUILTIN_DEFAULT_CONTEXT_CLASS
-    _CONFIG.logger_factory = _BUILTIN_DEFAULT_LOGGER_FACTORY  # type: ignore
+    _CONFIG.logger_factory = _BUILTIN_DEFAULT_LOGGER_FACTORY
     _CONFIG.cache_logger_on_first_use = _BUILTIN_CACHE_LOGGER_ON_FIRST_USE
 
 
@@ -292,11 +291,11 @@ class BoundLoggerLazyProxy:
     def __init__(
         self,
         logger: WrappedLogger,
-        wrapper_class: Optional[Type[BindableLogger]] = None,
-        processors: Optional[Iterable[Processor]] = None,
-        context_class: Optional[Type[Context]] = None,
-        cache_logger_on_first_use: Optional[bool] = None,
-        initial_values: Optional[Dict[str, Any]] = None,
+        wrapper_class: type[BindableLogger] | None = None,
+        processors: Iterable[Processor] | None = None,
+        context_class: type[Context] | None = None,
+        cache_logger_on_first_use: bool | None = None,
+        initial_values: dict[str, Any] | None = None,
         logger_factory_args: Any = None,
     ) -> None:
         self._logger = logger
@@ -337,7 +336,9 @@ class BoundLoggerLazyProxy:
         cls = self._wrapper_class or _CONFIG.default_wrapper_class
         # Looks like Protocols ignore definitions of __init__ so we have to
         # silence Mypy here.
-        logger = cls(_logger, processors=procs, context=ctx)  # type: ignore
+        logger = cls(
+            _logger, processors=procs, context=ctx  # type: ignore[call-arg]
+        )
 
         def finalized_bind(**new_values: Any) -> BindableLogger:
             """
@@ -352,7 +353,7 @@ class BoundLoggerLazyProxy:
             self._cache_logger_on_first_use is None
             and _CONFIG.cache_logger_on_first_use is True
         ):
-            self.bind = finalized_bind  # type: ignore
+            self.bind = finalized_bind  # type: ignore[assignment]
 
         return finalized_bind(**new_values)
 
@@ -392,13 +393,13 @@ class BoundLoggerLazyProxy:
 
         return getattr(bl, name)
 
-    def __getstate__(self) -> Dict[str, Any]:
+    def __getstate__(self) -> dict[str, Any]:
         """
         Our __getattr__ magic makes this necessary.
         """
         return self.__dict__
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
+    def __setstate__(self, state: dict[str, Any]) -> None:
         """
         Our __getattr__ magic makes this necessary.
         """

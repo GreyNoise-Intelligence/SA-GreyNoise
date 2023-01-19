@@ -4,25 +4,27 @@
 # repository for complete details.
 
 """
-Helpers that make development with ``structlog`` more pleasant.
+Helpers that make development with *structlog* more pleasant.
 
 See also the narrative documentation in `development`.
 """
+
+from __future__ import annotations
 
 import sys
 import warnings
 
 from io import StringIO
-from typing import Any, Iterable, Optional, TextIO, Type, Union
+from typing import Any, Iterable, TextIO, Type, Union
 
 from ._frames import _format_exception
-from .types import (
-    EventDict,
-    ExceptionFormatter,
-    ExcInfo,
-    Protocol,
-    WrappedLogger,
-)
+from .typing import EventDict, ExceptionRenderer, ExcInfo, WrappedLogger
+
+
+if sys.version_info >= (3, 8):
+    from typing import Protocol
+else:
+    from typing_extensions import Protocol
 
 
 try:
@@ -41,7 +43,7 @@ try:
     from rich.console import Console
     from rich.traceback import Traceback
 except ImportError:
-    rich = None  # type: ignore
+    rich = None  # type: ignore[assignment]
 
 
 __all__ = [
@@ -78,9 +80,9 @@ if colorama is not None:
     GREEN = colorama.Fore.GREEN
     RED_BACK = colorama.Back.RED
 else:
-    # These are the same values as the colorama color codes. Redefining them
+    # These are the same values as the Colorama color codes. Redefining them
     # here allows users to specify that they want color without having to
-    # install colorama, which is only supposed to be necessary in Windows.
+    # install Colorama, which is only supposed to be necessary in Windows.
     RESET_ALL = "\033[0m"
     BRIGHT = "\033[1m"
     DIM = "\033[2m"
@@ -94,7 +96,7 @@ else:
 
 
 if _IS_WINDOWS:  # pragma: no cover
-    # On Windows, use colors by default only if colorama is installed.
+    # On Windows, use colors by default only if Colorama is installed.
     _use_colors = colorama is not None
 else:
     # On other OSes, use colors by default.
@@ -163,7 +165,7 @@ def plain_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
 
     To be passed into `ConsoleRenderer`'s ``exception_formatter`` argument.
 
-    Used by default if neither ``rich`` not ``better-exceptions`` are present.
+    Used by default if neither *Rich* not *better-exceptions* are present.
 
     .. versionadded:: 21.2
     """
@@ -172,11 +174,11 @@ def plain_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
 
 def rich_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
     """
-    Pretty-print *exc_info* to *sio* using the ``rich`` package.
+    Pretty-print *exc_info* to *sio* using the *Rich* package.
 
     To be passed into `ConsoleRenderer`'s ``exception_formatter`` argument.
 
-    Used by default if ``rich`` is installed.
+    Used by default if *Rich* is installed.
 
     .. versionadded:: 21.2
     """
@@ -188,12 +190,11 @@ def rich_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
 
 def better_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
     """
-    Pretty-print *exc_info* to *sio* using the ``better-exceptions`` package.
+    Pretty-print *exc_info* to *sio* using the *better-exceptions* package.
 
     To be passed into `ConsoleRenderer`'s ``exception_formatter`` argument.
 
-    Used by default if ``better-exceptions`` is installed and ``rich`` is
-    absent.
+    Used by default if *better-exceptions* is installed and *Rich* is absent.
 
     .. versionadded:: 21.2
     """
@@ -202,7 +203,7 @@ def better_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
 
 if rich is not None:
     default_exception_formatter = rich_traceback
-elif better_exceptions is not None:  # type: ignore
+elif better_exceptions is not None:
     default_exception_formatter = better_traceback
 else:
     default_exception_formatter = plain_traceback
@@ -213,22 +214,22 @@ class ConsoleRenderer:
     Render ``event_dict`` nicely aligned, possibly in colors, and ordered.
 
     If ``event_dict`` contains a true-ish ``exc_info`` key, it will be
-    rendered *after* the log line. If rich_ or better-exceptions_ are present,
+    rendered *after* the log line. If Rich_ or better-exceptions_ are present,
     in colors and with extra context.
 
     :param pad_event: Pad the event to this many characters.
-    :param colors: Use colors for a nicer output. `True` by default if
-        colorama_ is installed.
+    :param colors: Use colors for a nicer output. `True` by default. On
+        Windows only if Colorama_ is installed.
     :param force_colors: Force colors even for non-tty destinations.
         Use this option if your logs are stored in a file that is meant
-        to be streamed to the console.
+        to be streamed to the console. Only meaningful on Windows.
     :param repr_native_str: When `True`, `repr` is also applied
         to native strings (i.e. unicode on Python 3 and bytes on Python 2).
         Setting this to `False` is useful if you want to have human-readable
         non-ASCII output on Python 2.  The ``event`` key is *never*
         `repr` -ed.
     :param level_styles: When present, use these styles for colors. This
-        must be a dict from level names (strings) to colorama styles. The
+        must be a dict from level names (strings) to Colorama styles. The
         default can be obtained by calling
         `ConsoleRenderer.get_default_level_styles`
     :param exception_formatter: A callable to render ``exc_infos``. If rich_
@@ -237,12 +238,14 @@ class ConsoleRenderer:
         `plain_traceback`, `better_traceback`, `rich_traceback`, or implement
         your own.
     :param sort_keys: Whether to sort keys when formatting. `True` by default.
+    :param event_key: The key to look for the main log message. Needed when
+        you rename it e.g. using `structlog.processors.EventRenamer`.
 
-    Requires the colorama_ package if *colors* is `True` **on Windows**.
+    Requires the Colorama_ package if *colors* is `True` **on Windows**.
 
-    .. _colorama: https://pypi.org/project/colorama/
+    .. _Colorama: https://pypi.org/project/colorama/
     .. _better-exceptions: https://pypi.org/project/better-exceptions/
-    .. _rich: https://pypi.org/project/rich/
+    .. _Rich: https://pypi.org/project/rich/
 
     .. versionadded:: 16.0
     .. versionadded:: 16.1 *colors*
@@ -250,10 +253,10 @@ class ConsoleRenderer:
     .. versionadded:: 18.1 *force_colors*
     .. versionadded:: 18.1 *level_styles*
     .. versionchanged:: 19.2
-       ``colorama`` now initializes lazily to avoid unwanted initializations as
+       *Colorama* now initializes lazily to avoid unwanted initializations as
        ``ConsoleRenderer`` is used by default.
     .. versionchanged:: 19.2 Can be pickled now.
-    .. versionchanged:: 20.1 ``colorama`` does not initialize lazily on Windows
+    .. versionchanged:: 20.1 *Colorama* does not initialize lazily on Windows
        anymore because it breaks rendering.
     .. versionchanged:: 21.1 It is additionally possible to set the logger name
        using the ``logger_name`` key in the ``event_dict``.
@@ -266,8 +269,9 @@ class ConsoleRenderer:
        for it.
     .. versionchanged:: 21.2 The colors keyword now defaults to True on
        non-Windows systems, and either True or False in Windows depending on
-       whether colorama is installed.
+       whether *Colorama* is installed.
     .. versionadded:: 21.3.0 *sort_keys*
+    .. versionadded:: 22.1 *event_key*
     """
 
     def __init__(
@@ -276,9 +280,10 @@ class ConsoleRenderer:
         colors: bool = _use_colors,
         force_colors: bool = False,
         repr_native_str: bool = False,
-        level_styles: Optional[Styles] = None,
-        exception_formatter: ExceptionFormatter = default_exception_formatter,
+        level_styles: Styles | None = None,
+        exception_formatter: ExceptionRenderer = default_exception_formatter,
         sort_keys: bool = True,
+        event_key: str = "event",
     ):
         styles: Styles
         if colors:
@@ -321,6 +326,7 @@ class ConsoleRenderer:
         self._repr_native_str = repr_native_str
         self._exception_formatter = exception_formatter
         self._sort_keys = sort_keys
+        self._event_key = event_key
 
     def _repr(self, val: Any) -> str:
         """
@@ -361,7 +367,7 @@ class ConsoleRenderer:
             )
 
         # force event to str for compatibility with standard library
-        event = event_dict.pop("event", None)
+        event = event_dict.pop(self._event_key, None)
         if not isinstance(event, str):
             event = str(event)
 

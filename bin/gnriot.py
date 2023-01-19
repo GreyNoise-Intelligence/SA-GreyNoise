@@ -192,7 +192,7 @@ class GNRiotCommand(EventingCommand):
                         USE_CACHE = True
 
                     api_client = GreyNoise(
-                        api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
+                        api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
 
                     # When no records found, batch will return {0:([],[])}
                     if len(chunk_dict) > 0:

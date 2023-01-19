@@ -11,15 +11,25 @@ Helpers to test your application's logging behavior.
 See :doc:`testing`.
 """
 
+from __future__ import annotations
+
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, List, NamedTuple, NoReturn, Tuple
+from typing import Any, Generator, NamedTuple, NoReturn
 
 from ._config import configure, get_config
 from .exceptions import DropEvent
-from .types import EventDict, WrappedLogger
+from .typing import EventDict, WrappedLogger
 
 
-__all__ = ["LogCapture", "capture_logs"]
+__all__ = [
+    "CapturedCall",
+    "CapturingLogger",
+    "CapturingLoggerFactory",
+    "LogCapture",
+    "ReturnLogger",
+    "ReturnLoggerFactory",
+    "capture_logs",
+]
 
 
 class LogCapture:
@@ -28,12 +38,12 @@ class LogCapture:
     Generally you should use `structlog.testing.capture_logs`,
     but you can use this class if you want to capture logs with other patterns.
 
-    :ivar List[structlog.types.EventDict] entries: The captured log entries.
+    :ivar List[structlog.typing.EventDict] entries: The captured log entries.
 
     .. versionadded:: 20.1.0
     """
 
-    entries: List[EventDict]
+    entries: list[EventDict]
 
     def __init__(self) -> None:
         self.entries = []
@@ -48,7 +58,7 @@ class LogCapture:
 
 
 @contextmanager
-def capture_logs() -> Generator[List[EventDict], None, None]:
+def capture_logs() -> Generator[list[EventDict], None, None]:
     """
     Context manager that appends all logging statements to its yielded list
     while it is active. Disables all configured processors for the duration
@@ -59,12 +69,22 @@ def capture_logs() -> Generator[List[EventDict], None, None]:
     .. versionadded:: 20.1.0
     """
     cap = LogCapture()
-    old_processors = get_config()["processors"]
+    # Modify `_Configuration.default_processors` set via `configure` but always
+    # keep the list instance intact to not break references held by bound
+    # loggers.
+    processors = get_config()["processors"]
+    old_processors = processors.copy()
     try:
-        configure(processors=[cap])
+        # clear processors list and use LogCapture for testing
+        processors.clear()
+        processors.append(cap)
+        configure(processors=processors)
         yield cap.entries
     finally:
-        configure(processors=old_processors)
+        # remove LogCapture and restore original processors
+        processors.clear()
+        processors.extend(old_processors)
+        configure(processors=processors)
 
 
 class ReturnLogger:
@@ -72,9 +92,9 @@ class ReturnLogger:
     Return the arguments that it's called with.
 
     >>> from structlog import ReturnLogger
-    >>> ReturnLogger().msg("hello")
+    >>> ReturnLogger().info("hello")
     'hello'
-    >>> ReturnLogger().msg("hello", when="again")
+    >>> ReturnLogger().info("hello", when="again")
     (('hello',), {'when': 'again'})
 
     .. versionchanged:: 0.3.0
@@ -127,8 +147,8 @@ class CapturedCall(NamedTuple):
     """
 
     method_name: str
-    args: Tuple[Any, ...]
-    kwargs: Dict[str, Any]
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
 
 
 class CapturingLogger:
@@ -143,7 +163,7 @@ class CapturingLogger:
     .. versionadded:: 20.2.0
     """
 
-    calls: List[CapturedCall]
+    calls: list[CapturedCall]
 
     def __init__(self) -> None:
         self.calls = []

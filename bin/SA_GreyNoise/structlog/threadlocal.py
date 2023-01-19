@@ -4,24 +4,31 @@
 # repository for complete details.
 
 """
-Primitives to keep context global but thread (and greenlet) local.
+**Deprecated** primitives to keep context global but thread (and greenlet)
+local.
 
-See `thread-local`.
+See `thread-local`, but please use :doc:`contextvars` instead.
+
+.. deprecated:: 22.1.0
 """
 
+from __future__ import annotations
+
 import contextlib
+import sys
 import threading
 import uuid
+import warnings
 
-from typing import Any, Dict, Generator, Iterator, Type, TypeVar
+from typing import Any, Generator, Iterator, TypeVar
 
 import structlog
 
 from ._config import BoundLoggerLazyProxy
-from .types import BindableLogger, Context, EventDict, WrappedLogger
+from .typing import BindableLogger, Context, EventDict, WrappedLogger
 
 
-def _determine_threadlocal() -> Type[Any]:
+def _determine_threadlocal() -> type[Any]:
     """
     Return a dict-like threadlocal storage depending on whether we run with
     greenlets or not.
@@ -33,25 +40,60 @@ def _determine_threadlocal() -> Type[Any]:
 
         return local
 
-    return GreenThreadLocal
+    return GreenThreadLocal  # pragma: no cover
 
 
 ThreadLocal = _determine_threadlocal()
 
 
-def wrap_dict(dict_class: Type[Context]) -> Type[Context]:
+def _deprecated() -> None:
+    """
+    Raise a warning with best-effort stacklevel adjustment.
+    """
+    callsite = ""
+    try:
+        f = sys._getframe()
+        callsite = f.f_back.f_back.f_globals[  # type: ignore[union-attr]
+            "__name__"
+        ]
+    except Exception:  # pragma: no cover
+        pass
+
+    # Avoid double warnings if TL functions call themselves.
+    if callsite == "structlog.threadlocal":
+        return
+
+    stacklevel = 3
+    # If a function is used as a decorator, we need to add two stack levels.
+    # This logic will probably break eventually, but it's not worth any more
+    # complexity.
+    if callsite == "contextlib":
+        stacklevel += 2
+
+    warnings.warn(
+        "`structlog.threadlocal` is deprecated, please use "
+        "`structlog.contextvars` instead.",
+        DeprecationWarning,
+        stacklevel=stacklevel,
+    )
+
+
+def wrap_dict(dict_class: type[Context]) -> type[Context]:
     """
     Wrap a dict-like class and return the resulting class.
 
     The wrapped class and used to keep global in the current thread.
 
     :param dict_class: Class used for keeping context.
+
+    .. deprecated:: 22.1.0
     """
+    _deprecated()
     Wrapped = type(
         "WrappedDict-" + str(uuid.uuid4()), (_ThreadLocalDictWrapper,), {}
     )
-    Wrapped._tl = ThreadLocal()  # type: ignore
-    Wrapped._dict_class = dict_class  # type: ignore
+    Wrapped._tl = ThreadLocal()  # type: ignore[attr-defined]
+    Wrapped._dict_class = dict_class  # type: ignore[attr-defined]
 
     return Wrapped
 
@@ -63,21 +105,24 @@ def as_immutable(logger: TLLogger) -> TLLogger:
     """
     Extract the context from a thread local logger into an immutable logger.
 
-    :param structlog.types.BindableLogger logger: A logger with *possibly*
+    :param structlog.typing.BindableLogger logger: A logger with *possibly*
       thread local state.
 
     :returns: :class:`~structlog.BoundLogger` with an immutable context.
+
+    .. deprecated:: 22.1.0
     """
+    _deprecated()
     if isinstance(logger, BoundLoggerLazyProxy):
-        logger = logger.bind()  # type: ignore
+        logger = logger.bind()  # type: ignore[assignment]
 
     try:
-        ctx = logger._context._tl.dict_.__class__(  # type: ignore
-            logger._context._dict  # type: ignore
+        ctx = logger._context._tl.dict_.__class__(  # type: ignore[union-attr]
+            logger._context._dict  # type: ignore[union-attr]
         )
         bl = logger.__class__(
-            logger._logger,  # type: ignore
-            processors=logger._processors,  # type: ignore
+            logger._logger,  # type: ignore[attr-defined, call-arg]
+            processors=logger._processors,  # type: ignore[attr-defined]
             context={},
         )
         bl._context = ctx
@@ -96,10 +141,13 @@ def tmp_bind(
 
     Only works with `structlog.threadlocal.wrap_dict`-based contexts.
     Use :func:`~structlog.threadlocal.bound_threadlocal` for new code.
+
+    .. deprecated:: 22.1.0
     """
+    _deprecated()
     saved = as_immutable(logger)._context
     try:
-        yield logger.bind(**tmp_values)  # type: ignore
+        yield logger.bind(**tmp_values)  # type: ignore[misc]
     finally:
         logger._context.clear()
         logger._context.update(saved)
@@ -114,11 +162,11 @@ class _ThreadLocalDictWrapper:
     Useful for short-lived threaded applications like requests in web app.
 
     Use :func:`wrap` to instantiate and use
-    :func:`structlog._loggers.BoundLogger.new` to clear the context.
+    :func:`structlog.BoundLogger.new` to clear the context.
     """
 
     _tl: Any
-    _dict_class: Type[Dict[str, Any]]
+    _dict_class: type[dict[str, Any]]
 
     def __init__(self, *args: Any, **kw: Any) -> None:
         """
@@ -181,7 +229,9 @@ def get_threadlocal() -> Context:
     Return a copy of the current thread-local context.
 
     .. versionadded:: 21.2.0
+    .. deprecated:: 22.1.0
     """
+    _deprecated()
     return _get_context().copy()
 
 
@@ -191,7 +241,9 @@ def get_merged_threadlocal(bound_logger: BindableLogger) -> Context:
     from *bound_logger*.
 
     .. versionadded:: 21.2.0
+    .. deprecated:: 22.1.0
     """
+    _deprecated()
     ctx = _get_context().copy()
     ctx.update(structlog.get_context(bound_logger))
 
@@ -212,7 +264,10 @@ def merge_threadlocal(
     .. versionchanged:: 20.1.0
        This function used to be called ``merge_threadlocal_context`` and that
        name is still kept around for backward compatibility.
+
+    .. deprecated:: 22.1.0
     """
+    _deprecated()
     context = _get_context().copy()
     context.update(event_dict)
 
@@ -231,7 +286,9 @@ def clear_threadlocal() -> None:
     request-handling code.
 
     .. versionadded:: 19.2.0
+    .. deprecated:: 22.1.0
     """
+    _deprecated()
     _CONTEXT.context = {}
 
 
@@ -243,7 +300,9 @@ def bind_threadlocal(**kw: Any) -> None:
     context to be global (thread-local).
 
     .. versionadded:: 19.2.0
+    .. deprecated:: 22.1.0
     """
+    _deprecated()
     _get_context().update(kw)
 
 
@@ -252,7 +311,9 @@ def unbind_threadlocal(*keys: str) -> None:
     Tries to remove bound *keys* from threadlocal logging context if present.
 
     .. versionadded:: 20.1.0
+    .. deprecated:: 22.1.0
     """
+    _deprecated()
     context = _get_context()
     for key in keys:
         context.pop(key, None)
@@ -267,7 +328,9 @@ def bound_threadlocal(**kw: Any) -> Generator[None, None, None]:
     Can be used as a context manager or decorator.
 
     .. versionadded:: 21.4.0
+    .. deprecated:: 22.1.0
     """
+    _deprecated()
     context = get_threadlocal()
     saved = {k: context[k] for k in context.keys() & kw.keys()}
 

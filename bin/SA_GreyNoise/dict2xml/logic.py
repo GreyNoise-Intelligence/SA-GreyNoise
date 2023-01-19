@@ -29,29 +29,32 @@ NameChar = re.compile(r"(\-|\.|[0-9]|\xB7|[\u0300-\u036F]|[\u203F-\u2040])")
 
 class Node(object):
     """
-        Represents each tag in the tree
+    Represents each tag in the tree
 
-        Each node has _either_ a single value or one or more children
-        If it has a value:
-            The serialized result is <%(tag)s>%(value)s</%(tag)s>
+    Each node has _either_ a single value or one or more children
+    If it has a value:
+        The serialized result is <%(tag)s>%(value)s</%(tag)s>
 
-        If it has children:
-            The serialized result is
-                <%(wrap)s>
-                    %(children)s
-                </%(wrap)s>
+    If it has children:
+        The serialized result is
+            <%(wrap)s>
+                %(children)s
+            </%(wrap)s>
 
-        Which one it is depends on the implementation of self.convert
+    Which one it is depends on the implementation of self.convert
     """
 
     # A mapping of characters to treat as escapable entities and their replacements
     entities = [("&", "&amp;"), ("<", "&lt;"), (">", "&gt;")]
 
-    def __init__(self, wrap="", tag="", data=None, iterables_repeat_wrap=True):
+    def __init__(
+        self, wrap="", tag="", data=None, iterables_repeat_wrap=True, closed_tags_for=None
+    ):
         self.tag = self.sanitize_element(tag)
         self.wrap = self.sanitize_element(wrap)
         self.data = data
         self.type = self.determine_type()
+        self.closed_tags_for = closed_tags_for
         self.iterables_repeat_wrap = iterables_repeat_wrap
 
         if self.type == "flat" and isinstance(self.data, str):
@@ -67,6 +70,9 @@ class Node(object):
         if wrap:
             end = "</{0}>".format(wrap)
             start = "<{0}>".format(wrap)
+
+        if self.closed_tags_for and self.data in self.closed_tags_for:
+            return "<{0}/>".format(self.wrap)
 
         # Convert the data attached in this node into a value and children
         value, children = self.convert()
@@ -106,11 +112,11 @@ class Node(object):
 
     def determine_type(self):
         """
-            Return the type of the data on this node as an identifying string
+        Return the type of the data on this node as an identifying string
 
-            * Iterable : Supports "for item in data"
-            * Mapping : Supports "for key in data: value = data[key]"
-            * flat : A string or something that isn't iterable or a mapping
+        * Iterable : Supports "for item in data"
+        * Mapping : Supports "for key in data: value = data[key]"
+        * flat : A string or something that isn't iterable or a mapping
         """
         data = self.data
         if isinstance(data, str):
@@ -124,11 +130,11 @@ class Node(object):
 
     def convert(self):
         """
-            Convert data on this node into a (value, children) tuple depending on the type of the data
-            If the type is :
-                * flat : Use self.tag to surround the value. <tag>value</tag>
-                * mapping : Return a list of tags where the key for each child is the wrap for that node
-                * iterable : Return a list of Nodes where self.wrap is the tag for that node
+        Convert data on this node into a (value, children) tuple depending on the type of the data
+        If the type is :
+            * flat : Use self.tag to surround the value. <tag>value</tag>
+            * mapping : Return a list of tags where the key for each child is the wrap for that node
+            * iterable : Return a list of Nodes where self.wrap is the tag for that node
         """
         val = ""
         typ = self.type
@@ -143,13 +149,25 @@ class Node(object):
             for key in sorted_data:
                 item = data[key]
                 children.append(
-                    Node(key, "", item, iterables_repeat_wrap=self.iterables_repeat_wrap)
+                    Node(
+                        key,
+                        "",
+                        item,
+                        iterables_repeat_wrap=self.iterables_repeat_wrap,
+                        closed_tags_for=self.closed_tags_for,
+                    )
                 )
 
         elif typ == "iterable":
             for item in data:
                 children.append(
-                    Node("", self.wrap, item, iterables_repeat_wrap=self.iterables_repeat_wrap,)
+                    Node(
+                        "",
+                        self.wrap,
+                        item,
+                        iterables_repeat_wrap=self.iterables_repeat_wrap,
+                        closed_tags_for=self.closed_tags_for,
+                    )
                 )
 
         else:
@@ -162,15 +180,15 @@ class Node(object):
     @staticmethod
     def sanitize_element(wrap):
         """
-            Convert `wrap` into a valid tag name applying the XML Naming Rules.
+        Convert `wrap` into a valid tag name applying the XML Naming Rules.
 
-                * Names can contain letters, numbers, and other characters
-                * Names cannot start with a number or punctuation character
-                * Names cannot start with the letters xml (or XML, or Xml, etc)
-                * Names cannot contain spaces
-                * Any name can be used, no words are reserved.
+            * Names can contain letters, numbers, and other characters
+            * Names cannot start with a number or punctuation character
+            * Names cannot start with the letters xml (or XML, or Xml, etc)
+            * Names cannot contain spaces
+            * Any name can be used, no words are reserved.
 
-            :ref: http://www.w3.org/TR/REC-xml/#NT-NameChar
+        :ref: http://www.w3.org/TR/REC-xml/#NT-NameChar
         """
         if wrap and isinstance(wrap, str):
             if wrap.lower().startswith("xml"):
@@ -193,11 +211,11 @@ class Converter(object):
 
     def __init__(self, wrap=None, indent="  ", newlines=True):
         """
-            wrap: The tag that the everything else will be contained within
-            indent: The string that is multiplied at the start of each new line, to represent each level of nesting
-            newlines: A boolean specifying whether we want each tag on a new line.
+        wrap: The tag that the everything else will be contained within
+        indent: The string that is multiplied at the start of each new line, to represent each level of nesting
+        newlines: A boolean specifying whether we want each tag on a new line.
 
-            Note that indent only works if newlines is True
+        Note that indent only works if newlines is True
         """
         self.wrap = wrap
         self.indent = indent
@@ -223,11 +241,11 @@ class Converter(object):
 
             def ret(nodes, wrapped):
                 """
-                    Indent nodes depending on value of wrapped and indent
-                    If not wrapped, then don't indent
-                    Otherwise,
-                        Seperate each child by a newline
-                        and indent each line in the child by one indent unit
+                Indent nodes depending on value of wrapped and indent
+                If not wrapped, then don't indent
+                Otherwise,
+                    Seperate each child by a newline
+                    and indent each line in the child by one indent unit
                 """
                 if wrapped:
                     seperator = "\n{0}".format(indent)
@@ -239,9 +257,12 @@ class Converter(object):
 
         return ret
 
-    def build(self, data, iterables_repeat_wrap=True):
+    def build(self, data, iterables_repeat_wrap=True, closed_tags_for=None):
         """Create a Node tree from the data and return it as a serialized xml string"""
         indenter = self._make_indenter()
         return Node(
-            wrap=self.wrap, data=data, iterables_repeat_wrap=iterables_repeat_wrap
+            wrap=self.wrap,
+            data=data,
+            iterables_repeat_wrap=iterables_repeat_wrap,
+            closed_tags_for=closed_tags_for,
         ).serialize(indenter)

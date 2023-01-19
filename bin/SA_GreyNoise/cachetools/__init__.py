@@ -13,7 +13,7 @@ __all__ = (
     "cachedmethod",
 )
 
-__version__ = "5.0.0"
+__version__ = "5.2.1"
 
 import collections
 import collections.abc
@@ -22,11 +22,7 @@ import heapq
 import random
 import time
 
-from .keys import hashkey as _defaultkey
-
-
-def _methodkey(_, *args, **kwargs):
-    return _defaultkey(*args, **kwargs)
+from . import keys
 
 
 class _DefaultSize:
@@ -619,7 +615,7 @@ class TLRUCache(_TimedCache):
         return value
 
 
-def cached(cache, key=_defaultkey, lock=None):
+def cached(cache, key=keys.hashkey, lock=None):
     """Decorator to wrap a function with a memoizing callable that saves
     results in a cache.
 
@@ -630,6 +626,9 @@ def cached(cache, key=_defaultkey, lock=None):
 
             def wrapper(*args, **kwargs):
                 return func(*args, **kwargs)
+
+            def clear():
+                pass
 
         elif lock is None:
 
@@ -645,6 +644,9 @@ def cached(cache, key=_defaultkey, lock=None):
                 except ValueError:
                     pass  # value too large
                 return v
+
+            def clear():
+                cache.clear()
 
         else:
 
@@ -663,12 +665,21 @@ def cached(cache, key=_defaultkey, lock=None):
                 except ValueError:
                     return v  # value too large
 
+            def clear():
+                with lock:
+                    cache.clear()
+
+        wrapper.cache = cache
+        wrapper.cache_key = key
+        wrapper.cache_lock = lock
+        wrapper.cache_clear = clear
+
         return functools.update_wrapper(wrapper, func)
 
     return decorator
 
 
-def cachedmethod(cache, key=_methodkey, lock=None):
+def cachedmethod(cache, key=keys.methodkey, lock=None):
     """Decorator to wrap a class or instance method with a memoizing
     callable that saves results in a cache.
 
@@ -693,6 +704,11 @@ def cachedmethod(cache, key=_methodkey, lock=None):
                     pass  # value too large
                 return v
 
+            def clear(self):
+                c = cache(self)
+                if c is not None:
+                    c.clear()
+
         else:
 
             def wrapper(self, *args, **kwargs):
@@ -712,6 +728,17 @@ def cachedmethod(cache, key=_methodkey, lock=None):
                         return c.setdefault(k, v)
                 except ValueError:
                     return v  # value too large
+
+            def clear(self):
+                c = cache(self)
+                if c is not None:
+                    with lock(self):
+                        c.clear()
+
+        wrapper.cache = cache
+        wrapper.cache_key = key
+        wrapper.cache_lock = lock
+        wrapper.cache_clear = clear
 
         return functools.update_wrapper(wrapper, method)
 

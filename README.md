@@ -142,6 +142,13 @@ following way:
 
 *Note: Configuration can only be done by admin but other custom commands can be used by admin and the users with list_storage_passwords capability.*
 
+# Proxy Support #
+To enable proxy support, modify the app_greynoise_settings.conf and add a proxy entry to the parameters section.
+
+Example:
+[parameters]
+proxy = http://proxy.acme.com:8080
+
 # CUSTOM COMMANDS #
 The following commands are included as a part of the app:
 
@@ -256,4 +263,4 @@ To uninstall app, user can follow below steps:
 
 # COPYRIGHT #
 
- - Copyright (C) 2021 GreyNoise Intelligence Inc. All Rights Reserved.
+ - Copyright (C) 2023 GreyNoise Intelligence Inc. All Rights Reserved.

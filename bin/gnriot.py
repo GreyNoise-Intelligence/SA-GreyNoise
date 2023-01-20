@@ -58,6 +58,7 @@ class GNRiotCommand(EventingCommand):
         ip_address = self.ip
         ip_field = self.ip_field
         api_key = ""
+        proxy = ""
         EVENTS_PER_CHUNK = 1
         THREADS = 3
         USE_CACHE = False
@@ -82,19 +83,22 @@ class GNRiotCommand(EventingCommand):
 
         if message:
             self.write_error(message)
-            logger.error("Error occured while retrieving API key, Error: {}".format(message))
+            logger.error("Error occurred while retrieving API key, Error: {}".format(message))
             exit(1)
 
         if ip_address and not ip_field:
-            # This peice of code will work as generating command and will not use the Splunk events.
+            # This piece of code will work as generating command and will not use the Splunk events.
             # Strip the spaces from the parameter value if given
             ip_address = ip_address.strip()
 
             logger.info("Started retrieving results")
             try:
                 logger.debug("Initiating to fetch RIOT information for IP address: {}".format(str(ip_address)))
-                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
-                # Opting timout 120 seconds for the requests
+                if 'http' in proxy:
+                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+                else:
+                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+                # Opting timeout 120 seconds for the requests
                 session_key = self._metadata.searchinfo.session_key
                 riot_information = utility.get_response_for_generating(
                     session_key, api_client, ip_address, 'greynoise_riot', logger)
@@ -117,7 +121,7 @@ class GNRiotCommand(EventingCommand):
                     "Value of IP address passed to {command_name} is either invalid or non-routable".format(
                         command_name=str(self._metadata.searchinfo.command)))
             except RateLimitError:
-                logger.error("Rate limit error occured while fetching the context information for ip={}".format(
+                logger.error("Rate limit error occurred while fetching the context information for ip={}".format(
                     str(ip_address)))
                 self.write_error("The Rate Limit has been exceeded. Please contact the Administrator")
             except RequestFailure as e:
@@ -144,7 +148,7 @@ class GNRiotCommand(EventingCommand):
                     "There was an ambiguous exception that occurred while handling your Request. Please try again.")
             except Exception:
                 logger.error("Exception: {} ".format(str(traceback.format_exc())))
-                self.write_error("Exception occured while fetching the RIOT information of the IP address. "
+                self.write_error("Exception occurred while fetching the RIOT information of the IP address. "
                                  "See greynoise_main.log for more details.")
 
         elif ip_field:
@@ -191,8 +195,12 @@ class GNRiotCommand(EventingCommand):
                         THREADS = 1
                         USE_CACHE = True
 
-                    api_client = GreyNoise(
-                        api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
+                    if 'http' in proxy:
+                        api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE,
+                                               integration_name=INTEGRATION_NAME, proxy=proxy)
+                    else:
+                        api_client = GreyNoise(api_key=api_key, timeout=120, use_cache=USE_CACHE,
+                                               integration_name=INTEGRATION_NAME)
 
                     # When no records found, batch will return {0:([],[])}
                     if len(chunk_dict) > 0:
@@ -206,9 +214,9 @@ class GNRiotCommand(EventingCommand):
                         logger.info("No events found, please increase the search timespan to have more search results.")
                 except Exception:
                     logger.info(
-                        "Exception occured while adding the RIOT information to the events, Error: {}".format(
+                        "Exception occurred while adding the RIOT information to the events, Error: {}".format(
                             traceback.format_exc()))
-                    self.write_error("Exception occured while adding the RIOT information of the IP addresses "
+                    self.write_error("Exception occurred while adding the RIOT information of the IP addresses "
                                      "to events. See greynoise_main.log for more details.")
 
         else:

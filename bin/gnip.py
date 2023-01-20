@@ -51,8 +51,11 @@ class IPContextCommand(BaseCommandHandler):
 
             logger.info("Initiating to fetch context information for ip: {}".format(str(ip_address)))
             # TODO make proxy aware
-            # Opting default timout 60 seconds for the request
-            api_client = GreyNoise(api_key=api_key, timeout=60, integration_name=INTEGRATION_NAME, proxy=proxy)
+            # Opting default timeout 60 seconds for the request
+            if 'http' in proxy:
+                api_client = GreyNoise(api_key=api_key, timeout=60, integration_name=INTEGRATION_NAME, proxy=proxy)
+            else:
+                api_client = GreyNoise(api_key=api_key, timeout=60, integration_name=INTEGRATION_NAME)
             session_key = self._metadata.searchinfo.session_key
             context_info = get_response_for_generating(session_key, api_client, ip_address, 'ip', logger)
             logger.info("Successfully retrieved the context information for ip={}".format(str(ip_address)))

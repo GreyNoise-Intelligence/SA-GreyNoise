@@ -45,6 +45,9 @@ IP_FIELDS = {
     'paths': None,
     'useragents': None,
     'fingerprint': None,
+    'bot': None,
+    'destination_countries': None,
+    'destination_country_codes': None,
     'error': None
 }
 
@@ -100,7 +103,10 @@ QUERY_FIELDS = {
     'hassh': None,
     "paths": None,
     "useragents": None,
-    "fingerprint": None
+    "fingerprint": None,
+    'bot': None,
+    'destination_countries': None,
+    'destination_country_codes': None,
 }
 
 MULTI_FIELDS = {
@@ -144,7 +150,10 @@ ENRICH_FIELDS = {
     'greynoise_tor': None,
     'greynoise_category': None,
     'greynoise_os': None,
-    'greynoise_error': None
+    'greynoise_error': None,
+    'greynoise_bot': None,
+    'greynoise_destination_countries': None,
+    'greynoise_destination_country_codes': None,
 }
 
 # Dictionary of all the fields that are available in riot information of IP address

@@ -107,7 +107,7 @@ def setup_logger(
 
 def get_api_key(session_key, logger):
     """
-    Returns the API key configured by the user from the Splunk enpoint, returns blank when no API key is found.
+    Returns the API key configured by the user from the Splunk endpoint, returns blank when no API key is found.
 
     :param session_key:
     :return: API Key
@@ -137,7 +137,7 @@ def get_proxy(session_key, logger):
     conf = get_conf_file(session_key, 'app_greynoise_settings')
 
     param_stanza = conf.get("parameters", {})
-    proxy = param_stanza.get("proxy", None)
+    proxy = param_stanza.get("proxy", '')
 
     return proxy
 
@@ -158,7 +158,7 @@ def make_error_message(message, session_key, logger):
                       'severity': 'error'}, method='POST', sessionKey=session_key
         )
     except Exception:
-        logger.error("Error occured while generating error message for Splunk, Error: {}".format(
+        logger.error("Error occurred while generating error message for Splunk, Error: {}".format(
             str(traceback.format_exc())))
 
 
@@ -192,13 +192,13 @@ def nested_dict_iter(nested, prefix=''):
 
     def nester_method(api_response, prefix):
         for key, value in list(api_response.items()):
-            if isinstance(value, collections.Mapping):  # its a Dictionary
+            if isinstance(value, collections.Mapping):  # it's a Dictionary
                 # This will update the contents of the value dictionary into parsed_dict itself
                 nester_method(value, prefix)
-            if isinstance(value, list):  # its a list
+            if isinstance(value, list):  # it's a list
                 _list = value
                 for item in _list:
-                    if isinstance(item, collections.Mapping):  # its a dict inside a list
+                    if isinstance(item, collections.Mapping):  # it's a dict inside a list
                         dict_length = int(len(list(item.keys())))
                         for n in range(0, dict_length):
                             current_key = list(item.keys())[n]
@@ -227,12 +227,15 @@ def validate_api_key(api_key, logger=None, proxy=None):
         logger.debug("Validating the api key...")
 
     try:
-        api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+        if 'http' in proxy:
+            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+        else:
+            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
         api_client.test_connection()
         return (True, 'API key is valid')
 
     except RateLimitError:
-        msg = "RateLimitError occured, please contact the Administrator"
+        msg = "RateLimitError occurred, please contact the Administrator"
         return (False, 'API key not validated, Error: {}'.format(msg))
     except RequestFailure as e:
         response_code, response_message = e.args
@@ -247,10 +250,10 @@ def validate_api_key(api_key, logger=None, proxy=None):
                 else response_message)
             return (False, 'API key not validated, Error: {}'.format(msg))
     except ConnectionError:
-        msg = "ConnectionError occured, please check your connection and try again."
+        msg = "ConnectionError occurred, please check your connection and try again."
         return (False, 'API key not validated, Error: {}'.format(msg))
     except RequestException:
-        msg = "An ambiguous exception occured, please try again."
+        msg = "An ambiguous exception occurred, please try again."
         return (False, 'API key not validated, Error: {}'.format(msg))
     except Exception as e:
         return (False, 'API key not validated, Error: {}'.format(str(e)))
@@ -344,7 +347,7 @@ def get_response_for_generating(session_key, api_client, ip, method, logger):
         if response is None:
             logger.debug("KVStore is not ready. Skipping caching mechanism.")
             response = [fetch_method(ip)]
-        elif response == []:
+        elif not response:
             response = [fetch_method(ip)]
             send_data_to_cache(cache, response, logger)
     else:
@@ -376,7 +379,7 @@ def get_ips_not_in_cache(cache, ips, logger):
 
 def fetch_response_from_api(fetch_method, cache, params, logger):
     """
-    Method to fetch reponse from greynoise api and send responses to cache.
+    Method to fetch response from greynoise api and send responses to cache.
 
     :param fetch_method: fetch method corresponding api endpoint
     :param cache: cache object

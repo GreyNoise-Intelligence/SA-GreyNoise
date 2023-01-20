@@ -42,7 +42,11 @@ class AlertBase(ModularAction):
         proxy = get_proxy(self.session_key, self.logger)
         if not api_key:
             self._handle_alert_exit(1)
-        return GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+        if 'http' in proxy:
+            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+        else:
+            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+        return api_client
 
     def handle_results(self):
         """Handle the events and return the ip addresses."""

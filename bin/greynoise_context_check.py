@@ -49,7 +49,7 @@ def run():
 
         logger = ModularAction.setup_logger("greynoise_context_modworkflow")
 
-        # Initialize the alert action class class
+        # Initialize the alert action class
         alert_base = GreyNoiseContextCheck(sys.stdin.read(), logger, "greynoise_context_check")
 
         # fetch context information

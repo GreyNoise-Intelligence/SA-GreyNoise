@@ -69,13 +69,16 @@ class OverviewCommand(GeneratingCommand):
                     logger.error("API key not found. Please configure the GreyNoise App for Splunk.")
                     exit(1)
 
-                # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
+                # Opting timeout 120 seconds for the requests
+                if 'http' in proxy:
+                    api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
+                else:
+                    api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
 
                 queries = {
-                    "malicious": "classification:malicious last_seen:today",
-                    "benign": "classification:benign last_seen:today",
-                    "unknown": "classification:unknown last_seen:today"
+                    "malicious": "classification:malicious last_seen:1d",
+                    "benign": "classification:benign last_seen:1d",
+                    "unknown": "classification:unknown last_seen:1d"
                 }
 
                 for key, value in queries.items():

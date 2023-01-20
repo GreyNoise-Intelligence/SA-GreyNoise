@@ -35,7 +35,7 @@ class BaseCommandHandler(GeneratingCommand):
                 message = str(e)
 
             if message:
-                logger.error("Error occured while retrieving API key, Error: {}".format(message))
+                logger.error("Error occurred while retrieving API key, Error: {}".format(message))
                 self.write_error(message)
                 exit(1)
 
@@ -45,7 +45,7 @@ class BaseCommandHandler(GeneratingCommand):
                 yield event
 
         except RateLimitError:
-            logger.error("Rate limit error occured while executing the custom command.")
+            logger.error("Rate limit error occurred while executing the custom command.")
             self.write_error("The Rate Limit has been exceeded. Please contact the Administrator")
         except RequestFailure as e:
 

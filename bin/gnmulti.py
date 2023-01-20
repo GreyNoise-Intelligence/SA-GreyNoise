@@ -79,7 +79,7 @@ class GNMultiCommand(EventingCommand):
 
                 if message:
                     self.write_error(message)
-                    logger.error("Error occured while retrieving API key, Error: {}".format(message))
+                    logger.error("Error occurred while retrieving API key, Error: {}".format(message))
                     exit(1)
 
                 # API key validation
@@ -105,9 +105,13 @@ class GNMultiCommand(EventingCommand):
                     THREADS = 1
                     USE_CACHE = True
 
-                # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=120,
-                                       use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
+                # Opting timeout 120 seconds for the requests
+                if 'http' in proxy:
+                    api_client = GreyNoise(api_key=api_key, timeout=120,
+                                           use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
+                else:
+                    api_client = GreyNoise(api_key=api_key, timeout=120,
+                                           use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
 
                 # When no records found, batch will return {0:([],[])}
                 if len(list(chunk_dict.values())[0][0]) >= 1:
@@ -125,9 +129,9 @@ class GNMultiCommand(EventingCommand):
 
             except Exception:
                 logger.info(
-                    "Exception occured while adding the noise and RIOT status to the events, Error: {}".format(
+                    "Exception occurred while adding the noise and RIOT status to the events, Error: {}".format(
                         traceback.format_exc()))
-                self.write_error("Exception occured while adding the noise and RIOT status of the "
+                self.write_error("Exception occurred while adding the noise and RIOT status of the "
                                  "IP addresses to events. See greynoise_main.log for more details.")
 
     def __init__(self):

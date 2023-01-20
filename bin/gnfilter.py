@@ -31,7 +31,7 @@ def event_filter(chunk_index, result, records_dict, ip_field, noise_events, meth
     for record in records_dict[0]:
 
         if error_flag:
-            # Exception has occured while fetching the noise statuses from API
+            # Exception has occurred while fetching the noise statuses from API
             if ip_field in record and record[ip_field] != '':
                 # These calls have been failed due to API failure,
                 # as this event have IP address value, considering them as noise
@@ -183,8 +183,12 @@ class GNFilterCommand(EventingCommand):
                     USE_CACHE = True
 
                 # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=120,
-                                       use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
+                if 'http' in proxy:
+                    api_client = GreyNoise(api_key=api_key, timeout=120,
+                                           use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
+                else:
+                    api_client = GreyNoise(api_key=api_key, timeout=120,
+                                           use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
 
                 # When no records found, batch will return {0:([],[])}
                 if len(list(chunk_dict.values())[0][0]) >= 1:
@@ -204,8 +208,8 @@ class GNFilterCommand(EventingCommand):
                     logger.info("No events found, please increase the search timespan to have more search results.")
 
             except Exception:
-                logger.info("Exception occured while filtering events, Error: {}".format(traceback.format_exc()))
-                self.write_error("Exception occured while filtering the events based on noise status. "
+                logger.info("Exception occurred while filtering events, Error: {}".format(traceback.format_exc()))
+                self.write_error("Exception occurred while filtering the events based on noise status. "
                                  "See greynoise_main.log for more details.")
 
     def __init__(self):

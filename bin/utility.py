@@ -227,20 +227,22 @@ def validate_api_key(api_key, logger=None, proxy=None):
         logger.debug("Validating the api key...")
 
     try:
-        if 'http' in proxy:
+        if proxy and 'http' in proxy:
             api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
         else:
             api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+
         api_client.test_connection()
-        return (True, 'API key is valid')
+
+        return True, 'API key is valid'
 
     except RateLimitError:
         msg = "RateLimitError occurred, please contact the Administrator"
-        return (False, 'API key not validated, Error: {}'.format(msg))
+        return False, 'API key not validated, Error: {}'.format(msg)
     except RequestFailure as e:
         response_code, response_message = e.args
         if response_code == 401:
-            return (False, 'Unauthorized. Please check your API key.')
+            return False, 'Unauthorized. Please check your API key.'
         else:
             # Need to handle this, as splunklib is unable to handle the exception with
             # (400, {'error': 'error_reason'}) format
@@ -248,15 +250,15 @@ def validate_api_key(api_key, logger=None, proxy=None):
                    "with status_code: {} and error: {}").format(
                 response_code, response_message['error'] if isinstance(response_message, dict)
                 else response_message)
-            return (False, 'API key not validated, Error: {}'.format(msg))
+            return False, 'API key not validated, Error: {}'.format(msg)
     except ConnectionError:
         msg = "ConnectionError occurred, please check your connection and try again."
-        return (False, 'API key not validated, Error: {}'.format(msg))
+        return False, 'API key not validated, Error: {}'.format(msg)
     except RequestException:
         msg = "An ambiguous exception occurred, please try again."
-        return (False, 'API key not validated, Error: {}'.format(msg))
+        return False, 'API key not validated, Error: {}'.format(msg)
     except Exception as e:
-        return (False, 'API key not validated, Error: {}'.format(str(e)))
+        return False, 'API key not validated, Error: {}'.format(str(e))
 
 
 def chunkgen(iterable, chunk_size=1000):

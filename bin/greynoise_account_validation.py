@@ -186,7 +186,7 @@ class GreyNoiseAPIValidation(Validator):
 
             # Validate API Key
             self.logger.debug("Validating API key.")
-            status, msg = validate_api_key(data.get('api_key'), proxy)
+            status, msg = validate_api_key(data.get('api_key'), self.logger, proxy)
             if not status:
                 raise Exception(msg)
             self.logger.info("API key validated.")

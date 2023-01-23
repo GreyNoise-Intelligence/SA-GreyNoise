@@ -19,6 +19,7 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
 
 # RELEASE NOTES (Version 2.1.3) #
  - Add support for configuring proxy information in conf file
+ - Add support for IP Destination Geo feature fields
  - Update to use GreyNoise SDK 1.3.0
 
 # RELEASE NOTES (Version 2.1.2) #

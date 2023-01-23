@@ -20,11 +20,19 @@ import threading
 import time
 from collections import namedtuple
 
-import splunktalib.common.util as scu
-
 import splunktaucclib.common.log as stulog
 
 from . import ta_consts as c
+
+
+def _escape(data):
+    """Escape &, <, and > in a string of data."""
+    # must do ampersand first
+    data = data.replace("&", "&amp;")
+    data = data.replace(">", "&gt;")
+    data = data.replace("<", "&lt;")
+    return data
+
 
 evt_fmt = (
     "<stream><event><host>{0}</host>"
@@ -32,7 +40,7 @@ evt_fmt = (
     "<sourcetype><![CDATA[{2}]]></sourcetype>"
     "<time>{3}</time>"
     "<index>{4}</index><data>"
-    "<![CDATA[{5}]]></data></event></stream>"
+    "{5}</data></event></stream>"
 )
 
 unbroken_evt_fmt = (
@@ -43,7 +51,7 @@ unbroken_evt_fmt = (
     "<sourcetype><![CDATA[{2}]]></sourcetype>"
     "<time>{3}</time>"
     "<index>{4}</index>"
-    "<data><![CDATA[{5}]]></data>"
+    "<data>{5}</data>"
     "{6}"
     "</event>"
     "</stream>"
@@ -123,7 +131,7 @@ class TADataCollector:
                     event.sourcetype or "",
                     event.time or "",
                     event.index or "",
-                    scu.escape_cdata(event.raw_data),
+                    _escape(event.raw_data),
                     "<done/>" if event.is_done else "",
                 )
             else:
@@ -133,7 +141,7 @@ class TADataCollector:
                     event.sourcetype or "",
                     event.time or "",
                     event.index or "",
-                    scu.escape_cdata(event.raw_data),
+                    _escape(event.raw_data),
                 )
             evts.append(evt)
         return evts

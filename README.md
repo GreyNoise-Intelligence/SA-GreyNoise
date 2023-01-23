@@ -13,7 +13,7 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
  - Prerequisites: GreyNoise API Key, Search heads without Enterprise Security requires the Splunk Common Information Model (CIM) Add-on to for the Modular Alerts to function.
 
 # COMPATIBILITY MATRIX #
- - Splunk Enterprise version: 8.2.x, 8.1.x, 8.0.x
+ - Splunk Enterprise version: 9.0.x, 8.2.x, 8.1.x, 8.0.x
  - OS: Platform independent
  - Vendor Products: GreyNoise API
 

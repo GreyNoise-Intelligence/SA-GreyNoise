@@ -133,7 +133,7 @@ class GNRiotCommand(EventingCommand):
                     # (400, {'error': 'error_reason'}) format
                     msg = ("The API call to the GreyNoise platform have been failed "
                            "with status_code: {} and error: {}").format(
-                        response_code, response_message['error'] if isinstance(response_message, dict)
+                        response_code, response_message['message'] if isinstance(response_message, dict)
                         else response_message)
 
                 logger.error("{}".format(str(msg)))

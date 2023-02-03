@@ -595,7 +595,7 @@ class GreyNoiseFeedConfiguration(Validator):
                 feed_savedsearch = service.saved_searches["greynoise_feed"]
                 feed_savedsearch.disable()
 
-                if job_id_scan_deployment:
+                if job_id_feed:
                     try:
                         job_details = service.job(job_id_feed)
                         status = job_details.state().content['dispatchState']

@@ -229,7 +229,8 @@
                                         "label": "All Indicators",
                                         "value": "ALL"
                                     }
-                                ]
+                                ],
+                                "disableSearch": true
                             },
                             "help": "Specify the time range for scanning the indexed Splunk data."
                         }

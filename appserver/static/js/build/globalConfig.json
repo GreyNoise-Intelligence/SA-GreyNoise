@@ -191,6 +191,55 @@
                 {
                     "entity": [
                         {
+                            "field":"enable_feed_import",
+                            "type":"checkbox",
+                            "label":"Enable Feed Import",
+                            "defaultValue": 0,
+                            "required":false,
+                            "help":"Select this checkbox to enable the ingest of a GreyNoise Feed."
+                        },
+                        {
+                            "field": "force_enable_ss",
+                            "label": "Force Feed Run Now",
+                            "type": "checkbox",
+                            "help": "Select this checkbox to stop the current scan and forcefully initialize a new scan.",
+                            "required": false
+                        },
+                        {
+                            "required": true,
+                            "type": "singleSelect",
+                            "label": "Feed Selection",
+                            "field": "feed_selection",
+                            "defaultValue": "BENIGN",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "Benign Indicators - Last 24 Hours",
+                                        "value": "BENIGN"
+                                    },
+                                    {
+                                        "label": "Malicious Indicators - Last 24 Hours",
+                                        "value": "MALICIOUS"
+                                    },
+                                    {
+                                        "label": "Malicious and Benign Indicators - Last 24 Hours",
+                                        "value": "MALICIOUS_BENIGN"
+                                    },
+                                    {
+                                        "label": "All Indicators",
+                                        "value": "ALL"
+                                    }
+                                ]
+                            },
+                            "help": "Specify the time range for scanning the indexed Splunk data."
+                        }
+                    ], 
+                    "title": "Feed Configuration",
+                    "name": "feed_configuration"
+                },
+                {
+                    "entity": [
+                        {
                             "field":"enable_caching",
                             "type":"checkbox",
                             "label":"Enable Caching",
@@ -218,7 +267,7 @@
                                     "errorMsg": "Time to live should be a valid integer only",
                                     "type": "regex"
                                 }
-                            ],                          
+                            ],
                             "help":"Enter a positive integer in the range 1-72 representing the caches' Time to live (in hours)."
                         },
                         {
@@ -228,8 +277,8 @@
                             "required":false,
                             "help":"Check this option to the purge the cache. After clicking the save button, the cache will be cleared."
                         }
-                    ], 
-                    "title": "Caching", 
+                    ],
+                    "title": "Caching",
                     "name": "caching"
                 },
                 {

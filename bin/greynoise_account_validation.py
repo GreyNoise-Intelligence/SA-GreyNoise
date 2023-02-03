@@ -505,13 +505,6 @@ class GreyNoiseFeedConfiguration(Validator):
 
                 if job_id_feed:
                     self.logger.debug("Job ID present. Handling macros.")
-                    # Update macros
-                    try:
-                        handle_macros(data, service)
-                    except ValueError:
-                        msg = ("The field names in \"Other fields\" parameter "
-                               "only supports underscore, digits, alphabets, and hyphen")
-                        raise Exception(msg)
 
                     self.logger.info("Enabling saved search.")
                     # Enable the scheduled saved search
@@ -567,15 +560,9 @@ class GreyNoiseFeedConfiguration(Validator):
                         return True
                 else:
                     self.logger.debug("Job ID not present. Handling macros.")
-                    # Update macros
-                    try:
-                        handle_macros(data, service)
-                    except ValueError:
-                        msg = ("The field names in \"Other fields\" parameter "
-                               "only supports underscore, digits, alphabets, and hyphen")
-                        raise Exception(msg)
 
                     # Enable the scheduled saved search
+                    self.logger.debug("Enabling Saved Search Feed")
                     feed_savedsearch.enable()
 
                     # Modify properties and run the saved search in case of job_id_scan_deployment

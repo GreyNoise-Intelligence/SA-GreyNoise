@@ -1,7 +1,6 @@
+import io
 import sys
-from typing import Optional, TextIO
-
-from prompt_toolkit.utils import is_windows
+from typing import ContextManager, Optional, TextIO
 
 from .base import DummyInput, Input, PipeInput
 
@@ -23,7 +22,7 @@ def create_input(
         `sys.stdin`. (We can open `stdout` or `stderr` for reading, this is how
         a `$PAGER` works.)
     """
-    if is_windows():
+    if sys.platform == "win32":
         from .win32 import Win32Input
 
         # If `stdin` was assigned `None` (which happens with pythonw.exe), use
@@ -40,24 +39,41 @@ def create_input(
             stdin = sys.stdin
 
             if always_prefer_tty:
-                for io in [sys.stdin, sys.stdout, sys.stderr]:
-                    if io.isatty():
-                        stdin = io
+                for obj in [sys.stdin, sys.stdout, sys.stderr]:
+                    if obj.isatty():
+                        stdin = obj
                         break
+
+        # If we can't access the file descriptor for the selected stdin, return
+        # a `DummyInput` instead. This can happen for instance in unit tests,
+        # when `sys.stdin` is patched by something that's not an actual file.
+        # (Instantiating `Vt100Input` would fail in this case.)
+        try:
+            stdin.fileno()
+        except io.UnsupportedOperation:
+            return DummyInput()
 
         return Vt100Input(stdin)
 
 
-def create_pipe_input() -> PipeInput:
+def create_pipe_input() -> ContextManager[PipeInput]:
     """
     Create an input pipe.
     This is mostly useful for unit testing.
+
+    Usage::
+
+        with create_pipe_input() as input:
+            input.send_text('inputdata')
+
+    Breaking change: In prompt_toolkit 3.0.28 and earlier, this was returning
+    the `PipeInput` directly, rather than through a context manager.
     """
-    if is_windows():
+    if sys.platform == "win32":
         from .win32_pipe import Win32PipeInput
 
-        return Win32PipeInput()
+        return Win32PipeInput.create()
     else:
         from .posix_pipe import PosixPipeInput
 
-        return PosixPipeInput()
+        return PosixPipeInput.create()

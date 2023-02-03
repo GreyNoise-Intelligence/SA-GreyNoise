@@ -11,7 +11,7 @@ from greynoise import GreyNoise
 import six
 
 from greynoise_constants import INTEGRATION_NAME
-from utility import get_log_level, get_api_key
+from utility import get_log_level, get_api_key, get_proxy
 
 
 class AlertBase(ModularAction):
@@ -39,9 +39,14 @@ class AlertBase(ModularAction):
     def get_api_client(self):
         """Get api client."""
         api_key = get_api_key(self.session_key, self.logger)
+        proxy = get_proxy(self.session_key, self.logger)
         if not api_key:
             self._handle_alert_exit(1)
-        return GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+        if 'http' in proxy:
+            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+        else:
+            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+        return api_client
 
     def handle_results(self):
         """Handle the events and return the ip addresses."""

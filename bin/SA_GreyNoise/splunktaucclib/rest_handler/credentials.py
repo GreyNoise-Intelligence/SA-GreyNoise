@@ -197,14 +197,11 @@ class RestCredentials:
                         # add to dict to be encrypted, else treat it as unchanged
                         encrypting[field_name] = data[field_name]
                         data_need_write_to_conf[field_name] = self.PASSWORD
+
                     else:
                         # get clear password for the field
-                        if clear_password and field_name in clear_password:
-                            data[field_name] = clear_password[field_name]
-                            encrypting[field_name] = clear_password[field_name]
-                        else:
-                            data[field_name] = ""
-                            encrypting[field_name] = ""
+                        data[field_name] = clear_password[field_name]
+                        encrypting[field_name] = clear_password[field_name]
 
             if encrypting and clear_password != encrypting:
                 # update passwords.conf if password changed
@@ -292,9 +289,7 @@ class RestCredentials:
             host=self._splunkd_info.hostname,
             port=self._splunkd_info.port,
         )
-
-        all_passwords = credential_manager._get_all_passwords()
-        # filter by realm
+        all_passwords = credential_manager.get_clear_passwords_in_realm()
         realm_passwords = [x for x in all_passwords if x["realm"] == self._realm]
         return self._merge_passwords(data, realm_passwords)
 
@@ -334,10 +329,6 @@ class RestCredentials:
                     if existed_model["content"][k] == self.PASSWORD:
                         # set existing as raw value
                         existed_model["content"][k] = v
-                    elif existed_model["content"][k] == "********":
-                        # set existing as raw value, magic pattern is the old one so rewrite this item to fix it.
-                        existed_model["content"][k] = v
-                        need_write_magic_pwd = True
                     elif existed_model["content"][k] == "":
                         # mark to delete it
                         clear_password[k] = ""

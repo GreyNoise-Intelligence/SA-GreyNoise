@@ -42,12 +42,12 @@ def run():
     """Execute the block."""
     try:
         if len(sys.argv) > 1 and sys.argv[1] != "--execute":
-            print(sys.stderr, ("FATAL Unsupported execution mode (expected --execute flag)"))
+            print(sys.stderr, "FATAL Unsupported execution mode (expected --execute flag)")
             sys.exit(1)
 
         logger = ModularAction.setup_logger("greynoise_quick_modworkflow")
 
-        # Initialize the alert action class class
+        # Initialize the alert action class
         alert_base = GreyNoiseQuickCheck(sys.stdin.read(), logger, "greynoise_quick_check")
 
         # fetch noise information

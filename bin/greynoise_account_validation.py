@@ -2,6 +2,7 @@ import os
 import traceback  # noqa # pylint: disable=unused-import
 import json
 import time
+import sys
 
 import app_greynoise_declare
 from solnlib import conf_manager  # noqa # pylint: disable=unused-import
@@ -168,15 +169,27 @@ class GreyNoiseAPIValidation(Validator):
     def validate(self, value, data):
         """Validate the api key entered by user on the Configuration Page and enable the saved search."""
         try:
+            # Get Conf file for obtaining parameters
+            conf = get_conf_file(self.session_key_obj.session_key, file='app_greynoise_settings', app=APP_NAME)
+
+            # maybe put in new field in webconf page or use .conf
+            # - ENV is not passed to user runnig splunk
+            # - ENV not good for cluser/distributed
+            parameters = conf.get("parameters", {})
+            proxy_conf = parameters.get('proxy', None)
+
+            # favor conf file
+            proxy = proxy_conf or os.environ.get('GREYNOISE_PROXY', None)
+
+            conf.update("parameters", {'proxy': proxy})
+            self.logger.info(f'proxy: {proxy}')
+
             # Validate API Key
             self.logger.debug("Validating API key.")
-            status, msg = validate_api_key(data.get('api_key'))
+            status, msg = validate_api_key(data.get('api_key'), self.logger, proxy)
             if not status:
                 raise Exception(msg)
             self.logger.info("API key validated.")
-
-            # Get Conf file for obtaining parameters
-            conf = get_conf_file(self.session_key_obj.session_key, file='app_greynoise_settings', app=APP_NAME)
 
             # Retrieve job_id_overview
             parameters = conf.get("scan_deployment", {})

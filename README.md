@@ -6,16 +6,23 @@ This is an app powered by the Splunk Add-on Builder.
 GreyNoise Splunk app provides multiple dashboards to effectively analyse and visualize the contextual and statistical data provided by GreyNoise. It also includes custom commands and alert actions which can be used along with Splunk searches to leverage GreyNoise APIs for custom use cases. It periodically scans the Splunk deployment through saved search to indicate the noise and RIOT IPs in the complete Splunk deployment. Along with this, the workflow action provided can be used to obtain live context information of any CIM compliant field containing an IP address.
 
  - Author: GreyNoise Intelligence Inc
- - Version: 2.1.2
+ - Version: 2.1.4
  - Creates Index: False
  - Has index-time operation: True
  - Implements summarization: False
  - Prerequisites: GreyNoise API Key, Search heads without Enterprise Security requires the Splunk Common Information Model (CIM) Add-on to for the Modular Alerts to function.
 
 # COMPATIBILITY MATRIX #
- - Splunk Enterprise version: 8.2.x, 8.1.x, 8.0.x
+ - Splunk Enterprise version: 9.0.x, 8.2.x, 8.1.x, 8.0.x
  - OS: Platform independent
  - Vendor Products: GreyNoise API
+
+# RELEASE NOTES (Version 2.1.4) #
+ - Add support for configuring proxy information in conf file
+ - Add support for IP Destination Geo feature fields
+ - Fix bug in `gnriot` when IPv6 address is sent for lookup
+ - Update to use GreyNoise SDK 1.3.0
+ - Update to use splunktaucclib 6.0.6
 
 # RELEASE NOTES (Version 2.1.2) #
  - Fixed issue where API key could not be entered on new installs
@@ -138,6 +145,13 @@ following way:
 
 *Note: Configuration can only be done by admin but other custom commands can be used by admin and the users with list_storage_passwords capability.*
 
+# Proxy Support #
+To enable proxy support, modify the app_greynoise_settings.conf and add a proxy entry to the parameters section.
+
+Example:
+[parameters]
+proxy = http://proxy.acme.com:8080
+
 # CUSTOM COMMANDS #
 The following commands are included as a part of the app:
 
@@ -252,4 +266,4 @@ To uninstall app, user can follow below steps:
 
 # COPYRIGHT #
 
- - Copyright (C) 2021 GreyNoise Intelligence Inc. All Rights Reserved.
+ - Copyright (C) 2023 GreyNoise Intelligence Inc. All Rights Reserved.

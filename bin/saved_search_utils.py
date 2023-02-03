@@ -28,7 +28,7 @@ CIM_IP_FIELDS = [
 
 def is_api_configured(conf):
     """
-    Checks wheather API key is yet configured or not.
+    Checks whether API key is configured.
 
     :param conf:
     :return string:

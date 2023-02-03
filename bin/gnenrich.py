@@ -72,6 +72,7 @@ class GNEnrichCommand(EventingCommand):
                 try:
                     message = ''
                     api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
+                    proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
                 except APIKeyNotFoundError as e:
                     message = str(e)
                 except HTTPError as e:
@@ -79,7 +80,7 @@ class GNEnrichCommand(EventingCommand):
 
                 if message:
                     self.write_error(message)
-                    logger.error("Error occured while retrieving API key, Error: {}".format(message))
+                    logger.error("Error occurred while retrieving API key, Error: {}".format(message))
                     exit(1)
 
                 # API key validation
@@ -105,9 +106,12 @@ class GNEnrichCommand(EventingCommand):
                     THREADS = 1
                     USE_CACHE = True
 
-                # Opting timout 120 seconds for the requests
-                api_client = GreyNoise(api_key=api_key, timeout=120,
-                                       use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
+                # Opting timeout 120 seconds for the requests
+                if 'http' in proxy:
+                    api_client = GreyNoise(api_key=api_key, timeout=120,
+                                           use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
+                else:
+                    api_client = GreyNoise(api_key=api_key, timeout=120,use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
 
                 if len(chunk_dict) > 0:
                     for event in event_generator.get_all_events(
@@ -121,10 +125,10 @@ class GNEnrichCommand(EventingCommand):
 
             except Exception:
                 logger.info(
-                    "Exception occured while getting context information for events events, Error: {}".format(
+                    "Exception occurred while getting context information for events events, Error: {}".format(
                         traceback.format_exc()))
                 self.write_error(
-                    "Exception occured while enriching events with the context information of IP addresses. "
+                    "Exception occurred while enriching events with the context information of IP addresses. "
                     "See greynoise_main.log for more details.")
 
     def __init__(self):

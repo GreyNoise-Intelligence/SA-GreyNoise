@@ -1,10 +1,12 @@
 import argparse
 import sys
 from json import dumps
-from os.path import abspath
+from os.path import abspath, basename, dirname, join, realpath
 from platform import python_version
-from typing import List
+from typing import List, Optional
+from unicodedata import unidata_version
 
+import charset_normalizer.md as md_module
 from charset_normalizer import from_fp
 from charset_normalizer.models import CliDetectionResult
 from charset_normalizer.version import __version__
@@ -43,7 +45,7 @@ def query_yes_no(question: str, default: str = "yes") -> bool:
             sys.stdout.write("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
 
-def cli_detect(argv: List[str] = None) -> int:
+def cli_detect(argv: Optional[List[str]] = None) -> int:
     """
     CLI assistant using ARGV and ArgumentParser
     :param argv:
@@ -111,7 +113,7 @@ def cli_detect(argv: List[str] = None) -> int:
         "-t",
         "--threshold",
         action="store",
-        default=0.1,
+        default=0.2,
         type=float,
         dest="threshold",
         help="Define a custom maximum amount of chaos allowed in decoded content. 0. <= chaos <= 1.",
@@ -119,8 +121,11 @@ def cli_detect(argv: List[str] = None) -> int:
     parser.add_argument(
         "--version",
         action="version",
-        version="Charset-Normalizer {} - Python {}".format(
-            __version__, python_version()
+        version="Charset-Normalizer {} - Python {} - Unicode {} - SpeedUp {}".format(
+            __version__,
+            python_version(),
+            unidata_version,
+            "OFF" if md_module.__file__.lower().endswith(".py") else "ON",
         ),
         help="Show version information and exit.",
     )
@@ -229,7 +234,10 @@ def cli_detect(argv: List[str] = None) -> int:
                         my_file.close()
                     continue
 
-                o_ = my_file.name.split(".")  # type: List[str]
+                dir_path = dirname(realpath(my_file.name))
+                file_name = basename(realpath(my_file.name))
+
+                o_: List[str] = file_name.split(".")
 
                 if args.replace is False:
                     o_.insert(-1, best_guess.encoding)
@@ -250,7 +258,7 @@ def cli_detect(argv: List[str] = None) -> int:
                     continue
 
                 try:
-                    x_[0].unicode_path = abspath("./{}".format(".".join(o_)))
+                    x_[0].unicode_path = join(dir_path, ".".join(o_))
 
                     with open(x_[0].unicode_path, "w", encoding="utf-8") as fp:
                         fp.write(str(best_guess))

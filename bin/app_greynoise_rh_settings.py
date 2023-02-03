@@ -9,7 +9,7 @@ from splunktaucclib.rest_handler.endpoint import (
 )
 import splunk.rest as rest
 from splunktaucclib.rest_handler import admin_external, util
-from splunk_aoblib.rest_migration import ConfigMigrationHandler
+from splunktaucclib.splunk_aoblib.rest_migration import ConfigMigrationHandler
 
 from greynoise_account_validation import GreyNoiseAPIValidation, GreyNoiseScanDeployment, PurgeHandler, EnableCachingHandler, TtlHandler
 

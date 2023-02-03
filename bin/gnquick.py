@@ -77,6 +77,7 @@ class GNQuickCommand(EventingCommand):
         try:
             message = ''
             api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
+            proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
         except APIKeyNotFoundError as e:
             message = str(e)
         except HTTPError as e:
@@ -84,11 +85,11 @@ class GNQuickCommand(EventingCommand):
 
         if message:
             self.write_error(message)
-            logger.error("Error occured while retrieving API key, Error: {}".format(message))
+            logger.error("Error occurred while retrieving API key, Error: {}".format(message))
             exit(1)
 
         if ip_addresses and not ip_field:
-            # This peice of code will work as generating command and will not use the Splunk events.
+            # This piece of code will work as generating command and will not use the Splunk events.
             # Splitting the ip_addresses by commas and stripping spaces from both the sides for each IP address
             ip_addresses = [ip.strip() for ip in ip_addresses.split(',')]
 
@@ -97,7 +98,10 @@ class GNQuickCommand(EventingCommand):
                 logger.debug("Initiating to fetch noise and RIOT status for IP address(es): {}".format(
                     str(ip_addresses)))
 
-                api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+                if 'http' in proxy:
+                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+                else:
+                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
 
                 # CACHING START
                 cache_enabled, cache_client = utility.get_caching(
@@ -112,7 +116,7 @@ class GNQuickCommand(EventingCommand):
                         if response is None:
                             logger.debug("KVStore is not ready. Skipping caching mechanism.")
                             noise_status = api_client.quick(ip_addresses)
-                        elif response == []:
+                        elif not response:
                             noise_status = utility.fetch_response_from_api(
                                 api_client.quick, cache_client, ip_addresses, logger)
                         else:
@@ -125,7 +129,7 @@ class GNQuickCommand(EventingCommand):
                                 traceback.format_exc()))
                     logger.debug("Generating command with caching took {} seconds.".format(time.time() - cache_start))
                 else:
-                    # Opting timout 120 seconds for the requests
+                    # Opting timeout 120 seconds for the requests
                     noise_status = api_client.quick(ip_addresses)
                 logger.info("Retrieved results successfully")
                 # CACHING END
@@ -170,7 +174,7 @@ class GNQuickCommand(EventingCommand):
 
             except RateLimitError:
                 logger.error(
-                    "Rate limit error occured while fetching the context information for ips={}".format(
+                    "Rate limit error occurred while fetching the context information for ips={}".format(
                         str(ip_addresses)))
                 self.write_error("The Rate Limit has been exceeded. Please contact the Administrator")
             except RequestFailure as e:
@@ -197,7 +201,7 @@ class GNQuickCommand(EventingCommand):
                     "There was an ambiguous exception that occurred while handling your Request. Please try again.")
             except Exception:
                 logger.error("Exception: {} ".format(str(traceback.format_exc())))
-                self.write_error("Exception occured while fetching the noise and RIOT status of the IP address(es). "
+                self.write_error("Exception occurred while fetching the noise and RIOT status of the IP address(es). "
                                  "See greynoise_main.log for more details.")
 
         elif ip_field:
@@ -218,7 +222,8 @@ class GNQuickCommand(EventingCommand):
 
                     # API key validation
                     if not self.api_validation_flag:
-                        api_key_validation, message = utility.validate_api_key(api_key, logger)
+                        proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
+                        api_key_validation, message = utility.validate_api_key(api_key, logger, proxy)
                         logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
                         self.api_validation_flag = True
                         if not api_key_validation:
@@ -238,9 +243,14 @@ class GNQuickCommand(EventingCommand):
                         THREADS = 1
                         USE_CACHE = True
 
-                    api_client = GreyNoise(api_key=api_key, timeout=120,
-                                           use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
-                    # When no records found, batch will return {0:([],[])}
+                    if 'http' in proxy:
+                        api_client = GreyNoise(api_key=api_key, timeout=120,
+                                               use_cache=USE_CACHE, integration_name=INTEGRATION_NAME, proxy=proxy)
+                    else:
+                        api_client = GreyNoise(api_key=api_key, timeout=120,
+                                               use_cache=USE_CACHE, integration_name=INTEGRATION_NAME)
+
+                # When no records found, batch will return {0:([],[])}
                     tot_time_start = time.time()
                     if len(list(chunk_dict.values())[0][0]) >= 1:
                         for event in event_generator.get_all_events(
@@ -253,9 +263,9 @@ class GNQuickCommand(EventingCommand):
                     logger.debug("Total execution time => {}".format(tot_time_end - tot_time_start))
                 except Exception:
                     logger.info(
-                        "Exception occured while adding the noise and RIOT status to the events, Error: {}".format(
+                        "Exception occurred while adding the noise and RIOT status to the events, Error: {}".format(
                             traceback.format_exc()))
-                    self.write_error("Exception occured while adding the noise and RIOT status of "
+                    self.write_error("Exception occurred while adding the noise and RIOT status of "
                                      "the IP addresses to events. See greynoise_main.log for more details.")
 
         else:

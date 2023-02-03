@@ -36,10 +36,10 @@ def exception_handler(method):
                 'response': msg[0]
             }
         except RateLimitError as e:
-            kwargs['logger'].error("Rate limit error occured. Exception: {}".format(str(e)))
+            kwargs['logger'].error("Rate limit error occurred. Exception: {}".format(str(e)))
             return {
                 'message': 'error',
-                'response': 'Rate-limit error occured while retrieving information from GreyNoise API'
+                'response': 'Rate-limit error occurred while retrieving information from GreyNoise API'
             }
         except RequestFailure as e:
             response_code, response_message = e.args
@@ -52,7 +52,7 @@ def exception_handler(method):
             kwargs['logger'].error("{}".format(str(msg)))
             return {
                 'message': 'error',
-                'response': 'Request failure occured while retrieving information from GreyNoise API'
+                'response': 'Request failure occurred while retrieving information from GreyNoise API'
             }
         except ConnectionError as e:
             kwargs['logger'].error(
@@ -60,7 +60,7 @@ def exception_handler(method):
                             .format(str(e)))
             return {
                 'message': 'error',
-                'response': 'Connection error occured while retrieving information from GreyNoise API'
+                'response': 'Connection error occurred while retrieving information from GreyNoise API'
             }
         except RequestException as e:
             kwargs['logger'].error(
@@ -68,13 +68,13 @@ def exception_handler(method):
                 "Exception: {}".format(str(e)))
             return {
                 'message': 'error',
-                'response': 'Request exception occured while retrieving information from GreyNoise API'
+                'response': 'Request exception occurred while retrieving information from GreyNoise API'
             }
         except Exception:
             kwargs['logger'].error("Exception: {} ".format(str(traceback.format_exc())))
             return {
                 'message': 'error',
-                'response': 'Exception occured while retrieving information from GreyNoise API'
+                'response': 'Exception occurred while retrieving information from GreyNoise API'
             }
 
     return wrapper
@@ -275,8 +275,8 @@ def event_processor(records_dict, result, method, ip_field, logger):
 
     # Loading the response to avoid loading it each time
     # This will either have API response for the chunk or
-    # the exception message denoting exception occured while fetching the data
-    if result['response'] != []:
+    # the exception message denoting exception occurred while fetching the data
+    if result['response']:
         if type(result['response'][0]) == list:
             api_results = []
             for each in result['response'][0]:
@@ -294,11 +294,11 @@ def event_processor(records_dict, result, method, ip_field, logger):
         for event in api_results:
             ip_lookup[event['ip']] = event
 
-    # This will be called per chunk to yield the events as per the objective of trasnforming command
+    # This will be called per chunk to yield the events as per the objective of transforming command
     for record in records_dict[0]:
 
         if error_flag:
-            # Exception has occured while fetching the data
+            # Exception has occurred while fetching the data
             if ip_field in record and record[ip_field]:
                 event = {
                     'ip': record[ip_field],
@@ -474,7 +474,7 @@ def batch(iterable, ip_field, events_per_chunk, logger, optimize_requests=True):
 
     if optimize_requests and len(all_unique_ips) <= 5000:
         all_records = []
-        # Return records in only one chunk if the deployment less then 1000 unique IP addresses
+        # Return records in only one chunk if the deployment less than 1000 unique IP addresses
         for records, _ in list(chunk_dict.values()):
             for event in records:
                 all_records.append(event)

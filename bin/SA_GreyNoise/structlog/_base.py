@@ -7,11 +7,13 @@
 Logger wrapper and helper class.
 """
 
-from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple
+from __future__ import annotations
+
+from typing import Any, Iterable, Mapping, Sequence
 
 from structlog.exceptions import DropEvent
 
-from .types import BindableLogger, Context, Processor, WrappedLogger
+from .typing import BindableLogger, Context, Processor, WrappedLogger
 
 
 class BoundLoggerBase:
@@ -65,7 +67,7 @@ class BoundLoggerBase:
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
-    def bind(self, **new_values: Any) -> "BoundLoggerBase":
+    def bind(self, **new_values: Any) -> BoundLoggerBase:
         """
         Return a new logger with *new_values* added to the existing ones.
         """
@@ -75,7 +77,7 @@ class BoundLoggerBase:
             self._context.__class__(self._context, **new_values),
         )
 
-    def unbind(self, *keys: str) -> "BoundLoggerBase":
+    def unbind(self, *keys: str) -> BoundLoggerBase:
         """
         Return a new logger with *keys* removed from the context.
 
@@ -87,7 +89,7 @@ class BoundLoggerBase:
 
         return bl
 
-    def try_unbind(self, *keys: str) -> "BoundLoggerBase":
+    def try_unbind(self, *keys: str) -> BoundLoggerBase:
         """
         Like :meth:`unbind`, but best effort: missing keys are ignored.
 
@@ -99,7 +101,7 @@ class BoundLoggerBase:
 
         return bl
 
-    def new(self, **new_values: Any) -> "BoundLoggerBase":
+    def new(self, **new_values: Any) -> BoundLoggerBase:
         """
         Clear context and binds *initial_values* using `bind`.
 
@@ -114,8 +116,8 @@ class BoundLoggerBase:
     # Helper methods for sub-classing concrete BoundLoggers.
 
     def _process_event(
-        self, method_name: str, event: Optional[str], event_kw: Dict[str, Any]
-    ) -> Tuple[Sequence[Any], Mapping[str, Any]]:
+        self, method_name: str, event: str | None, event_kw: dict[str, Any]
+    ) -> tuple[Sequence[Any], Mapping[str, Any]]:
         """
         Combines creates an ``event_dict`` and runs the chain.
 
@@ -127,7 +129,7 @@ class BoundLoggerBase:
         :param event: The event -- usually the first positional argument to a
             logger.
         :param event_kw: Additional event keywords.  For example if someone
-            calls ``log.msg("foo", bar=42)``, *event* would to be ``"foo"``
+            calls ``log.info("foo", bar=42)``, *event* would to be ``"foo"``
             and *event_kw* ``{"bar": 42}``.
 
         :raises: `structlog.DropEvent` if log entry should be dropped.
@@ -164,7 +166,7 @@ class BoundLoggerBase:
         elif isinstance(event_dict, tuple):
             # In this case we assume that the last processor returned a tuple
             # of ``(args, kwargs)`` and pass it right through.
-            return event_dict  # type: ignore
+            return event_dict  # type: ignore[return-value]
         elif isinstance(event_dict, dict):
             return (), event_dict
         else:
@@ -175,7 +177,7 @@ class BoundLoggerBase:
             )
 
     def _proxy_to_logger(
-        self, method_name: str, event: Optional[str] = None, **event_kw: Any
+        self, method_name: str, event: str | None = None, **event_kw: Any
     ) -> Any:
         """
         Run processor chain on event & call *method_name* on wrapped logger.
@@ -190,7 +192,7 @@ class BoundLoggerBase:
         :param event: The event -- usually the first positional argument to a
             logger.
         :param event_kw: Additional event keywords.  For example if someone
-            calls ``log.msg("foo", bar=42)``, *event* would to be ``"foo"``
+            calls ``log.info("foo", bar=42)``, *event* would to be ``"foo"``
             and *event_kw* ``{"bar": 42}``.
 
         .. note::

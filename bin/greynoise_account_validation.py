@@ -430,3 +430,193 @@ class GreyNoiseScanDeployment(Validator):
             return False
         else:
             return True
+
+
+class GreyNoiseFeedConfiguration(Validator):
+    """Class to enable the feed configuration."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the parameters."""
+        super(GreyNoiseFeedConfiguration, self).__init__(*args, **kwargs)
+        self._validator = validator
+        self._args = args
+        self._kwargs = kwargs
+        self.path = os.path.abspath(__file__)
+        self.session_key_obj = GetSessionKey()
+        self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context="feed_configuration")
+
+    def get_kvstore_status(self):
+        """Get kv store status."""
+        _, content = rest.simpleRequest("/services/kvstore/status",
+                                        sessionKey=self.session_key_obj.session_key,
+                                        method="GET",
+                                        getargs={"output_mode": "json"},
+                                        raiseAllErrors=True)
+        data = json.loads(content)["entry"]
+        return data[0]["content"]["current"].get("status")
+
+    def validate(self, value, data):
+        """Method to enable/disable the feed saved search based on the input in Feed Configuration Page."""
+        # Retrieve App Name
+        try:
+            # Get Conf object of apps settings
+            conf = get_conf_file(self.session_key_obj.session_key, file='app_greynoise_settings')
+
+            try:
+                if not is_api_configured(conf):
+                    msg = "Configure the API key to use this feature"
+                    raise Exception(msg)
+            except HTTPError as e:
+                self.logger.error(str(e))
+                self.put_msg(str(e))
+                return False
+
+            parameters = conf.get("feed_configuration", {})
+            enable_feed_import = data.get('enable_feed_import', 0)
+            force_enable_ss = data.get('force_enable_ss', 0)
+            job_id_feed = parameters.get("job_id_feed", None)
+            feed_selection = data.get("feed_selection", "BENIGN")
+            if feed_selection == "ALL":
+                query = "last_seen:1d"
+            elif feed_selection == "MALICIOUS":
+                query = "last_seen:1d classification:malicious"
+            elif feed_selection == "MALICIOUS_BENIGN":
+                query = "last_seen:1d (classification:benign OR classification:malicious"
+            else:
+                query = "last_seen:1d classification:benign"
+
+            # Creating client for connecting server
+            self.logger.debug("Creating Splunk Client object.")
+            mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
+            service = client.connect(port=mgmt_port, token=self.session_key_obj.session_key, app=APP_NAME)
+
+            if bool(int(enable_feed_import)):
+                try:
+                    self.logger.info("Retrieving the KV store status.")
+                    status = self.get_kvstore_status()
+                    if status != "ready":
+                        message = "KV store is not in ready state. Make sure it is enabled."
+                        make_error_message(message, self.session_key_obj.session_key, self.logger)
+                except Exception:
+                    self.logger.error("Could not retrieve the status of KV store.")
+                # Enable the scheduled saved search
+                self.logger.debug("Initiating user action to enable the saved search: Feed Configuration.")
+                feed_savedsearch = service.saved_searches["greynoise_feed"]
+
+                if job_id_feed:
+                    self.logger.debug("Job ID present. Handling macros.")
+                    # Update macros
+                    try:
+                        handle_macros(data, service)
+                    except ValueError:
+                        msg = ("The field names in \"Other fields\" parameter "
+                               "only supports underscore, digits, alphabets, and hyphen")
+                        raise Exception(msg)
+
+                    self.logger.info("Enabling saved search.")
+                    # Enable the scheduled saved search
+                    feed_savedsearch.enable()
+
+                    dispatch_again = compare_parameters(data, conf.get("feed_configuration", {}))
+
+                    if bool(int(force_enable_ss)) or dispatch_again:
+                        self.logger.debug("Dispatching a new saved search.")
+                        try:
+                            job_details = service.job(job_id_feed)
+                            job_details.delete()
+                        except Exception:
+                            pass
+                        # Modify properties and run the saved search in case of job_id_scan_deployment
+                        # is not present in conf file.
+                        feed_once_savedsearch = service.saved_searches["greynoise_feed_once"]
+                        kwargs = {
+                            "dispatch.query": query,
+                        }
+                        feed_once_savedsearch.update(**kwargs).refresh()
+                        job = feed_once_savedsearch.dispatch()
+                        job_sid = job["sid"]
+                        conf.update("feed_configuration", {'job_id_feed': job_sid})
+                        self.logger.info("Saved search for FEED dispatched successfully.")
+                        return True
+                    else:
+                        try:
+                            self.logger.debug("Dispatching a new search if the current one is expired.")
+                            job_details = service.job(job_id_feed)
+                            status = job_details.state().content['dispatchState']
+
+                            if status == 'PAUSED':
+                                # unpause the search in case of savedsearch job is paused by someone
+                                job_details.unpause()
+                                return True
+                            if status in ['QUEUED', 'PARSING', 'RUNNING']:
+                                return True
+                        except Exception:
+                            pass
+
+                        # Modify properties and run the saved search in case of job_id_scan_deployment
+                        # is not present in conf file.
+                        feed_savedsearch = service.saved_searches["greynoise_feed"]
+                        kwargs = {
+                            "dispatch.query": query,
+                        }
+                        feed_savedsearch.update(**kwargs).refresh()
+                        job = feed_savedsearch.dispatch()
+                        job_sid = job["sid"]
+                        conf.update("feed_configuration", {'job_id_feed': job_sid})
+                        self.logger.info("Saved search for FEED dispatched successfully.")
+                        return True
+                else:
+                    self.logger.debug("Job ID not present. Handling macros.")
+                    # Update macros
+                    try:
+                        handle_macros(data, service)
+                    except ValueError:
+                        msg = ("The field names in \"Other fields\" parameter "
+                               "only supports underscore, digits, alphabets, and hyphen")
+                        raise Exception(msg)
+
+                    # Enable the scheduled saved search
+                    feed_savedsearch.enable()
+
+                    # Modify properties and run the saved search in case of job_id_scan_deployment
+                    # is not present in conf file.
+                    feed_savedsearch = service.saved_searches["greynoise_feed"]
+                    kwargs = {
+                        "dispatch.query": query,
+                    }
+                    feed_savedsearch.update(**kwargs).refresh()
+                    job = feed_savedsearch.dispatch()
+                    job_sid = job["sid"]
+                    conf.update("feed_configuration", {'job_id_feed': job_sid})
+                    self.logger.info("Saved search for FEED dispatched successfully.")
+            else:
+                self.logger.debug("Initiating user action to disable the saved search.")
+                # Retrive and disable scheduled saved search
+                feed_savedsearch = service.saved_searches["greynoise_feed"]
+                feed_savedsearch.disable()
+
+                if job_id_scan_deployment:
+                    try:
+                        job_details = service.job(job_id_feed)
+                        status = job_details.state().content['dispatchState']
+                        if status in ['QUEUED', 'PARSING', 'RUNNING', 'FINALIZING', 'PAUSED']:
+                            job_details.cancel()
+                    except Exception:
+                        pass
+                self.logger.info("Saved search FEED disabled successfully.")
+        except HTTPError:
+            self.logger.error("Error while retrieving Saved Search. Please "
+                              "check if the saved searches {} and {} exists.".format(
+                                  "greynoise_feed_once", "greynoise_feed"))
+            self.put_msg("Error while retrieving Saved Search. Kindly check greynoise_main.log for more details.")
+            return False
+        except Exception as e:
+            try:
+                msg
+            except Exception:
+                msg = "Unrecognized error: {}".format(str(e))
+            self.logger.error(msg)
+            self.put_msg(msg)
+            return False
+        else:
+            return True

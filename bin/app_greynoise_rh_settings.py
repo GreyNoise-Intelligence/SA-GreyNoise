@@ -61,6 +61,29 @@ fields_caching = [
 ]
 model_caching = RestModel(fields_caching, name='caching')
 
+fields_feed_configuration = [
+    field.RestField(
+        'feed_selection',
+        required=False,
+        encrypted=False,
+        validator=None
+    ),
+    field.RestField(
+        'enable_feed_import',
+        required=False,
+        encrypted=False,
+        validator=GreyNoiseFeedConfiguration()
+    ),
+    field.RestField(
+        'force_enable_ss',
+        required=False,
+        encrypted=False,
+        default=None,
+        validator=None
+    ),
+]
+model_feed_configuration = RestModel(fields_feed_configuration, name='feed_configuration')
+
 fields_scan_deployment = [
     field.RestField(
         'ip_indexes',
@@ -119,6 +142,7 @@ endpoint = MultipleModel(
         model_logging, 
         model_parameters,
         model_scan_deployment,
+        model_feed_configuration,
         model_caching
     ],
 )

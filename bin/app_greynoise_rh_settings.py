@@ -11,7 +11,7 @@ import splunk.rest as rest
 from splunktaucclib.rest_handler import admin_external, util
 from splunktaucclib.splunk_aoblib.rest_migration import ConfigMigrationHandler
 
-from greynoise_account_validation import GreyNoiseAPIValidation, GreyNoiseScanDeployment, PurgeHandler, EnableCachingHandler, TtlHandler
+from greynoise_account_validation import GreyNoiseAPIValidation, GreyNoiseScanDeployment, PurgeHandler, EnableCachingHandler, TtlHandler, GreyNoiseFeedConfiguration
 
 util.remove_http_proxy_env_vars()
 

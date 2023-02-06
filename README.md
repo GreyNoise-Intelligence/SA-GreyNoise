@@ -162,8 +162,8 @@ The following commands are included as a part of the app:
     - Search format: `| gnquick ip="<ip_address1>,<ip_address2>,<ip_address3>" [OR] SPL_QUERY | gnquick ip_field="<ip_field>"`
     - Purpose: Retrieve the noise and RIOT status of all the IP addresses as separate events [OR] Retrieve the noise and RIOT status for all the given IPs returned by the SPL_QUERY for specified ip_field. 
  - gnquery
-    - Search format: `| gnquery query="<GNQL_query>" result_size="<result_size>"`
-    - Purpose: Retrieve the results of the given GNQL query from GreyNoise. result_size denotes the number of results to be retrieved which is capped at 50,000. result_size is an optional parameter with default value of 50,000.
+    - Search format: `| gnquery query="<GNQL_query>" result_size="<result_size>" page_size="<page_size>"`
+    - Purpose: Retrieve the results of the given GNQL query from GreyNoise. result_size denotes the number of results to be retrieved which is capped at 50,000. result_size is an optional parameter with default value of 50,000. page_size is an option parameter with a default value of 1000.
  - gnstats
     - Search format: `| gnstats query="<GNQL_query>" count="<stats_count>"`
     - Purpose: Fetch the aggregate statistics for the top organizations, actors, tags, ASNs, countries, classifications, and operating systems of all the results for a given GNQL query. count denotes the number of stats to be retrieved. count is an optional parameter.

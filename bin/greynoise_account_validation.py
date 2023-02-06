@@ -3,6 +3,7 @@ import traceback  # noqa # pylint: disable=unused-import
 import json
 import time
 import sys
+import datetime
 
 import app_greynoise_declare
 from solnlib import conf_manager  # noqa # pylint: disable=unused-import
@@ -443,7 +444,30 @@ class GreyNoiseFeedConfiguration(Validator):
         self._kwargs = kwargs
         self.path = os.path.abspath(__file__)
         self.session_key_obj = GetSessionKey()
+        self.mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
+        self.session_key = self.session_key_obj.session_key
+        self.collection_name = "gn_feed_collection"
         self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context="feed_configuration")
+
+        try:
+            service = client.connect(
+                port=self.mgmt_port, token=self.session_key, app=APP_NAME)
+            if self.collection_name in service.kvstore:
+                self.collection = service.kvstore[self.collection_name]
+                self.collection.data.query_by_id("item1")
+            else:
+                self.logger.error(
+                    "Collection {} does not exist. Please define one in collections.conf.".format(self.collection_name))
+                raise CachingException("Collection {} does not exist.".format(self.collection_name))
+        except HTTPError as e:
+            if e.status == 404:
+                # self.collection.data.query_by_id("item1") purpose is to raise an error when kvstore is disabled.
+                # So, handling 404 error caused by it when kvstore is enabled.
+                pass
+            else:
+                raise e
+        except Exception as e:
+            raise e
 
     def get_kvstore_status(self):
         """Get kv store status."""
@@ -481,7 +505,7 @@ class GreyNoiseFeedConfiguration(Validator):
             elif feed_selection == "MALICIOUS":
                 query = "last_seen:1d classification:malicious"
             elif feed_selection == "MALICIOUS_BENIGN":
-                query = "last_seen:1d (classification:benign OR classification:malicious"
+                query = "last_seen:1d (classification:benign OR classification:malicious)"
             else:
                 query = "last_seen:1d classification:benign"
 
@@ -499,12 +523,17 @@ class GreyNoiseFeedConfiguration(Validator):
                         make_error_message(message, self.session_key_obj.session_key, self.logger)
                 except Exception:
                     self.logger.error("Could not retrieve the status of KV store.")
+
+                self.logger.info("Saving query to KVStore: {}".format(query))
+                timestamp = int(datetime.datetime.now().timestamp() * 1000)
+                self.collection.data.insert({'created': timestamp, 'query': query})
+
                 # Enable the scheduled saved search
                 self.logger.debug("Initiating user action to enable the saved search: Feed Configuration.")
                 feed_savedsearch = service.saved_searches["greynoise_feed"]
 
                 if job_id_feed:
-                    self.logger.debug("Job ID present. Handling macros.")
+                    self.logger.debug("Job ID present.")
 
                     self.logger.info("Enabling saved search.")
                     # Enable the scheduled saved search
@@ -522,10 +551,6 @@ class GreyNoiseFeedConfiguration(Validator):
                         # Modify properties and run the saved search in case of job_id_scan_deployment
                         # is not present in conf file.
                         feed_once_savedsearch = service.saved_searches["greynoise_feed_once"]
-                        kwargs = {
-                            "dispatch.query": query,
-                        }
-                        feed_once_savedsearch.update(**kwargs).refresh()
                         job = feed_once_savedsearch.dispatch()
                         job_sid = job["sid"]
                         conf.update("feed_configuration", {'job_id_feed': job_sid})
@@ -549,17 +574,13 @@ class GreyNoiseFeedConfiguration(Validator):
                         # Modify properties and run the saved search in case of job_id_scan_deployment
                         # is not present in conf file.
                         feed_savedsearch = service.saved_searches["greynoise_feed"]
-                        kwargs = {
-                            "dispatch.query": query,
-                        }
-                        feed_savedsearch.update(**kwargs).refresh()
                         job = feed_savedsearch.dispatch()
                         job_sid = job["sid"]
                         conf.update("feed_configuration", {'job_id_feed': job_sid})
                         self.logger.info("Saved search for FEED dispatched successfully.")
                         return True
                 else:
-                    self.logger.debug("Job ID not present. Handling macros.")
+                    self.logger.debug("Job ID not present.")
 
                     # Enable the scheduled saved search
                     self.logger.debug("Enabling Saved Search Feed")
@@ -568,10 +589,6 @@ class GreyNoiseFeedConfiguration(Validator):
                     # Modify properties and run the saved search in case of job_id_scan_deployment
                     # is not present in conf file.
                     feed_savedsearch = service.saved_searches["greynoise_feed"]
-                    kwargs = {
-                        "dispatch.query": query,
-                    }
-                    feed_savedsearch.update(**kwargs).refresh()
                     job = feed_savedsearch.dispatch()
                     job_sid = job["sid"]
                     conf.update("feed_configuration", {'job_id_feed': job_sid})

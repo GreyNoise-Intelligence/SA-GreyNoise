@@ -12,7 +12,7 @@ import event_generator
 import validator
 
 
-def response_scroller(api_client, logger, query, result_size, page_size):
+def response_scroller(api_client, logger, query, result_size, page_size, exclude_raw):
     """Uses api_client instance of GreyNoise SDK to fetch query results and traverse them if result set is too large."""
     # This will keep the count of how many events are remaining to be sent to Splunk
     remaining_chunk_size = result_size
@@ -40,7 +40,7 @@ def response_scroller(api_client, logger, query, result_size, page_size):
             size = remaining_chunk_size
             logger.debug("Size for the GNQL query is configured to {}".format(size))
 
-        api_response = api_client.query(query=query, size=size, scroll=scroll)
+        api_response = api_client.query(query=query, exclude_raw=exclude_raw, size=size, scroll=scroll)
 
         if api_response.get('count', None):
             # If this is the last page of API response, the scroll will not be present
@@ -116,6 +116,12 @@ class GNQueryCommand(BaseCommandHandler):
         default="1000", name='page_size', require=False
     )
 
+    exclude_raw = Option(
+        doc='''**Syntax:** **exclude_raw=***<GNQL_query>*
+        **Description:**Removes the raw_data object from each IP response''',
+        default=False, name='exclude_raw', require=False
+    )
+
     def do_generate(self, api_key, proxy, logger):
         """
         Method to fetch the api response and process and send the response with extractions in the Splunk.
@@ -126,6 +132,7 @@ class GNQueryCommand(BaseCommandHandler):
         query = self.query
         result_size = self.result_size
         page_size = self.page_size
+        exclude_raw = self.exclude_raw
 
         logger.info("Started retrieving results for query: {}".format(str(query)))
 
@@ -161,7 +168,7 @@ class GNQueryCommand(BaseCommandHandler):
             str(query), str(result_size), str(page_size)))
 
         # Keep generating the events till result_size is not reached or all the query results are sent to Splunk
-        for event in response_scroller(api_client, logger, query, result_size, page_size):
+        for event in response_scroller(api_client, logger, query, result_size, page_size, exclude_raw):
             yield event
 
         logger.info("Successfully retrieved results for the GreyNoise query: {}".format(str(query)))

@@ -32,6 +32,7 @@ def response_scroller(api_client, logger, query, result_size, page_size):
         stats_api_response = api_client.stats(query=query)
         if stats_api_response.get('count', None) < remaining_chunk_size:
             remaining_chunk_size = stats_api_response.get('count', None)
+            logger.debug("Query result count is smaller than result_max, total results: {}".format(remaining_chunk_size))
 
         # Do not fetch a bunch of results if user does not request so many results
         # Fetch only required numbers of events to keep away if the requested size is less than 10,000
@@ -112,7 +113,7 @@ class GNQueryCommand(BaseCommandHandler):
     page_size = Option(
         doc='''**Syntax:** **page_size=***<GNQL_query>*
         **Description:**Number of results per page to return by the GNQL API''',
-        default="1000", name='result_size', require=False
+        default="1000", name='page_size', require=False
     )
 
     def do_generate(self, api_key, proxy, logger):

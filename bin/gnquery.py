@@ -12,7 +12,7 @@ import event_generator
 import validator
 
 
-def response_scroller(api_client, logger, query, result_size):
+def response_scroller(api_client, logger, query, result_size, page_size):
     """Uses api_client instance of GreyNoise SDK to fetch query results and traverse them if result set is too large."""
     # This will keep the count of how many events are remaining to be sent to Splunk
     remaining_chunk_size = result_size
@@ -21,16 +21,21 @@ def response_scroller(api_client, logger, query, result_size):
 
     while not completion_flag:
         event_count = 0
-        size = None
+        size = page_size
 
         # Avoid the extra call if expected number of events are already retrieved
         if remaining_chunk_size == 0:
             logger.debug("No GreyNoise query results remaining to be sent, completing the search...")
             break
 
+        # check query size and see if total results is less than requested result size
+        stats_api_response = api_client.stats(query=query)
+        if stats_api_response.get('count', None) < remaining_chunk_size:
+            remaining_chunk_size = stats_api_response.get('count', None)
+
         # Do not fetch a bunch of results if user does not request so many results
         # Fetch only required numbers of events to keep away if the requested size is less than 10,000
-        if remaining_chunk_size < 10000:
+        if remaining_chunk_size < size:
             size = remaining_chunk_size
             logger.debug("Size for the GNQL query is configured to {}".format(size))
 
@@ -83,12 +88,13 @@ class GNQueryCommand(BaseCommandHandler):
 
     **Syntax**::
     `| gnquery query="classification:malicious" result_size="50"`
-    `| gnquery query="classification:benign"
+    `| gnquery query="classification:benign page_size="500"`
 
     **Description**::
     The `gnquery` command uses the `GNQL query` provided in `query` parameter to return GreyNoise
     query results using method :method:`query` from GreyNoise Python SDK.
     The optional parameter `result_size` can be used to limit number of the results retrieved.
+     The optional parameter `page_size` can be used to control the number of results returned per API request.
     """
 
     query = Option(
@@ -103,6 +109,12 @@ class GNQueryCommand(BaseCommandHandler):
         default="50000", name='result_size', require=False
     )
 
+    page_size = Option(
+        doc='''**Syntax:** **page_size=***<GNQL_query>*
+        **Description:**Number of results per page to return by the GNQL API''',
+        default="1000", name='result_size', require=False
+    )
+
     def do_generate(self, api_key, proxy, logger):
         """
         Method to fetch the api response and process and send the response with extractions in the Splunk.
@@ -112,6 +124,7 @@ class GNQueryCommand(BaseCommandHandler):
         """
         query = self.query
         result_size = self.result_size
+        page_size = self.page_size
 
         logger.info("Started retrieving results for query: {}".format(str(query)))
 
@@ -124,9 +137,13 @@ class GNQueryCommand(BaseCommandHandler):
         if result_size:
             result_size = result_size.strip()
 
+        if page_size:
+            page_size = page_size.strip()
+
         # Validating the given parameters
         try:
             result_size = validator.Integer(option_name='result_size', minimum=1).validate(result_size)
+            page_size = validator.Integer(option_name='page_size', minimum=1).validate(page_size)
         except ValueError as e:
             # Validator will throw ValueError with error message when the parameters are not proper
             logger.error(str(e))
@@ -139,11 +156,11 @@ class GNQueryCommand(BaseCommandHandler):
         else:
             api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
 
-        logger.info("Fetching results for GNQL query: {}, requested number of results: {}".format(
-            str(query), str(result_size)))
+        logger.info("Fetching results for GNQL query: {}, requested number of results: {}, page size: {}".format(
+            str(query), str(result_size), str(page_size)))
 
         # Keep generating the events till result_size is not reached or all the query results are sent to Splunk
-        for event in response_scroller(api_client, logger, query, result_size):
+        for event in response_scroller(api_client, logger, query, result_size, page_size):
             yield event
 
         logger.info("Successfully retrieved results for the GreyNoise query: {}".format(str(query)))

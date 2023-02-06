@@ -309,7 +309,7 @@ class GreyNoise(object):  # pylint: disable=R0205,R0902
         response = self._request(endpoint)
         return response
 
-    def query(self, query, size=None, scroll=None):
+    def query(self, query, size=None, scroll=None, exclude_raw=False):
         """Run GNQL query."""
         if self.offering == "community":
             response = {"message": "GNQL not supported with Community offering"}
@@ -322,7 +322,10 @@ class GreyNoise(object):  # pylint: disable=R0205,R0902
                 params["scroll"] = scroll
             response = self._request(self.EP_GNQL, params=params)
 
-        return response
+        if exclude_raw:
+            if 'data' in response:
+                for ip_data in response["data"]:
+                    ip_data.pop("raw_data")
 
     def quick(self, ip_addresses, include_invalid=False):  # pylint: disable=R0912,R0914
         """Get activity associated with one or more IP addresses.

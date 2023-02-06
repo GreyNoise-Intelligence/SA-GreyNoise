@@ -152,6 +152,7 @@ class GNQueryCommand(BaseCommandHandler):
         try:
             result_size = validator.Integer(option_name='result_size', minimum=1).validate(result_size)
             page_size = validator.Integer(option_name='page_size', minimum=1).validate(page_size)
+            exclude_raw = validator.Boolean(option_name='exclude_raw').validate(exclude_raw)
         except ValueError as e:
             # Validator will throw ValueError with error message when the parameters are not proper
             logger.error(str(e))

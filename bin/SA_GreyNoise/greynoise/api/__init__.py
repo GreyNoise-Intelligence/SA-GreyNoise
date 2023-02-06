@@ -327,6 +327,8 @@ class GreyNoise(object):  # pylint: disable=R0205,R0902
                 for ip_data in response["data"]:
                     ip_data.pop("raw_data")
 
+        return response
+
     def quick(self, ip_addresses, include_invalid=False):  # pylint: disable=R0912,R0914
         """Get activity associated with one or more IP addresses.
 

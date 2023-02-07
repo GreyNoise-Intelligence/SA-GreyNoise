@@ -2,13 +2,34 @@
   <label>Overview</label>
   <fieldset submitButton="false"></fieldset>
   <row>
-  
-    <panel>
+     <panel>
       <single>
         <title># of IPs scanned in the deployment</title>
         <search>
           <query>
             | inputlookup gn_scan_deployment_ip_lookup 
+            | stats count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+        <option name="drilldown">all</option>
+        <drilldown>
+          <link target="_blank">
+            <![CDATA[
+              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*
+            ]]>
+          </link>
+        </drilldown>
+      </single>
+    </panel>
+         <panel>
+      <single>
+        <title># of indicators in GreyNoise Feedk lookup</title>
+        <search>
+          <query>
+            | inputlookup greynoise_indicators.csv
             | stats count
           </query>
           <earliest>0</earliest>

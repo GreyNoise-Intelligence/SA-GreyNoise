@@ -499,6 +499,7 @@ class GreyNoiseFeedConfiguration(Validator):
             enable_feed_import = data.get('enable_feed_import', 0)
             force_enable_ss = data.get('force_enable_ss', 0)
             job_id_feed = parameters.get("job_id_feed", None)
+            job_id_feed_purge = parameters.get("job_id_feed_purge", None)
             feed_selection = data.get("feed_selection", "BENIGN")
             if feed_selection == "ALL":
                 query = "last_seen:1d"
@@ -531,17 +532,17 @@ class GreyNoiseFeedConfiguration(Validator):
                 # Enable the scheduled saved search
                 self.logger.debug("Initiating user action to enable the saved search: Feed Configuration.")
                 feed_savedsearch = service.saved_searches["greynoise_feed"]
+                feed_purge_savedsearch = service.saved_searches["greynoise_feed_purge"]
 
                 if job_id_feed:
                     self.logger.debug("Job ID present.")
 
-                    self.logger.info("Enabling saved search.")
+                    self.logger.info("Enabling FEED saved search.")
                     # Enable the scheduled saved search
                     feed_savedsearch.enable()
+                    feed_purge_savedsearch.enable()
 
-                    dispatch_again = compare_parameters(data, conf.get("feed_configuration", {}))
-
-                    if bool(int(force_enable_ss)) or dispatch_again:
+                    if bool(int(force_enable_ss)):
                         self.logger.debug("Dispatching a new saved search.")
                         try:
                             job_details = service.job(job_id_feed)
@@ -574,9 +575,13 @@ class GreyNoiseFeedConfiguration(Validator):
                         # Modify properties and run the saved search in case of job_id_scan_deployment
                         # is not present in conf file.
                         feed_savedsearch = service.saved_searches["greynoise_feed"]
+                        feed_purge_savedsearch = service.saved_searches["greynoise_feed_purge"]
                         job = feed_savedsearch.dispatch()
+                        job_purge = feed_purge_savedsearch.dispatch()
                         job_sid = job["sid"]
+                        job_purge_sid = job_purge["sid"]
                         conf.update("feed_configuration", {'job_id_feed': job_sid})
+                        conf.update("feed_configuration", {'job_id_feed_purge': job_purge_sid})
                         self.logger.info("Saved search for FEED dispatched successfully.")
                         return True
                 else:
@@ -585,23 +590,38 @@ class GreyNoiseFeedConfiguration(Validator):
                     # Enable the scheduled saved search
                     self.logger.debug("Enabling Saved Search Feed")
                     feed_savedsearch.enable()
+                    feed_purge_savedsearch.enable()
 
                     # Modify properties and run the saved search in case of job_id_scan_deployment
                     # is not present in conf file.
                     feed_savedsearch = service.saved_searches["greynoise_feed"]
+                    feed_purge_savedsearch = service.saved_searches["greynoise_feed_purge"]
                     job = feed_savedsearch.dispatch()
+                    job_purge = feed_purge_savedsearch.dispatch()
                     job_sid = job["sid"]
+                    job_purge_sid = job_purge["sid"]
                     conf.update("feed_configuration", {'job_id_feed': job_sid})
+                    conf.update("feed_configuration", {'job_id_feed_purge': job_purge_sid})
                     self.logger.info("Saved search for FEED dispatched successfully.")
             else:
                 self.logger.debug("Initiating user action to disable the saved search.")
                 # Retrive and disable scheduled saved search
                 feed_savedsearch = service.saved_searches["greynoise_feed"]
+                feed_purge_savedsearch = service.saved_searches["greynoise_feed_purge"]
                 feed_savedsearch.disable()
+                feed_purge_savedsearch.disable()
 
                 if job_id_feed:
                     try:
                         job_details = service.job(job_id_feed)
+                        status = job_details.state().content['dispatchState']
+                        if status in ['QUEUED', 'PARSING', 'RUNNING', 'FINALIZING', 'PAUSED']:
+                            job_details.cancel()
+                    except Exception:
+                        pass
+                if job_id_feed_purge:
+                    try:
+                        job_details = service.job(job_id_feed_purge)
                         status = job_details.state().content['dispatchState']
                         if status in ['QUEUED', 'PARSING', 'RUNNING', 'FINALIZING', 'PAUSED']:
                             job_details.cancel()

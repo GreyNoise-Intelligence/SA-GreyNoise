@@ -171,6 +171,7 @@ def get_dict(method):
         'multi': fields.MULTI_FIELDS,
         'filter': fields.FILTER_FIELDS,
         'enrich': fields.ENRICH_FIELDS,
+        'ip_multi': fields.ENRICH_FIELDS,
         'riot': fields.RIOT_FIELDS,
         'greynoise_riot': fields.GREYNOISE_RIOT_FIELDS
     }

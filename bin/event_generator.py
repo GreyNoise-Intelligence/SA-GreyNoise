@@ -169,10 +169,12 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
     """
     cache_enabled, cache = get_caching(session_key, method, logger)
 
-    if method in ['ip', 'enrich']:
+    if method == 'ip':
         fetch_method = api_client.ip
     elif method == 'greynoise_riot':
         fetch_method = api_client.riot
+    elif method == 'ip_multi':
+        fetch_method = api_client.ip_multi
     else:
         # For 'multi' and 'filter' commands
         fetch_method = api_client.quick
@@ -181,7 +183,7 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
         # Doing this to pass the multiple arguments to method used in map method
-        if method == 'enrich' or method == 'greynoise_riot':
+        if method == 'greynoise_riot':
             ips = []
             ips_not_in_cache = []
             if int(cache_enabled) == 1 and cache is not None:
@@ -249,7 +251,7 @@ def method_response_mapper(method, result, logger):
             result['response'] = [
                 result['response']
             ]
-    elif method == 'multi':
+    elif method in ['multi', 'ip_multi']:
         # quick method from GreyNoise SDK will not return the response for invalid IP
         # This flag is to indicate the event generation for missing IPs
         generate_missing_events = True

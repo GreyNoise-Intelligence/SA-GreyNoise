@@ -32,7 +32,8 @@ class Caching(object):
             "context": "context",
             "ip": "context",
             "multi": "multi",
-            "quick": "multi"
+            "quick": "multi",
+            "ip_multi": "context"
         }
         self.mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
         self.session_key = ssnkey

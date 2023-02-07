@@ -322,6 +322,10 @@ def event_processor(records_dict, result, method, ip_field, logger):
                     if method == 'enrich' and 'raw_data' in ip_lookup[record[ip_field]]:
                         del ip_lookup[record[ip_field]]['raw_data']
 
+                    # Deleting the raw_data from the response when the request method is ip_multi
+                    if method == 'ip_multi' and 'raw_data' in ip_lookup[record[ip_field]]:
+                        del ip_lookup[record[ip_field]]['raw_data']
+
                     yield make_valid_event(method, ip_lookup[record[ip_field]], True, record)
                 else:
                     # Meaning ip is either invalid or not returned by the API,

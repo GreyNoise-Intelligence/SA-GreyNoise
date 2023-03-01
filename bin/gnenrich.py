@@ -85,7 +85,7 @@ class GNEnrichCommand(EventingCommand):
 
                 # API key validation
                 if not self.api_validation_flag:
-                    api_key_validation, message = utility.validate_api_key(api_key, logger)
+                    api_key_validation, message = utility.validate_api_key(api_key, logger, proxy)
                     logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
                     self.api_validation_flag = True
                     if not api_key_validation:

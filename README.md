@@ -18,7 +18,7 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
  - Vendor Products: GreyNoise API
 
 # RELEASE NOTES (Version 2.1.5) #
- - Fix bug with `gnenrich` and `gnfilter` where proxy wasn't being used for API key validation
+ - Fix bug with `gnenrich`, `gnriot`, and `gnfilter` where proxy wasn't being used for API key validation
 
 # RELEASE NOTES (Version 2.1.4) #
  - Add support for configuring proxy information in conf file

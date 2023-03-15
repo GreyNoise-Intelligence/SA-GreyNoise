@@ -28,6 +28,7 @@ class Caching(object):
         """
         command_map = {
             "greynoise_riot": "riot",
+            "greynoise_similar": "similar",
             "enrich": "context",
             "context": "context",
             "ip": "context",

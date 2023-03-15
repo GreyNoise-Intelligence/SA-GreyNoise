@@ -185,3 +185,31 @@ GREYNOISE_RIOT_FIELDS = {
     'greynoise_trust_level': None,
     'greynoise_error': None
 }
+
+SIMILAR_FIELDS = {
+    'ip': None,
+    'actor': None,
+    'classification': None,
+    'first_seen': None,
+    'last_seen': None,
+    'asn': None,
+    'city': None,
+    'country': None,
+    'country_code': None,
+    'organization': None,
+    'similar_ips': None
+}
+
+GREYNOISE_SIMILAR_FIELDS = {
+    'greynoise_ip': None,
+    'greynoise_actor': None,
+    'greynoise_classification': None,
+    'greynoise_first_seen': None,
+    'greynoise_last_seen': None,
+    'greynoise_asn': None,
+    'greynoise_city': None,
+    'greynoise_country': None,
+    'greynoise_country_code': None,
+    'greynoise_organization': None,
+    'greynoise_similar_ips': None
+}

@@ -173,6 +173,8 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
         fetch_method = api_client.ip
     elif method == 'greynoise_riot':
         fetch_method = api_client.riot
+    elif method == 'greynoise_similar':
+        fetch_method = api_client.similar
     elif method == 'ip_multi':
         fetch_method = api_client.ip_multi
     else:
@@ -243,7 +245,7 @@ def method_response_mapper(method, result, logger):
     """
     generate_missing_events = False
 
-    if method in ['enrich', 'greynoise_riot']:
+    if method in ['enrich', 'greynoise_riot', 'greynoise_similar']:
         # Response from the ip and riot method used for enrich and riot will have single dict in response
         # but the event_processor will expect a list of dicts
         # Therefore masking the response to the list if the API response is proper and intact

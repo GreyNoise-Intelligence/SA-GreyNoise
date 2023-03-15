@@ -1,0 +1,62 @@
+<form stylesheet="error_msg.css,daterangepicker.css" script="parameter_validator.js" isDashboard="true" version="1.1">
+  <label>IP Timeline Lookup</label>
+  <fieldset submitButton="true" autoRun="false">
+    <input type="text" token="tkn_ip_address">
+      <label>IP Address</label>
+      <default></default>
+      <initialValue></initialValue>
+    </input>
+    <input type="text" token="tkn_days">
+      <label>Days to Look Back</label>
+      <default></default>
+      <initialValue></initialValue>
+    </input>
+    <input type="text" token="tkn_limit">
+      <label>Max Events to Return</label>
+      <default></default>
+      <initialValue></initialValue>
+    </input>
+    <input type="text" id="daterange" token="daterange">
+      <label>Date Range (in UTC)</label>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title></title>
+      <table rejects="$message$">
+        <search id="gnquery_results">
+          <query>
+            $token_search_trigger$ | gniptimeline ip_field=$tkn_ip_address_escaped$ days=$tkn_ip_address_escaped$
+            | table ip noise classification last_seen organization actor tags os category country asn message
+            | rename ip AS "IP Address"
+          </query>
+          <done>
+            <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;no results&quot;">
+              <set token="message">GreyNoise has not observed any recent activity with the provided parameters</set>
+            </condition>
+            <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;bad query&quot;">
+              <set token="message">No results were returned due to improper values in the parameters</set>
+            </condition>
+            <condition match="$job.resultCount$ == 1 AND len($result.message$) &gt; 0">
+              <set token="message">No results were returned due to an unexpected reason: $result.message$</set>
+            </condition>
+          </done>
+        </search>
+        <option name="rowNumbers">true</option>
+        <option name="count">50</option>
+        <option name="drilldown">cell</option>
+        <drilldown>
+          <link target="_blank">
+              <![CDATA[
+                /app/SA-GreyNoise/noise_ip_timeline?form.tkn_ip_address=$row.IP Address$
+              ]]>
+          </link>
+        </drilldown>
+        <fields>"IP Address"</fields>
+      </table>
+      <html depends="$message$">
+         <div class="custom-result-value">$message$</div>
+      </html>
+    </panel>
+  </row>
+</form>

@@ -173,7 +173,9 @@ def get_dict(method):
         'enrich': fields.ENRICH_FIELDS,
         'ip_multi': fields.ENRICH_FIELDS,
         'riot': fields.RIOT_FIELDS,
-        'greynoise_riot': fields.GREYNOISE_RIOT_FIELDS
+        'similar': fieldss.SIMILAR_FIELDS,
+        'greynoise_riot': fields.GREYNOISE_RIOT_FIELDS,
+        'greynoise_similar': fields.GREYNOISE_SIMILAR_FIELDS
     }
     return dict_hash.get(method, fields.DEFAULT_FIELDS)
 

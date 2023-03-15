@@ -1,0 +1,52 @@
+<form stylesheet="error_msg.css" script="parameter_validator.js" isDashboard="true" version="1.1">
+  <label>Similar IP Lookup</label>
+  <fieldset submitButton="true" autoRun="false">
+    <input type="text" token="tkn_ip_address">
+      <label>IP Address</label>
+      <default></default>
+      <initialValue></initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title></title>
+      <table rejects="$message$">
+        <search id="gnquery_results">
+          <query>
+            $token_search_trigger$ | gnipsimilar
+            [| makeresults
+              | eval ip = if(isnull("$tkn_ip_address_escaped$") OR "$tkn_ip_address_escaped$"=="", "", "$tkn_ip_address_escaped$")
+              | return ip ]
+            | table ip,last_seen
+            | rename ip AS "IP Address" last_seen AS "Last Seen"
+          </query>
+          <done>
+            <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;no results&quot;">
+              <set token="message">GreyNoise has not observed any recent activity with the provided parameters</set>
+            </condition>
+            <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;bad query&quot;">
+              <set token="message">No results were returned due to improper values in the parameters</set>
+            </condition>
+            <condition match="$job.resultCount$ == 1 AND len($result.message$) &gt; 0">
+              <set token="message">No results were returned due to an unexpected reason: $result.message$</set>
+            </condition>
+          </done>
+        </search>
+        <option name="rowNumbers">true</option>
+        <option name="count">50</option>
+        <option name="drilldown">cell</option>
+        <drilldown>
+          <link target="_blank">
+              <![CDATA[
+                /app/SA-GreyNoise/similar_ip_lookup?form.tkn_ip_address=$row.IP Address$
+              ]]>
+          </link>
+        </drilldown>
+        <fields>"IP Address", "Last Seen"</fields>
+      </table>
+      <html depends="$message$">
+         <div class="custom-result-value">$message$</div>
+      </html>
+    </panel>
+  </row>
+</form>

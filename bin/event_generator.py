@@ -169,7 +169,7 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
     """
     cache_enabled, cache = get_caching(session_key, method, logger)
 
-    if method == 'ip':
+    if method in ['ip', 'enrich']:
         fetch_method = api_client.ip
     elif method == 'greynoise_riot':
         fetch_method = api_client.riot
@@ -185,7 +185,7 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
         # Doing this to pass the multiple arguments to method used in map method
-        if method == 'greynoise_riot':
+        if method == 'enrich' or method == 'greynoise_riot':
             ips = []
             ips_not_in_cache = []
             if int(cache_enabled) == 1 and cache is not None:

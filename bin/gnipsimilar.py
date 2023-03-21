@@ -22,8 +22,8 @@ class GNIPSimilarCommand(EventingCommand):
     gnipsimilar - Generating and Transforming Command.
 
     This command can be used as generating command as well as transforming command,
-    When used as generating command, it returns riot information of the given IP address,
-    When used as transforming command, it adds the riot information to the events that are returned from Splunk search.
+    When used as generating command, it returns similarity information of the given IP address,
+    When used as transforming command, it adds the similarity information to the events that are returned from Splunk search.
 
     Data pulled from /v3/similarity/ips/{ip} using GreyNoise Python SDK
 
@@ -100,12 +100,12 @@ class GNIPSimilarCommand(EventingCommand):
                     api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
                 # Opting timeout 120 seconds for the requests
                 session_key = self._metadata.searchinfo.session_key
-                riot_information = utility.get_response_for_generating(
+                similarity_information = utility.get_response_for_generating(
                     session_key, api_client, ip_address, 'greynoise_similar', logger)
                 logger.info("Retrieved results successfully")
 
-                # Process the API response and send the riot information of IP with extractions to the Splunk
-                yield event_generator.make_valid_event('riot', riot_information, True)
+                # Process the API response and send the similarity information of IP with extractions to the Splunk
+                yield event_generator.make_valid_event('similar', similarity_information, True)
                 logger.debug("Fetched Similarity information for ip={} from GreyNoise API".format(str(ip_address)))
 
             except ValueError as e:
@@ -148,7 +148,7 @@ class GNIPSimilarCommand(EventingCommand):
                     "There was an ambiguous exception that occurred while handling your Request. Please try again.")
             except Exception:
                 logger.error("Exception: {} ".format(str(traceback.format_exc())))
-                self.write_error("Exception occurred while fetching the RIOT information of the IP address. "
+                self.write_error("Exception occurred while fetching the similarity information of the IP address. "
                                  "See greynoise_main.log for more details.")
 
         elif ip_field:

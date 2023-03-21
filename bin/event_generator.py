@@ -16,7 +16,7 @@ from greynoise.util import validate_ip
 
 from utility import get_dict, nested_dict_iter, get_ips_not_in_cache, fetch_response_from_api, get_caching
 
-GENERATING_COMMAND_METHODS = ['ip', 'quick', 'query', 'stats', 'riot']
+GENERATING_COMMAND_METHODS = ['ip', 'quick', 'query', 'stats', 'riot', 'similar']
 
 
 def exception_handler(method):
@@ -87,6 +87,9 @@ def pull_data_from_api_other(fetch_method, cache_enabled, cache, ip, logger, par
 
     :param fetch_method: API method to be called with the given params
     :param logger: logger instance
+    :param cache_enabled: is the cache enabled
+    :param cache: which cache to use
+    :param ip: ip information
     :param params: parameters that needs to be passed with the GreyNoise SDK call
     :param api_sleep_timer: Wait time in seconds before actual API call to avoid ConnectionError with GreyNoise server
     :return: dict having `message` denoting the API response status,
@@ -117,6 +120,8 @@ def pull_data_from_api_multi(fetch_method, cache_enabled, cache, params, logger,
 
     :param fetch_method: API method to be called with the given params
     :param logger: logger instance
+    :param cache_enabled: is the cache enabled
+    :param cache: which cache to use
     :param params: parameters that needs to be passed with the GreyNoise SDK call
     :param api_sleep_timer: Wait time in seconds before actual API call to avoid ConnectionError with GreyNoise server
     :return: dict having `message` denoting the API response status,
@@ -159,6 +164,7 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
     """
     Driver method for the transforming commands that use the threading mechanism to retrieve data from GreyNoise SDK.
 
+    :param session_key: session key information
     :param api_client: API client instance
     :param method: method from which threading driver is invoked
     :param ip_field: Field representing the IP address
@@ -185,7 +191,7 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
         # Doing this to pass the multiple arguments to method used in map method
-        if method == 'enrich' or method == 'greynoise_riot':
+        if method in ['enrich', 'greynoise_riot' 'greynoise_similar']:
             ips = []
             ips_not_in_cache = []
             if int(cache_enabled) == 1 and cache is not None:
@@ -241,6 +247,7 @@ def method_response_mapper(method, result, logger):
 
     :param method: method used for the API invocation
     :param result: Response returned from the pull_data_from_api method
+    :param logger: logger configuration
     :return: tuple with the flag to generate missing events and the updated result
     """
     generate_missing_events = False
@@ -262,7 +269,7 @@ def method_response_mapper(method, result, logger):
         raise Exception(
             "Unexpected method type encountered while processing the API response, method name: {}".format(str(method)))
 
-    return (generate_missing_events, result)
+    return generate_missing_events, result
 
 
 def event_processor(records_dict, result, method, ip_field, logger):
@@ -270,6 +277,7 @@ def event_processor(records_dict, result, method, ip_field, logger):
     Process on each chunk, format response retrieved from API and Send the results of transforming command to Splunk.
 
     :param records_dict: Tuple having all the records of the chunk and all the IP addresses present in the ip_field
+    :param result: result information
     :param method: method used for the API invocation
     :param ip_field: name of the field representing the IP address in Splunk events
     :param logger: logger instance
@@ -438,6 +446,7 @@ def batch(iterable, ip_field, events_per_chunk, logger, optimize_requests=True):
     :param iterable: Records sent to the command by Splunk
     :param ip_field: Field representing the IP address
     :param events_per_chunk: Size of each chunk
+    :param logger: logger information
     :param optimize_requests: Specify whether to reduce the chunk to one when distinct IPs are below 1000,
     :return: dict
     """

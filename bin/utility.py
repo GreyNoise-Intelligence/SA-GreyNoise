@@ -57,6 +57,7 @@ def get_log_level(session_key):
     # Get logging stanza from the settings
     logging_config = conf.get("logging", {})
     logging_level = logging_config.get("loglevel", 'INFO')
+    level = logging.INFO
     if logging_level == 'INFO':
         level = logging.INFO
     elif logging_level == 'DEBUG':
@@ -110,6 +111,7 @@ def get_api_key(session_key, logger):
     Returns the API key configured by the user from the Splunk endpoint, returns blank when no API key is found.
 
     :param session_key:
+    :param logger: logger information
     :return: API Key
     """
     # Get configuration file from the helper method defined in utility
@@ -128,9 +130,10 @@ def get_api_key(session_key, logger):
 
 def get_proxy(session_key, logger):
     """
-    Returns the proxy configured by the user from the Splunk enpoint, returns blank when no proxy is found.
+    Returns the proxy configured by the user from the Splunk endpoint, returns blank when no proxy is found.
 
     :param session_key:
+    :param logger: logger information
     :return: proxy url
     """
     # Get configuration file from the helper method defined in utility
@@ -138,6 +141,8 @@ def get_proxy(session_key, logger):
 
     param_stanza = conf.get("parameters", {})
     proxy = param_stanza.get("proxy", '')
+
+    logger.debug('Proxy server found in config: {}'.format(proxy))
 
     return proxy
 
@@ -148,13 +153,13 @@ def make_error_message(message, session_key, logger):
 
     :param message:
     :param session_key:
-    :param filename:
+    :param logger: logger information
     :return: error message
     """
     try:
         splunk.rest.simpleRequest(
             '/services/messages/new',
-            postargs={'name': APP_NAME, 'value': '%s' % (message),
+            postargs={'name': APP_NAME, 'value': '%s' % message,
                       'severity': 'error'}, method='POST', sessionKey=session_key
         )
     except Exception:
@@ -188,6 +193,7 @@ def nested_dict_iter(nested, prefix=''):
     We want something like this for Splunk:
         [{port : [<port_1>, <port_2>]},{proto : [<proto_1>, <proto_2>]}]
     :param nested:
+    :param prefix:
     :return: dict
     """
     parsed_dict = {}
@@ -225,6 +231,7 @@ def validate_api_key(api_key, logger=None, proxy=None):
     Returns false only when 401 code is thrown, indicating the unauthorised access.
     :param api_key:
     :param logger:
+    :param proxy:
     """
     if logger:
         logger.debug("Validating the api key...")
@@ -345,6 +352,8 @@ def get_response_for_generating(session_key, api_client, ip, method, logger):
     cache_enabled, cache = get_caching(session_key, method, logger)
     if method == 'ip':
         fetch_method = api_client.ip
+    elif method == 'greynoise_similar':
+        fetch_method = api_client.similar
     else:
         fetch_method = api_client.riot
     if int(cache_enabled) == 1 and cache is not None:
@@ -366,6 +375,7 @@ def get_ips_not_in_cache(cache, ips, logger):
 
     :param cache: Cache client object.
     :param ips: List of ips to fetch response from cache.
+    :param logger: logger configuration
     :return: list of response(s), ips not in cache.
     """
     try:

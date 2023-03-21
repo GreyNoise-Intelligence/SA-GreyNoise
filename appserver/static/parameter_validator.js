@@ -94,13 +94,13 @@ require([
         }
 
         if (is_invalid == 1) {
-            tokens.set("message", "Please enter value (without asterik) in atleast one of the following parameters: IP Address, Organization, Actor, Tags or ASN");
-            tokensSub.set("message", "Please enter value (without asterik) in atleast one of the following parameters: IP Address, Organization, Actor, Tags or ASN");
+            tokens.set("message", "Please enter value (without asterisk) in at least one of the following parameters: IP Address, Organization, Actor, Tags or ASN");
+            tokensSub.set("message", "Please enter value (without asterisk) in at least one of the following parameters: IP Address, Organization, Actor, Tags or ASN");
             return;
         }
 
         // Escaping the '"'
-        var tokensToEscapeSpecialCharacter = ["tkn_ip_address", "tkn_organization", "tkn_actor", "tkn_tag", "tkn_os", "tkn_category", "tkn_country", "tkn_asn"]
+        var tokensToEscapeSpecialCharacter = ["tkn_ip_address", "tkn_organization", "tkn_actor", "tkn_tag", "tkn_os", "tkn_category", "tkn_country", "tkn_asn", "tkn_min_score", "tkn_limit", "tkn_days"]
         for (i = 0; i < tokensToEscapeSpecialCharacter.length; i++) {
             let tokenVal = tokens.get(tokensToEscapeSpecialCharacter[i]).trim();
             tokenVal = tokenVal.replace(new RegExp('"','g'),'\\\\\\\"');

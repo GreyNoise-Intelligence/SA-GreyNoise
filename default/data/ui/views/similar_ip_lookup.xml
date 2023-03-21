@@ -1,10 +1,23 @@
-<form stylesheet="error_msg.css" script="parameter_validator.js" isDashboard="true" version="1.1">
+<form stylesheet="error_msg.css,daterangepicker.css" script="parameter_validator.js" isDashboard="true" version="1.1">
   <label>Similar IP Lookup</label>
   <fieldset submitButton="true" autoRun="false">
     <input type="text" token="tkn_ip_address">
       <label>IP Address</label>
       <default></default>
       <initialValue></initialValue>
+    </input>
+    <input type="text" token="tkn_min_score">
+      <label>Minimum Similarity Score</label>
+      <default>90</default>
+      <initialValue>90</initialValue>
+    </input>
+    <input type="text" token="tkn_limit">
+      <label>Max Results to Return</label>
+      <default>50</default>
+      <initialValue>50</initialValue>
+    </input>
+    <input type="text" id="daterange" token="daterange">
+      <label>Date Range (in UTC)</label>
     </input>
   </fieldset>
   <row>
@@ -13,13 +26,15 @@
       <table rejects="$message$">
         <search id="gnquery_results">
           <query>
-            $token_search_trigger$ | gnipsimilar
-            [| makeresults
-              | eval ip = if(isnull("$tkn_ip_address_escaped$") OR "$tkn_ip_address_escaped$"=="", "", "$tkn_ip_address_escaped$")
-              | return ip ]
-            | table ip,last_seen
-            | rename ip AS "IP Address" last_seen AS "Last Seen"
-          </query>
+    $token_search_trigger$ | gnquery
+    [| makeresults
+    | eval ip_address = if(isnull("$tkn_ip_address_escaped$") OR "$tkn_ip_address_escaped$"=="", "", " ip:"."$tkn_ip_address_escaped$")
+    | eval query = ip_address
+    | return query ]
+| eval noise = if(seen == "1", "True", "False")
+| table ip message
+| rename ip AS "IP Address"
+ </query>
           <done>
             <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;no results&quot;">
               <set token="message">GreyNoise has not observed any recent activity with the provided parameters</set>
@@ -38,11 +53,11 @@
         <drilldown>
           <link target="_blank">
               <![CDATA[
-                /app/SA-GreyNoise/similar_ip_lookup?form.tkn_ip_address=$row.IP Address$
+                /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=$row.IP Address$
               ]]>
           </link>
         </drilldown>
-        <fields>"IP Address", "Last Seen"</fields>
+        <fields>"IP Address"</fields>
       </table>
       <html depends="$message$">
          <div class="custom-result-value">$message$</div>

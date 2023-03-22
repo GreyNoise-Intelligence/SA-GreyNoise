@@ -180,7 +180,6 @@ def get_dict(method):
         'riot': fields.RIOT_FIELDS,
         'similar': fields.SIMILAR_FIELDS,
         'greynoise_riot': fields.GREYNOISE_RIOT_FIELDS,
-        'greynoise_similar': fields.GREYNOISE_SIMILAR_FIELDS
     }
     return dict_hash.get(method, fields.DEFAULT_FIELDS)
 
@@ -320,7 +319,7 @@ def get_caching(session_key, method, logger):
 
     :returns: cache_enabled flag,cache object.
     """
-    if method == 'filter':
+    if method in ['filter', 'similar']:
         cache_enabled = 0
         cache = None
     else:
@@ -347,15 +346,15 @@ def get_response_for_generating(session_key, api_client, ip, method, logger):
     :param ip:
     :param method:
     :param logger:
-    :return: resposne
+    :return: response
     """
     cache_enabled, cache = get_caching(session_key, method, logger)
-    if method == 'ip':
-        fetch_method = api_client.ip
-    elif method == 'greynoise_similar':
+    if method in ['riot', 'greynoise_riot']:
+        fetch_method = api_client.riot
+    elif method in ['similar']:
         fetch_method = api_client.similar
     else:
-        fetch_method = api_client.riot
+        fetch_method = api_client.ip
     if int(cache_enabled) == 1 and cache is not None:
         response = cache.query_kv_store([ip])
         if response is None:

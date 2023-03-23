@@ -199,3 +199,30 @@ SIMILAR_FIELDS = {
     'organization': None,
     'similar_ips': None
 }
+
+TIMELINE_FIELDS = {
+    'ip': None,
+    'end_time': None,
+    'start_time': None,
+    'asn': None,
+    'category': None,
+    'city': None,
+    'classification': None,
+    'country': None,
+    'country_code': None,
+    'destinations': None,
+    'hassh_fingerprints': None,
+    'http_paths': None,
+    'http_user_agents': None,
+    'ja3_fingerprints': None,
+    'organization': None,
+    'protocols': None,
+    'rdns': None,
+    'region': None,
+    'spoofable': None,
+    'tags': None,
+    'timestamp': None,
+    'tor': None,
+    'vpn': None,
+    'vpn_service': None,
+}

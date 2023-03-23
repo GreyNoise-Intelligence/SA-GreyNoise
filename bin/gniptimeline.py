@@ -12,23 +12,23 @@ import event_generator
 import validator
 
 
-def response_scroller(api_client, logger, ip_address, min_score, limit):
+def response_scroller(api_client, logger, ip_address, days, limit):
     """Uses api_client instance of GreyNoise SDK to fetch query results and traverse them if result set is too large."""
     event_count = 0
     try:
-        api_response = api_client.similar(ip_address=ip_address, min_score=min_score, limit=limit)
+        api_response = api_client.timelinedaily(ip_address=ip_address, days=days, limit=limit)
 
-        if api_response.get('total', None) != 0:
-            similar_ips = api_response.get('similar_ips', [])
-            sim_ip_count = api_response.get('total', None)
+        if api_response.get('activity', None):
+            timeline_activity = api_response.get('activity', [])
+            activity_count = len(timeline_activity)
 
-            logger.debug("Processing {} similar IP responses for {}".format(sim_ip_count, ip_address))
+            logger.debug("Processing {} timeline events for {}".format(activity_count, ip_address))
 
-            for sim_ip in similar_ips:
+            for activity in timeline_activity:
                 if event_count == 0:
-                    yield event_generator.make_valid_event('similar', sim_ip, True)
+                    yield event_generator.make_valid_event('timeline', activity, True)
                 else:
-                    yield event_generator.make_valid_event('similar', sim_ip, False)
+                    yield event_generator.make_valid_event('timeline', activity, False)
                 event_count = event_count + 1
         else:
             message = api_response.get('message', '')
@@ -38,7 +38,7 @@ def response_scroller(api_client, logger, ip_address, min_score, limit):
                 'message': message,
                 'ip': ip
             }
-            yield event_generator.make_invalid_event('similar', event, True)
+            yield event_generator.make_invalid_event('timeline', event, True)
             exit(1)
     except Exception as e:
         logger.error("Error processing Similar command: {}".format(e))
@@ -47,19 +47,19 @@ def response_scroller(api_client, logger, ip_address, min_score, limit):
 @Configuration(type="events")
 class GNIPSimilarCommand(BaseCommandHandler):
     """
-    gnipsimilar - Generating Command.
+    gniptimeline - Generating Command.
 
-    Generating command that returns the results of the GreyNoise Similarity tool,
-    Data pulled from /v3/similaritl using GreyNoise Python SDK
+    Generating command that returns the results of the GreyNoise Timeline tool,
+    Data pulled from /v3/timeline using GreyNoise Python SDK
 
     **Syntax**::
-    `| gnipsimilar ip_address="1.2.3.4" limit="50"`
-    `| gnipsimilar ip_address="1.2.3.4" limit="50" min_score="90"`
+    `| gniptimeline ip_address="1.2.3.4" days="30"`
+    `| gniptimeline ip_address="1.2.3.4" limit="50" days="30"`
 
     **Description**::
-    The `gnipsimilar` command uses the `IP Address` provided in `ip_address` parameter to return GreyNoise
-    similarity results using method :method:`similar` from GreyNoise Python SDK.
-    The optional parameter `min_score` can be used to provide the min_score for matches returned
+    The `gniptimeline` command uses the `IP Address` provided in `ip_address` parameter to return GreyNoise
+    timeline results using method :method:`timelinedaily` from GreyNoise Python SDK.
+    The optional parameter `days` can be used to provide the number of days to include in the timeline
      The optional parameter `limit` can be used to control max number of results to return.
     """
 
@@ -69,15 +69,15 @@ class GNIPSimilarCommand(BaseCommandHandler):
         name='ip_address', require=True
     )
 
-    min_score = Option(
-        doc='''**Syntax:** **min_score=***<min_score>*
-        **Description:**Only get similar IPs with a score above this value''',
-        default="90", name='min_score', require=False
+    days = Option(
+        doc='''**Syntax:** **days=***<days>*
+        **Description:**Number of days of events to retrieve''',
+        default="30", name='days', require=False
     )
 
     limit = Option(
         doc='''**Syntax:** **limit=***<limit>*
-        **Description:**Max number of similar IPs to return''',
+        **Description:**Max number of timeline IPs to return''',
         default="50", name='limit', require=False
     )
 
@@ -91,10 +91,10 @@ class GNIPSimilarCommand(BaseCommandHandler):
         :logger: logger object.
         """
         ip_address = self.ip_address
-        min_score = self.min_score
+        days = self.days
         limit = self.limit
 
-        logger.info("Started retrieving similarity results for ip: {}".format(str(ip_address)))
+        logger.info("Started retrieving timeline results for ip: {}".format(str(ip_address)))
 
         if ip_address == '':
             logger.error("Parameter ip_address should not be empty.")
@@ -102,15 +102,15 @@ class GNIPSimilarCommand(BaseCommandHandler):
             exit(1)
 
         # Strip the spaces from the parameter value if given
-        if min_score:
-            min_score = min_score.strip()
+        if days:
+            min_score = days.strip()
 
         if limit:
             limit = limit.strip()
 
         # Validating the given parameters
         try:
-            min_score = validator.Integer(option_name='min_score', minimum=1).validate(min_score)
+            days = validator.Integer(option_name='days', minimum=1).validate(days)
             limit = validator.Integer(option_name='limit', minimum=1).validate(limit)
         except ValueError as e:
             # Validator will throw ValueError with error message when the parameters are not proper
@@ -124,14 +124,14 @@ class GNIPSimilarCommand(BaseCommandHandler):
         else:
             api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
 
-        logger.info("Fetching results for Similarity lookup: {}, requested number of results: {}, min score: {}".format(
-            str(ip_address), str(limit), str(min_score)))
+        logger.info("Fetching timeline events for: {}, requested number of results: {}, days: {}".format(
+            str(ip_address), str(limit), str(days)))
 
         # Keep generating the events till result_size is not reached or all the query results are sent to Splunk
-        for event in response_scroller(api_client, logger, ip_address, min_score, limit):
+        for event in response_scroller(api_client, logger, ip_address, days, limit):
             yield event
 
-        logger.info("Successfully retrieved similarity results for the GreyNoise IP: {}".format(str(ip_address)))
+        logger.info("Successfully retrieved timeline results for the GreyNoise IP: {}".format(str(ip_address)))
 
     def __init__(self):
         """Initialize custom command class."""

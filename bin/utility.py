@@ -179,6 +179,7 @@ def get_dict(method):
         'ip_multi': fields.ENRICH_FIELDS,
         'riot': fields.RIOT_FIELDS,
         'similar': fields.SIMILAR_FIELDS,
+        'timeline': fields.TIMELINE_FIELDS,
         'greynoise_riot': fields.GREYNOISE_RIOT_FIELDS,
     }
     return dict_hash.get(method, fields.DEFAULT_FIELDS)
@@ -319,7 +320,7 @@ def get_caching(session_key, method, logger):
 
     :returns: cache_enabled flag,cache object.
     """
-    if method in ['filter', 'similar']:
+    if method in ['filter', 'similar', 'timeline']:
         cache_enabled = 0
         cache = None
     else:
@@ -351,8 +352,6 @@ def get_response_for_generating(session_key, api_client, ip, method, logger):
     cache_enabled, cache = get_caching(session_key, method, logger)
     if method in ['riot', 'greynoise_riot']:
         fetch_method = api_client.riot
-    elif method in ['similar']:
-        fetch_method = api_client.similar
     else:
         fetch_method = api_client.ip
     if int(cache_enabled) == 1 and cache is not None:

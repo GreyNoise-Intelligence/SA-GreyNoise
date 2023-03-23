@@ -16,7 +16,7 @@ from greynoise.util import validate_ip
 
 from utility import get_dict, nested_dict_iter, get_ips_not_in_cache, fetch_response_from_api, get_caching
 
-GENERATING_COMMAND_METHODS = ['ip', 'quick', 'query', 'stats', 'riot', 'similar']
+GENERATING_COMMAND_METHODS = ['ip', 'quick', 'query', 'stats', 'riot', 'similar', 'timeline']
 
 
 def exception_handler(method):
@@ -189,7 +189,7 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
         # Doing this to pass the multiple arguments to method used in map method
-        if method in ['enrich', 'greynoise_riot' 'greynoise_similar']:
+        if method in ['enrich', 'greynoise_riot']:
             ips = []
             ips_not_in_cache = []
             if int(cache_enabled) == 1 and cache is not None:

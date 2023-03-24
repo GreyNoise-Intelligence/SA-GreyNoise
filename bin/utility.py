@@ -211,10 +211,17 @@ def nested_dict_iter(nested, prefix=''):
                         dict_length = int(len(list(item.keys())))
                         for n in range(0, dict_length):
                             current_key = list(item.keys())[n]
-                            if current_key in parsed_dict:
-                                parsed_dict[prefix + current_key].append(list(item.values())[n])
+                            if key in ["destinations", "tags"]:
+                                current_key = key + "_" + current_key
+                                if current_key in parsed_dict:
+                                    parsed_dict[prefix + current_key].append(list(item.values())[n])
+                                else:
+                                    parsed_dict[prefix + current_key] = [list(item.values())[n]]
                             else:
-                                parsed_dict[prefix + current_key] = [list(item.values())[n]]
+                                if current_key in parsed_dict:
+                                    parsed_dict[prefix + current_key].append(list(item.values())[n])
+                                else:
+                                    parsed_dict[prefix + current_key] = [list(item.values())[n]]
                     else:
                         parsed_dict[prefix + key] = value
             else:

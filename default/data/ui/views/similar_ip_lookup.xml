@@ -7,12 +7,12 @@
       <initialValue></initialValue>
     </input>
     <input type="text" token="tkn_min_score">
-      <label>Minimum Similarity Score</label>
+      <label>Minimun Score</label>
       <default>90</default>
       <initialValue>90</initialValue>
     </input>
     <input type="text" token="tkn_limit">
-      <label>Max Results to Return</label>
+      <label>Result Limit</label>
       <default>50</default>
       <initialValue>50</initialValue>
     </input>
@@ -24,16 +24,20 @@
     <panel>
       <title></title>
       <table rejects="$message$">
-        <search id="gnquery_results">
+        <search id="gnipsimilar_results">
           <query>
-    $token_search_trigger$ | gnquery
+    $token_search_trigger$ | gnipsimilar
     [| makeresults
-    | eval ip_address = if(isnull("$tkn_ip_address_escaped$") OR "$tkn_ip_address_escaped$"=="", "", " ip:"."$tkn_ip_address_escaped$")
-    | eval query = ip_address
-    | return query ]
-| eval noise = if(seen == "1", "True", "False")
-| table ip message
-| rename ip AS "IP Address"
+    | eval ip_address = if(isnull("$tkn_ip_address_escaped$") OR "$tkn_ip_address_escaped$"=="", "", "$tkn_ip_address_escaped$")
+    | eval min_score = if(isnull("$tkn_min_score_escaped$") OR "$tkn_min_score_escaped$"=="", "90", "$tkn_min_score_escaped$")
+    | eval limit = if(isnull("$tkn_limit_escaped$") OR "$tkn_limit_escaped$"=="", "90", "$tkn_limit_escaped$")
+    | eval ip_address = ip_address
+    | eval min_score = min_score
+    | eval limit = limit
+    | return ip_address min_score limit ]
+| eval score = tostring(round(score * 100,2)) + "%"
+| table ip score classification actor organization country last_seen features
+| rename ip AS "IP Address" score AS "Score" classification AS "Classification" actor AS "Actor" organization AS "Organization" country AS "Source Country" last_seen AS "Last Seen" features AS "Similarity Features"
  </query>
           <done>
             <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;no results&quot;">
@@ -47,17 +51,21 @@
             </condition>
           </done>
         </search>
-        <option name="rowNumbers">true</option>
         <option name="count">50</option>
-        <option name="drilldown">cell</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="Classification">
+          <colorPalette type="map">{"malicious":#D41F1F,"benign":#277C52,"unknown":#65778A}</colorPalette>
+        </format>
+        <fields>["IP Address","Score","Classification","Actor","Organization","Source Country","Last Seen","Similarity Features"]</fields>
         <drilldown>
           <link target="_blank">
-              <![CDATA[
+            <![CDATA[
                 /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=$row.IP Address$
               ]]>
           </link>
         </drilldown>
-        <fields>"IP Address"</fields>
       </table>
       <html depends="$message$">
          <div class="custom-result-value">$message$</div>

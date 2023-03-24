@@ -102,10 +102,13 @@ require([
         // Escaping the '"'
         var tokensToEscapeSpecialCharacter = ["tkn_ip_address", "tkn_organization", "tkn_actor", "tkn_tag", "tkn_os", "tkn_category", "tkn_country", "tkn_asn", "tkn_min_score", "tkn_limit", "tkn_days"]
         for (i = 0; i < tokensToEscapeSpecialCharacter.length; i++) {
-            let tokenVal = tokens.get(tokensToEscapeSpecialCharacter[i]).trim();
-            tokenVal = tokenVal.replace(new RegExp('"','g'),'\\\\\\\"');
-            tokens.set(tokensToEscapeSpecialCharacter[i] + "_escaped",tokenVal);
-            tokensSub.set(tokensToEscapeSpecialCharacter[i] + "_escaped",tokenVal);
+            let tokenVal = tokens.get(tokensToEscapeSpecialCharacter[i]);
+            if (tokenVal) {
+                tokenValTrim = tokenVal.trim();
+                tokenValTrim = tokenValTrim.replace(new RegExp('"','g'),'\\\\\\\"');
+                tokens.set(tokensToEscapeSpecialCharacter[i] + "_escaped",tokenValTrim);
+                tokensSub.set(tokensToEscapeSpecialCharacter[i] + "_escaped",tokenValTrim);
+                }
         }
 
         // setting token for API use

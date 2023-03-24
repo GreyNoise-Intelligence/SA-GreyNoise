@@ -8,13 +8,13 @@
     </input>
     <input type="text" token="tkn_days">
       <label>Days to Look Back</label>
-      <default></default>
-      <initialValue></initialValue>
+      <default>30</default>
+      <initialValue>30</initialValue>
     </input>
     <input type="text" token="tkn_limit">
-      <label>Max Events to Return</label>
-      <default></default>
-      <initialValue></initialValue>
+      <label>Result Limit</label>
+      <default>50</default>
+      <initialValue>50</initialValue>
     </input>
     <input type="text" id="daterange" token="daterange">
       <label>Date Range (in UTC)</label>
@@ -24,12 +24,22 @@
     <panel>
       <title></title>
       <table rejects="$message$">
-        <search id="gnquery_results">
+        <search id="gniptimeline_results">
           <query>
-            $token_search_trigger$ | gniptimeline ip_field=$tkn_ip_address_escaped$ days=$tkn_ip_address_escaped$
-            | table ip noise classification last_seen organization actor tags os category country asn message
-            | rename ip AS "IP Address"
-          </query>
+    $token_search_trigger$ | gniptimeline
+    [| makeresults
+    | eval ip_address = if(isnull("$tkn_ip_address_escaped$") OR "$tkn_ip_address_escaped$"=="", "", "$tkn_ip_address_escaped$")
+    | eval days = if(isnull("$tkn_days_escaped$") OR "$tkn_days_escaped$"=="", "30", "$tkn_days_escaped$")
+    | eval limit = if(isnull("$tkn_limit_escaped$") OR "$tkn_limit_escaped$"=="", "50", "$tkn_limit_escaped$")
+    | eval ip_address = ip_address
+    | eval days = days
+    | eval limit = limit
+    | return ip_address days limit ]
+| eval time=strptime(timestamp,"%Y-%m-%dT%H:%M:%SZ")
+| eval date = strftime(time,"%Y-%m-%d")
+| table date classification tags_name rdns organization asn port http_paths http_user_agents
+| rename date AS "Event Date" classification AS "Classification" tags_name AS "Tag(s)" rdns AS "rDNS" organization AS "Organization" asn AS "ASN" port AS "Port(s) Scanned" http_paths AS "Web Path(s)" http_user_agents AS "User Agent(s)"
+ </query>
           <done>
             <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;no results&quot;">
               <set token="message">GreyNoise has not observed any recent activity with the provided parameters</set>
@@ -42,17 +52,20 @@
             </condition>
           </done>
         </search>
-        <option name="rowNumbers">true</option>
         <option name="count">50</option>
-        <option name="drilldown">cell</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+        <format type="color" field="Classification">
+          <colorPalette type="map">{"malicious":#D41F1F,"benign":#277C52,"unknown":#65778A}</colorPalette>
+        </format>
+        <fields>["Event Date","Classification","Tag(s)","rDNS","Organization","ASN","Port(s) Scanned","Web Path(s)","User Agent(s)"]</fields>
         <drilldown>
           <link target="_blank">
-              <![CDATA[
-                /app/SA-GreyNoise/noise_ip_timeline?form.tkn_ip_address=$row.IP Address$
+            <![CDATA[
+                /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=$row.IP Address$
               ]]>
           </link>
         </drilldown>
-        <fields>"IP Address"</fields>
       </table>
       <html depends="$message$">
          <div class="custom-result-value">$message$</div>

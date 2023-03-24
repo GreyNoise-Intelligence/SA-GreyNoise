@@ -41,11 +41,12 @@ def response_scroller(api_client, logger, ip_address, days, limit):
             yield event_generator.make_invalid_event('timeline', event, True)
             exit(1)
     except Exception as e:
-        logger.error("Error processing Similar command: {}".format(e))
+        logger.error("Error processing Timeline command: {}".format(e))
+        exit(1)
 
 
 @Configuration(type="events")
-class GNIPSimilarCommand(BaseCommandHandler):
+class GNIPTimelineCommand(BaseCommandHandler):
     """
     gniptimeline - Generating Command.
 
@@ -135,7 +136,7 @@ class GNIPSimilarCommand(BaseCommandHandler):
 
     def __init__(self):
         """Initialize custom command class."""
-        super(GNIPSimilarCommand, self).__init__()
+        super(GNIPTimelineCommand, self).__init__()
 
 
-dispatch(GNIPSimilarCommand, sys.argv, sys.stdin, sys.stdout, __name__)
+dispatch(GNIPTimelineCommand, sys.argv, sys.stdin, sys.stdout, __name__)

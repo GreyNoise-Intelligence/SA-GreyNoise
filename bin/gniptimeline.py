@@ -15,33 +15,30 @@ import validator
 def response_scroller(api_client, logger, ip_address, days, limit):
     """Uses api_client instance of GreyNoise SDK to fetch query results and traverse them if result set is too large."""
     event_count = 0
-    try:
-        api_response = api_client.timelinedaily(ip_address=ip_address, days=days, limit=limit)
 
-        if api_response.get('activity', None):
-            timeline_activity = api_response.get('activity', [])
-            activity_count = len(timeline_activity)
+    api_response = api_client.timelinedaily(ip_address=ip_address, days=days, limit=limit)
 
-            logger.debug("Processing {} timeline events for {}".format(activity_count, ip_address))
+    if api_response.get('activity', None):
+        timeline_activity = api_response.get('activity', [])
+        activity_count = len(timeline_activity)
 
-            for activity in timeline_activity:
-                if event_count == 0:
-                    yield event_generator.make_valid_event('timeline', activity, True)
-                else:
-                    yield event_generator.make_valid_event('timeline', activity, False)
-                event_count = event_count + 1
-        else:
-            message = api_response.get('message', '')
-            ip = api_response.get('ip', '')
-            logger.info("No results returned for GreyNoise IP: {}, message: {}".format(str(ip), str(message)))
-            event = {
-                'message': message,
-                'ip': ip
-            }
-            yield event_generator.make_invalid_event('timeline', event, True)
-            exit(1)
-    except Exception as e:
-        logger.error("Error processing Timeline command: {}".format(e))
+        logger.debug("Processing {} timeline events for {}".format(activity_count, ip_address))
+
+        for activity in timeline_activity:
+            if event_count == 0:
+                yield event_generator.make_valid_event('timeline', activity, True)
+            else:
+                yield event_generator.make_valid_event('timeline', activity, False)
+            event_count = event_count + 1
+    else:
+        message = api_response.get('message', '')
+        ip = api_response.get('ip', '')
+        logger.info("No results returned for GreyNoise IP: {}, message: {}".format(str(ip), str(message)))
+        event = {
+            'message': message,
+            'ip': ip
+        }
+        yield event_generator.make_invalid_event('timeline', event, True)
         exit(1)
 
 
@@ -129,10 +126,20 @@ class GNIPTimelineCommand(BaseCommandHandler):
             str(ip_address), str(limit), str(days)))
 
         # Keep generating the events till result_size is not reached or all the query results are sent to Splunk
-        for event in response_scroller(api_client, logger, ip_address, days, limit):
-            yield event
+        try:
+            for event in response_scroller(api_client, logger, ip_address, days, limit):
+                yield event
 
-        logger.info("Successfully retrieved timeline results for the GreyNoise IP: {}".format(str(ip_address)))
+            logger.info("Successfully retrieved timeline results for the GreyNoise IP: {}".format(str(ip_address)))
+        except Exception as e:
+            logger.error("Error processing gniptimeline command: {}".format(e))
+            if "401" in str(e):
+                self.write_error("Error processing gniptimeline command.  API Key not valid")
+            elif "403" in str(e):
+                self.write_error("Error processing gniptimeline command.  API Key not authorized for this feature")
+            else:
+                self.write_error("Error processing gniptimeline command.  Check greynoise_main.log for more details")
+            exit(1)
 
     def __init__(self):
         """Initialize custom command class."""

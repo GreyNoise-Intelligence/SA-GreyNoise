@@ -15,33 +15,31 @@ import validator
 def response_scroller(api_client, logger, ip_address, min_score, limit):
     """Uses api_client instance of GreyNoise SDK to fetch query results and traverse them if result set is too large."""
     event_count = 0
-    try:
-        api_response = api_client.similar(ip_address=ip_address, min_score=min_score, limit=limit)
 
-        if api_response.get('total', None) != 0:
-            similar_ips = api_response.get('similar_ips', [])
-            sim_ip_count = api_response.get('total', None)
+    api_response = api_client.similar(ip_address=ip_address, min_score=min_score, limit=limit)
 
-            logger.debug("Processing {} similar IP responses for {}".format(sim_ip_count, ip_address))
+    if api_response.get('total', None) != 0:
+        similar_ips = api_response.get('similar_ips', [])
+        sim_ip_count = api_response.get('total', None)
 
-            for sim_ip in similar_ips:
-                if event_count == 0:
-                    yield event_generator.make_valid_event('similar', sim_ip, True)
-                else:
-                    yield event_generator.make_valid_event('similar', sim_ip, False)
-                event_count = event_count + 1
-        else:
-            message = api_response.get('message', '')
-            ip = api_response.get('ip', '')
-            logger.info("No results returned for GreyNoise IP: {}, message: {}".format(str(ip), str(message)))
-            event = {
-                'message': message,
-                'ip': ip
-            }
-            yield event_generator.make_invalid_event('similar', event, True)
-            exit(1)
-    except Exception as e:
-        logger.error("Error processing Similar command: {}".format(e))
+        logger.debug("Processing {} similar IP responses for {}".format(sim_ip_count, ip_address))
+
+        for sim_ip in similar_ips:
+            if event_count == 0:
+                yield event_generator.make_valid_event('similar', sim_ip, True)
+            else:
+                yield event_generator.make_valid_event('similar', sim_ip, False)
+            event_count = event_count + 1
+    else:
+        message = api_response.get('message', '')
+        ip = api_response.get('ip', '')
+        logger.info("No results returned for GreyNoise IP: {}, message: {}".format(str(ip), str(message)))
+        event = {
+            'message': message,
+            'ip': ip
+        }
+        yield event_generator.make_invalid_event('similar', event, True)
+        exit(1)
 
 
 @Configuration(type="events")
@@ -128,10 +126,20 @@ class GNIPSimilarCommand(BaseCommandHandler):
             str(ip_address), str(limit), str(min_score)))
 
         # Keep generating the events till result_size is not reached or all the query results are sent to Splunk
-        for event in response_scroller(api_client, logger, ip_address, min_score, limit):
-            yield event
+        try:
+            for event in response_scroller(api_client, logger, ip_address, min_score, limit):
+                yield event
 
-        logger.info("Successfully retrieved similarity results for the GreyNoise IP: {}".format(str(ip_address)))
+            logger.info("Successfully retrieved similarity results for the GreyNoise IP: {}".format(str(ip_address)))
+        except Exception as e:
+            logger.error("Error processing gnipsimilar command: {}".format(e))
+            if "401" in str(e):
+                self.write_error("Error processing gnipsimilar command.  API Key not valid")
+            elif "403" in str(e):
+                self.write_error("Error processing gnipsimilar command.  API Key not authorized for this feature")
+            else:
+                self.write_error("Error processing gnipsimilar command.  Check greynoise_main.log for more details")
+            exit(1)
 
     def __init__(self):
         """Initialize custom command class."""

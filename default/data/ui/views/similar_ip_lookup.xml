@@ -1,5 +1,6 @@
 <form stylesheet="error_msg.css,daterangepicker.css" script="parameter_validator.js" isDashboard="true" version="1.1">
   <label>Similar IP Lookup</label>
+  <description>Allows for an analyst to query the GreyNoise IP Similarity tool for internet scanning IPs that have similar attributes to the one submitted.  Requires an IP Similarity license to function.</description>
   <fieldset submitButton="true" autoRun="false">
     <input type="text" token="tkn_ip_address">
       <label>IP Address</label>
@@ -7,7 +8,7 @@
       <initialValue></initialValue>
     </input>
     <input type="text" token="tkn_min_score">
-      <label>Minimun Score</label>
+      <label>Minimum Score</label>
       <default>90</default>
       <initialValue>90</initialValue>
     </input>

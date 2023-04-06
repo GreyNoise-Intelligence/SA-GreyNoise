@@ -7,20 +7,18 @@ import collections
 import logging
 import traceback
 
-import splunk.rest
-from splunk.clilib.bundle_paths import make_splunkhome_path
 import app_greynoise_declare
-from requests.exceptions import ConnectionError, RequestException
-from solnlib import conf_manager
-
+import fields
+import splunk.rest
+from caching import Caching
 from greynoise import GreyNoise
 from greynoise.exceptions import RateLimitError, RequestFailure
-
-import fields
-from greynoise_exceptions import APIKeyNotFoundError, CachingException
 from greynoise_constants import INTEGRATION_NAME
-from caching import Caching
+from greynoise_exceptions import APIKeyNotFoundError, CachingException
+from requests.exceptions import ConnectionError, RequestException
 from six.moves import range
+from solnlib import conf_manager
+from splunk.clilib.bundle_paths import make_splunkhome_path
 
 APP_NAME = app_greynoise_declare.ta_name
 
@@ -29,7 +27,7 @@ def get_conf_file(
     session_key,
     file,
     app=APP_NAME,
-    realm="__REST_CREDENTIAL__#{app_name}#configs/conf-app_greynoise_settings".format(app_name=APP_NAME)
+    realm="__REST_CREDENTIAL__#{app_name}#configs/conf-app_greynoise_settings".format(app_name=APP_NAME),
 ):
     """
     Returns the conf object of the file.
@@ -52,21 +50,21 @@ def get_log_level(session_key):
     :return: level
     """
     # Get configuration file from the helper method defined in utility
-    conf = get_conf_file(session_key, 'app_greynoise_settings')
+    conf = get_conf_file(session_key, "app_greynoise_settings")
 
     # Get logging stanza from the settings
     logging_config = conf.get("logging", {})
-    logging_level = logging_config.get("loglevel", 'INFO')
+    logging_level = logging_config.get("loglevel", "INFO")
     level = logging.INFO
-    if logging_level == 'INFO':
+    if logging_level == "INFO":
         level = logging.INFO
-    elif logging_level == 'DEBUG':
+    elif logging_level == "DEBUG":
         level = logging.DEBUG
-    elif logging_level == 'WARNING':
+    elif logging_level == "WARNING":
         level = logging.WARNING
-    elif logging_level == 'ERROR':
+    elif logging_level == "ERROR":
         level = logging.ERROR
-    elif logging_level == 'CRITICAL':
+    elif logging_level == "CRITICAL":
         level = logging.CRITICAL
 
     return level
@@ -74,11 +72,13 @@ def get_log_level(session_key):
 
 def setup_logger(
     logger=None,
-    log_format=('%(asctime)s log_level=%(levelname)s, pid=%(process)d, '
-                'tid=%(threadName)s, func_name=%(funcName)s, code_line_no=%(lineno)d | '),
+    log_format=(
+        "%(asctime)s log_level=%(levelname)s, pid=%(process)d, "
+        "tid=%(threadName)s, func_name=%(funcName)s, code_line_no=%(lineno)d | "
+    ),
     logger_name="greynoise_main",
     session_key=None,
-    log_context='GreyNoise App'
+    log_context="GreyNoise App",
 ):
     """Get a logger object with specified log level."""
     if logger is None:
@@ -91,12 +91,13 @@ def setup_logger(
     logger.propagate = False
     logger.setLevel(level)
 
-    log_name = logger_name + '.log'
-    file_handler = logging.handlers.RotatingFileHandler(make_splunkhome_path(
-        ['var', 'log', 'splunk', log_name]), maxBytes=2500000, backupCount=5)
+    log_name = logger_name + ".log"
+    file_handler = logging.handlers.RotatingFileHandler(
+        make_splunkhome_path(["var", "log", "splunk", log_name]), maxBytes=2500000, backupCount=5
+    )
 
     # Adding the source of the logs to the log format
-    log_format = log_format + '[{log_context}] %(message)s'.format(log_context=log_context)
+    log_format = log_format + "[{log_context}] %(message)s".format(log_context=log_context)
     formatter = logging.Formatter(log_format)
     file_handler.setFormatter(formatter)
 
@@ -115,10 +116,10 @@ def get_api_key(session_key, logger):
     :return: API Key
     """
     # Get configuration file from the helper method defined in utility
-    conf = get_conf_file(session_key, 'app_greynoise_settings')
+    conf = get_conf_file(session_key, "app_greynoise_settings")
 
     api_key_stanza = conf.get("parameters", {})
-    api_key = api_key_stanza.get("api_key", '')
+    api_key = api_key_stanza.get("api_key", "")
 
     if not api_key:
         message = "API key not found. Please configure the GreyNoise App for Splunk."
@@ -137,12 +138,12 @@ def get_proxy(session_key, logger):
     :return: proxy url
     """
     # Get configuration file from the helper method defined in utility
-    conf = get_conf_file(session_key, 'app_greynoise_settings')
+    conf = get_conf_file(session_key, "app_greynoise_settings")
 
     param_stanza = conf.get("parameters", {})
-    proxy = param_stanza.get("proxy", '')
+    proxy = param_stanza.get("proxy", "")
 
-    logger.debug('Proxy server found in config: {}'.format(proxy))
+    logger.debug("Proxy server found in config: {}".format(proxy))
 
     return proxy
 
@@ -158,34 +159,36 @@ def make_error_message(message, session_key, logger):
     """
     try:
         splunk.rest.simpleRequest(
-            '/services/messages/new',
-            postargs={'name': APP_NAME, 'value': '%s' % message,
-                      'severity': 'error'}, method='POST', sessionKey=session_key
+            "/services/messages/new",
+            postargs={"name": APP_NAME, "value": "%s" % message, "severity": "error"},
+            method="POST",
+            sessionKey=session_key,
         )
     except Exception:
-        logger.error("Error occurred while generating error message for Splunk, Error: {}".format(
-            str(traceback.format_exc())))
+        logger.error(
+            "Error occurred while generating error message for Splunk, Error: {}".format(str(traceback.format_exc()))
+        )
 
 
 def get_dict(method):
     """Returns dict having all fields as key that may take place while calling method with None as default value."""
     dict_hash = {
-        'ip': fields.IP_FIELDS,
-        'quick': fields.QUICK_FIELDS,
-        'query': fields.QUERY_FIELDS,
-        'multi': fields.MULTI_FIELDS,
-        'filter': fields.FILTER_FIELDS,
-        'enrich': fields.ENRICH_FIELDS,
-        'ip_multi': fields.ENRICH_FIELDS,
-        'riot': fields.RIOT_FIELDS,
-        'similar': fields.SIMILAR_FIELDS,
-        'timeline': fields.TIMELINE_FIELDS,
-        'greynoise_riot': fields.GREYNOISE_RIOT_FIELDS,
+        "ip": fields.IP_FIELDS,
+        "quick": fields.QUICK_FIELDS,
+        "query": fields.QUERY_FIELDS,
+        "multi": fields.MULTI_FIELDS,
+        "filter": fields.FILTER_FIELDS,
+        "enrich": fields.ENRICH_FIELDS,
+        "ip_multi": fields.ENRICH_FIELDS,
+        "riot": fields.RIOT_FIELDS,
+        "similar": fields.SIMILAR_FIELDS,
+        "timeline": fields.TIMELINE_FIELDS,
+        "greynoise_riot": fields.GREYNOISE_RIOT_FIELDS,
     }
     return dict_hash.get(method, fields.DEFAULT_FIELDS)
 
 
-def nested_dict_iter(nested, prefix=''):
+def nested_dict_iter(nested, prefix=""):
     """
     This is a dict inside a list so we assume something like.
 
@@ -244,38 +247,37 @@ def validate_api_key(api_key, logger=None, proxy=None):
         logger.debug("Validating the api key...")
 
     try:
-        if proxy and 'http' in proxy:
+        if proxy and "http" in proxy:
             api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
         else:
             api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
 
         api_client.test_connection()
 
-        return True, 'API key is valid'
+        return True, "API key is valid"
 
     except RateLimitError:
         msg = "RateLimitError occurred, please contact the Administrator"
-        return False, 'API key not validated, Error: {}'.format(msg)
+        return False, "API key not validated, Error: {}".format(msg)
     except RequestFailure as e:
         response_code, response_message = e.args
         if response_code == 401:
-            return False, 'Unauthorized. Please check your API key.'
+            return False, "Unauthorized. Please check your API key."
         else:
             # Need to handle this, as splunklib is unable to handle the exception with
             # (400, {'error': 'error_reason'}) format
-            msg = ("The API call to the GreyNoise API has failed "
-                   "with status_code: {} and error: {}").format(
-                response_code, response_message['error'] if isinstance(response_message, dict)
-                else response_message)
-            return False, 'API key not validated, Error: {}'.format(msg)
+            msg = ("The API call to the GreyNoise API has failed " "with status_code: {} and error: {}").format(
+                response_code, response_message["error"] if isinstance(response_message, dict) else response_message
+            )
+            return False, "API key not validated, Error: {}".format(msg)
     except ConnectionError:
         msg = "ConnectionError occurred, please check your connection and try again."
-        return False, 'API key not validated, Error: {}'.format(msg)
+        return False, "API key not validated, Error: {}".format(msg)
     except RequestException:
         msg = "An ambiguous exception occurred, please try again."
-        return False, 'API key not validated, Error: {}'.format(msg)
+        return False, "API key not validated, Error: {}".format(msg)
     except Exception as e:
-        return False, 'API key not validated, Error: {}'.format(str(e))
+        return False, "API key not validated, Error: {}".format(str(e))
 
 
 def chunkgen(iterable, chunk_size=1000):
@@ -327,7 +329,7 @@ def get_caching(session_key, method, logger):
 
     :returns: cache_enabled flag,cache object.
     """
-    if method in ['filter', 'similar', 'timeline']:
+    if method in ["filter", "similar", "timeline"]:
         cache_enabled = 0
         cache = None
     else:
@@ -338,8 +340,10 @@ def get_caching(session_key, method, logger):
             else:
                 cache = None
         except CachingException as e:
-            logger.debug("An exception occurred while fetching/ looking up/ creating KVStore"
-                         " or while trying to create service object : {}".format(e))
+            logger.debug(
+                "An exception occurred while fetching/ looking up/ creating KVStore"
+                " or while trying to create service object : {}".format(e)
+            )
             cache = None
             cache_enabled = 0
     return cache_enabled, cache
@@ -357,7 +361,7 @@ def get_response_for_generating(session_key, api_client, ip, method, logger):
     :return: response
     """
     cache_enabled, cache = get_caching(session_key, method, logger)
-    if method in ['riot', 'greynoise_riot']:
+    if method in ["riot", "greynoise_riot"]:
         fetch_method = api_client.riot
     else:
         fetch_method = api_client.ip

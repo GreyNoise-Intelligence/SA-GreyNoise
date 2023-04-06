@@ -1,5 +1,6 @@
 <form stylesheet="error_msg.css,daterangepicker.css" script="parameter_validator.js" isDashboard="true" version="1.1">
   <label>IP Timeline Lookup</label>
+  <description>Allows for an analyst to query the GreyNoise IP Timeline functionality to retrieve a daily summary of scanning activity for the submitted IP.  Requires an IP Timeline license to function.</description>
   <fieldset submitButton="true" autoRun="false">
     <input type="text" token="tkn_ip_address">
       <label>IP Address</label>
@@ -37,8 +38,10 @@
     | return ip_address days limit ]
 | eval time=strptime(timestamp,"%Y-%m-%dT%H:%M:%SZ")
 | eval date = strftime(time,"%Y-%m-%d")
-| table date classification tags_name rdns organization asn port http_paths http_user_agents
-| rename date AS "Event Date" classification AS "Classification" tags_name AS "Tag(s)" rdns AS "rDNS" organization AS "Organization" asn AS "ASN" port AS "Port(s) Scanned" http_paths AS "Web Path(s)" http_user_agents AS "User Agent(s)"
+| spath output=ports path=results.protocols{}.port
+| spath output=tags path=results.tags{}.name
+| table date classification tags rdns organization asn ports http_paths http_user_agents
+| rename date AS "Event Date" classification AS "Classification" tags AS "Tag(s)" rdns AS "rDNS" organization AS "Organization" asn AS "ASN" ports AS "Port(s) Scanned" http_paths AS "Web Path(s)" http_user_agents AS "User Agent(s)"
  </query>
           <done>
             <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;no results&quot;">

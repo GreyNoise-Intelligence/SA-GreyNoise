@@ -5,15 +5,15 @@ Python script to gather intention of IP address via GreyNoise quick check endpoi
 
 """
 from __future__ import print_function
+
 import json
 import logging
 import logging.handlers
 import sys
 
-from cim_actions import ModularAction
 import app_greynoise_declare  # noqa # pylint: disable=unused-import
-
 from alert_utils import AlertBase
+from cim_actions import ModularAction
 
 
 class GreyNoiseQuickCheck(AlertBase):
@@ -33,9 +33,9 @@ class GreyNoiseQuickCheck(AlertBase):
             flag = True
         self.writeevents(index="main", source="greynoise_quick")
         if flag:
-            self.message("The events are successfully written to Splunk", status='success')
+            self.message("The events are successfully written to Splunk", status="success")
         else:
-            self.message("No events were returned", status='failure')
+            self.message("No events were returned", status="failure")
 
 
 def run():
@@ -57,7 +57,7 @@ def run():
     except Exception as error:
         # adding additional logging since adhoc search invocations do not write to stderr
         try:
-            alert_base.message(str(error), status='failure', level=logging.CRITICAL)
+            alert_base.message(str(error), status="failure", level=logging.CRITICAL)
         except Exception:
             logger.critical(error)
         print("ERROR: %s" % str(error), file=sys.stderr)

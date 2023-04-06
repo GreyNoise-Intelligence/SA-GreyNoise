@@ -1,12 +1,11 @@
 import sys
 import traceback
 
-import app_greynoise_declare # noqa # pylint: disable=unused-import
-from splunklib.searchcommands import dispatch, GeneratingCommand, Configuration
-from greynoise import GreyNoise
-
+import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import utility
+from greynoise import GreyNoise
 from greynoise_constants import INTEGRATION_NAME
+from splunklib.searchcommands import Configuration, GeneratingCommand, dispatch
 
 
 @Configuration(type="events")
@@ -28,7 +27,7 @@ class OverviewCommand(GeneratingCommand):
         "operating_systems": "operating_system",
         "categories": "category",
         "asns": "asn",
-        "actors": "actor"
+        "actors": "actor",
     }
 
     def handle_stats(self, data, classification):
@@ -48,18 +47,18 @@ class OverviewCommand(GeneratingCommand):
                         "stats_field": value,
                         "stats_value": entry[value],
                         "stats_count": entry["count"],
-                        "classification": classification
+                        "classification": classification,
                     }
                     self.RESULTS.append(a)
 
     def generate(self):
         """Method that yields records to the Splunk processing pipeline."""
         logger = utility.setup_logger(
-            session_key=self._metadata.searchinfo.session_key, log_context=self._metadata.searchinfo.command)
+            session_key=self._metadata.searchinfo.session_key, log_context=self._metadata.searchinfo.command
+        )
 
         # Enter the mechanism only when the Search is complete and all the events are available
         if self.search_results_info and not self.metadata.preview:
-
             try:
                 api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
                 proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
@@ -70,7 +69,7 @@ class OverviewCommand(GeneratingCommand):
                     exit(1)
 
                 # Opting timeout 120 seconds for the requests
-                if 'http' in proxy:
+                if "http" in proxy:
                     api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
                 else:
                     api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
@@ -78,7 +77,7 @@ class OverviewCommand(GeneratingCommand):
                 queries = {
                     "malicious": "classification:malicious last_seen:1d",
                     "benign": "classification:benign last_seen:1d",
-                    "unknown": "classification:unknown last_seen:1d"
+                    "unknown": "classification:unknown last_seen:1d",
                 }
 
                 for key, value in queries.items():

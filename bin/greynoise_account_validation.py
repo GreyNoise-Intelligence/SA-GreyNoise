@@ -1,25 +1,28 @@
-import os
-import traceback  # noqa # pylint: disable=unused-import
-import json
-import time
-import sys
 import datetime
+import json
+import os
+import time
+import traceback  # noqa # pylint: disable=unused-import
 
 import app_greynoise_declare
-from solnlib import conf_manager  # noqa # pylint: disable=unused-import
 import splunk.admin as admin
-import splunk.rest as rest
 import splunk.clilib.cli_common
+import splunk.rest as rest
 import splunklib.client as client
-from splunklib.binding import HTTPError
-from splunktaucclib.rest_handler.endpoint.validator import Validator
-from splunktaucclib.rest_handler.endpoint import (
-    validator
+from greynoise_constants import BACKOFF_FACTOR, MAX_RETRIES
+from greynoise_exceptions import CachingException
+from saved_search_utils import (
+    DATE,
+    TIME_MAP,
+    compare_parameters,
+    handle_macros,
+    is_api_configured,
 )
-
-from utility import validate_api_key, get_conf_file, setup_logger, make_error_message
-from saved_search_utils import is_api_configured, handle_macros, compare_parameters, DATE, TIME_MAP
-from greynoise_constants import MAX_RETRIES, BACKOFF_FACTOR
+from solnlib import conf_manager  # noqa # pylint: disable=unused-import
+from splunklib.binding import HTTPError
+from splunktaucclib.rest_handler.endpoint import validator
+from splunktaucclib.rest_handler.endpoint.validator import Validator
+from utility import get_conf_file, make_error_message, setup_logger, validate_api_key
 
 APP_NAME = app_greynoise_declare.ta_name
 
@@ -51,10 +54,10 @@ class EnableCachingHandler(Validator):
         service = client.connect(port=mgmt_port, token=self.session_key_obj.session_key, app=APP_NAME)
         try:
             # Update Macro for enable caching
-            service.post("properties/macros/greynoise_caching", definition=str(data['enable_caching']))
+            service.post("properties/macros/greynoise_caching", definition=str(data["enable_caching"]))
             return True
         except Exception:
-            self.logger.error('Failed to update caching macro\n{} '.format(traceback.format_exc()))
+            self.logger.error("Failed to update caching macro\n{} ".format(traceback.format_exc()))
             self.put_msg("Failed to toggle caching. See logs for details.")
             return False
 
@@ -78,10 +81,10 @@ class TtlHandler(Validator):
         """Method to call all ttl helpers."""
         try:
             # Update Macro TTL
-            self.service.post("properties/macros/greynoise_ttl", definition=str(data['ttl']))
+            self.service.post("properties/macros/greynoise_ttl", definition=str(data["ttl"]))
             return True
         except Exception:
-            self.logger.error('Failed to update caching macro\n{} '.format(traceback.format_exc()))
+            self.logger.error("Failed to update caching macro\n{} ".format(traceback.format_exc()))
             self.put_msg("Failed to save TTL for cache. See logs for details.")
             return False
 
@@ -115,35 +118,41 @@ class PurgeHandler(Validator):
 
                     retry_count += 1
                     if retry_count == 1:
-                        self.logger.warning('Method="{}()" Args="{}" Kwargs="{}" Error="{}"'.format(
-                            method.__name__, args, kwargs, ex))
+                        self.logger.warning(
+                            'Method="{}()" Args="{}" Kwargs="{}" Error="{}"'.format(method.__name__, args, kwargs, ex)
+                        )
 
                     # Exponential backoff
-                    delay = (BACKOFF_FACTOR) * (2 ** retry_count - 1)
+                    delay = (BACKOFF_FACTOR) * (2**retry_count - 1)
                     time.sleep(delay)
 
-                    self.logger.info('RetryCount={} RetryAfterSecond={}'.format(retry_count, delay))
+                    self.logger.info("RetryCount={} RetryAfterSecond={}".format(retry_count, delay))
 
             return response
+
         return wrapper
 
     @retry
     def cache_purge_helper(self):
         """Method to purge all caches."""
-        caches = ['multi', 'context', 'riot']
+        caches = ["multi", "context", "riot"]
         for each in caches:
             response_status, response_content = rest.simpleRequest(
                 "/servicesNS/nobody/" + str(APP_NAME) + "/storage/collections/data/" + each,
-                sessionKey=self.session_key_obj.session_key, method='DELETE', getargs={"output_mode": "json"},
-                raiseAllErrors=True, timeout=180)
+                sessionKey=self.session_key_obj.session_key,
+                method="DELETE",
+                getargs={"output_mode": "json"},
+                raiseAllErrors=True,
+                timeout=180,
+            )
 
     def validate(self, value, data):
         """Method to call all purge helpers."""
         try:
-            if data['purge_cache'] == '1':
+            if data["purge_cache"] == "1":
                 self.logger.debug("Purging cache and unchecking the Purge Cache checkbox.")
                 self.cache_purge_helper()
-                data['purge_cache'] = '0'
+                data["purge_cache"] = "0"
                 self.logger.info("Cache purged successfully.")
             else:
                 self.logger.debug("Purge Cache is Disabled")
@@ -171,23 +180,23 @@ class GreyNoiseAPIValidation(Validator):
         """Validate the api key entered by user on the Configuration Page and enable the saved search."""
         try:
             # Get Conf file for obtaining parameters
-            conf = get_conf_file(self.session_key_obj.session_key, file='app_greynoise_settings', app=APP_NAME)
+            conf = get_conf_file(self.session_key_obj.session_key, file="app_greynoise_settings", app=APP_NAME)
 
             # maybe put in new field in webconf page or use .conf
             # - ENV is not passed to user runnig splunk
             # - ENV not good for cluser/distributed
             parameters = conf.get("parameters", {})
-            proxy_conf = parameters.get('proxy', None)
+            proxy_conf = parameters.get("proxy", None)
 
             # favor conf file
-            proxy = proxy_conf or os.environ.get('GREYNOISE_PROXY', None)
+            proxy = proxy_conf or os.environ.get("GREYNOISE_PROXY", None)
 
-            conf.update("parameters", {'proxy': proxy})
-            self.logger.info(f'proxy: {proxy}')
+            conf.update("parameters", {"proxy": proxy})
+            self.logger.info(f"proxy: {proxy}")
 
             # Validate API Key
             self.logger.debug("Validating API key.")
-            status, msg = validate_api_key(data.get('api_key'), self.logger, proxy)
+            status, msg = validate_api_key(data.get("api_key"), self.logger, proxy)
             if not status:
                 raise Exception(msg)
             self.logger.info("API key validated.")
@@ -208,7 +217,7 @@ class GreyNoiseAPIValidation(Validator):
             if not job_id_overview:
                 self.logger.debug("Setting up the saved search for the first time in absence of job_id.")
                 # Update the API key in the conf file so that the custom commands can execute
-                conf.update("parameters", {'api_key': data.get('api_key')}, ['api_key'])
+                conf.update("parameters", {"api_key": data.get("api_key")}, ["api_key"])
 
                 # Retrive saved search
                 overview_savedsearch_once = service.saved_searches["greynoise_overview_once"]
@@ -217,7 +226,7 @@ class GreyNoiseAPIValidation(Validator):
                 # Saved job_id_overview to indicate the search is not first time
                 job = overview_savedsearch_once.dispatch()
                 job_sid = job["sid"]
-                conf.update("scan_deployment", {'job_id_overview': job_sid})
+                conf.update("scan_deployment", {"job_id_overview": job_sid})
 
                 # Enable the saved search to execute on cron schedule
                 overview_savedsearch.enable()
@@ -226,9 +235,10 @@ class GreyNoiseAPIValidation(Validator):
                 overview_savedsearch.enable()
                 self.logger.debug("Re-enabled the Overview saved search.")
         except HTTPError:
-            self.logger.error("Error while retrieving Saved Search. Please "
-                              "check if the saved searches {} and {} exists.".format(
-                                  "greynoise_overview_once", "greynoise_overview"))
+            self.logger.error(
+                "Error while retrieving Saved Search. Please "
+                "check if the saved searches {} and {} exists.".format("greynoise_overview_once", "greynoise_overview")
+            )
             self.put_msg("Error while retrieving Saved Search. Kindly check greynoise_main.log for more details.")
             return False
         except Exception as e:
@@ -258,11 +268,13 @@ class GreyNoiseScanDeployment(Validator):
 
     def get_kvstore_status(self):
         """Get kv store status."""
-        _, content = rest.simpleRequest("/services/kvstore/status",
-                                        sessionKey=self.session_key_obj.session_key,
-                                        method="GET",
-                                        getargs={"output_mode": "json"},
-                                        raiseAllErrors=True)
+        _, content = rest.simpleRequest(
+            "/services/kvstore/status",
+            sessionKey=self.session_key_obj.session_key,
+            method="GET",
+            getargs={"output_mode": "json"},
+            raiseAllErrors=True,
+        )
         data = json.loads(content)["entry"]
         return data[0]["content"]["current"].get("status")
 
@@ -271,7 +283,7 @@ class GreyNoiseScanDeployment(Validator):
         # Retrieve App Name
         try:
             # Get Conf object of apps settings
-            conf = get_conf_file(self.session_key_obj.session_key, file='app_greynoise_settings')
+            conf = get_conf_file(self.session_key_obj.session_key, file="app_greynoise_settings")
 
             try:
                 if not is_api_configured(conf):
@@ -283,8 +295,8 @@ class GreyNoiseScanDeployment(Validator):
                 return False
 
             parameters = conf.get("scan_deployment", {})
-            enable_ss = data.get('enable_ss', 0)
-            force_enable_ss = data.get('force_enable_ss', 0)
+            enable_ss = data.get("enable_ss", 0)
+            force_enable_ss = data.get("force_enable_ss", 0)
             job_id_scan_deployment = parameters.get("job_id_scan_deployment", None)
 
             # Creating client for connecting server
@@ -311,8 +323,10 @@ class GreyNoiseScanDeployment(Validator):
                     try:
                         handle_macros(data, service)
                     except ValueError:
-                        msg = ("The field names in \"Other fields\" parameter "
-                               "only supports underscore, digits, alphabets, and hyphen")
+                        msg = (
+                            'The field names in "Other fields" parameter '
+                            "only supports underscore, digits, alphabets, and hyphen"
+                        )
                         raise Exception(msg)
 
                     self.logger.info("Enabling saved search.")
@@ -335,25 +349,25 @@ class GreyNoiseScanDeployment(Validator):
                             scan_deployment_savedsearch_once = service.saved_searches["greynoise_scan_deployment_once"]
                             kwargs = {
                                 "dispatch.earliest_time": TIME_MAP[DATE[start_time]],
-                                "dispatch.latest_time": "now"
+                                "dispatch.latest_time": "now",
                             }
                             scan_deployment_savedsearch_once.update(**kwargs).refresh()
                             job = scan_deployment_savedsearch_once.dispatch()
                             job_sid = job["sid"]
-                            conf.update("scan_deployment", {'job_id_scan_deployment': job_sid})
+                            conf.update("scan_deployment", {"job_id_scan_deployment": job_sid})
                             self.logger.info("Saved search dispatched successfully.")
                             return True
                     else:
                         try:
                             self.logger.debug("Dispatching a new search if the current one is expired.")
                             job_details = service.job(job_id_scan_deployment)
-                            status = job_details.state().content['dispatchState']
+                            status = job_details.state().content["dispatchState"]
 
-                            if status == 'PAUSED':
+                            if status == "PAUSED":
                                 # unpause the search in case of savedsearch job is paused by someone
                                 job_details.unpause()
                                 return True
-                            if status in ['QUEUED', 'PARSING', 'RUNNING']:
+                            if status in ["QUEUED", "PARSING", "RUNNING"]:
                                 return True
                         except Exception:
                             pass
@@ -365,12 +379,12 @@ class GreyNoiseScanDeployment(Validator):
                             scan_deployment_savedsearch_once = service.saved_searches["greynoise_scan_deployment_once"]
                             kwargs = {
                                 "dispatch.earliest_time": TIME_MAP[DATE[start_time]],
-                                "dispatch.latest_time": "now"
+                                "dispatch.latest_time": "now",
                             }
                             scan_deployment_savedsearch_once.update(**kwargs).refresh()
                             job = scan_deployment_savedsearch_once.dispatch()
                             job_sid = job["sid"]
-                            conf.update("scan_deployment", {'job_id_scan_deployment': job_sid})
+                            conf.update("scan_deployment", {"job_id_scan_deployment": job_sid})
                             self.logger.info("Saved search dispatched successfully.")
                             return True
                 else:
@@ -379,8 +393,10 @@ class GreyNoiseScanDeployment(Validator):
                     try:
                         handle_macros(data, service)
                     except ValueError:
-                        msg = ("The field names in \"Other fields\" parameter "
-                               "only supports underscore, digits, alphabets, and hyphen")
+                        msg = (
+                            'The field names in "Other fields" parameter '
+                            "only supports underscore, digits, alphabets, and hyphen"
+                        )
                         raise Exception(msg)
 
                     # Enable the scheduled saved search
@@ -391,15 +407,12 @@ class GreyNoiseScanDeployment(Validator):
                     start_time = data.get("scan_start_time", "NOW")
                     if start_time != "NOW":
                         scan_deployment_savedsearch_once = service.saved_searches["greynoise_scan_deployment_once"]
-                        kwargs = {
-                            "dispatch.earliest_time": TIME_MAP[DATE[start_time]],
-                            "dispatch.latest_time": "now"
-                        }
+                        kwargs = {"dispatch.earliest_time": TIME_MAP[DATE[start_time]], "dispatch.latest_time": "now"}
                         scan_deployment_savedsearch_once.update(**kwargs).refresh()
                         job = scan_deployment_savedsearch_once.dispatch()
                         job_sid = job["sid"]
                         self.logger.info("Dispatched the search successfully.")
-                        conf.update("scan_deployment", {'job_id_scan_deployment': job_sid})
+                        conf.update("scan_deployment", {"job_id_scan_deployment": job_sid})
             else:
                 self.logger.debug("Initiating user action to disable the saved search.")
                 # Retrive and disable scheduled saved search
@@ -409,16 +422,19 @@ class GreyNoiseScanDeployment(Validator):
                 if job_id_scan_deployment:
                     try:
                         job_details = service.job(job_id_scan_deployment)
-                        status = job_details.state().content['dispatchState']
-                        if status in ['QUEUED', 'PARSING', 'RUNNING', 'FINALIZING', 'PAUSED']:
+                        status = job_details.state().content["dispatchState"]
+                        if status in ["QUEUED", "PARSING", "RUNNING", "FINALIZING", "PAUSED"]:
                             job_details.cancel()
                     except Exception:
                         pass
                 self.logger.info("Saved search disabled successfully.")
         except HTTPError:
-            self.logger.error("Error while retrieving Saved Search. Please "
-                              "check if the saved searches {} and {} exists.".format(
-                                  "greynoise_scan_deployment_once", "greynoise_scan_deployment"))
+            self.logger.error(
+                "Error while retrieving Saved Search. Please "
+                "check if the saved searches {} and {} exists.".format(
+                    "greynoise_scan_deployment_once", "greynoise_scan_deployment"
+                )
+            )
             self.put_msg("Error while retrieving Saved Search. Kindly check greynoise_main.log for more details.")
             return False
         except Exception as e:
@@ -450,14 +466,14 @@ class GreyNoiseFeedConfiguration(Validator):
         self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context="feed_configuration")
 
         try:
-            service = client.connect(
-                port=self.mgmt_port, token=self.session_key, app=APP_NAME)
+            service = client.connect(port=self.mgmt_port, token=self.session_key, app=APP_NAME)
             if self.collection_name in service.kvstore:
                 self.collection = service.kvstore[self.collection_name]
                 self.collection.data.query_by_id("item1")
             else:
                 self.logger.error(
-                    "Collection {} does not exist. Please define one in collections.conf.".format(self.collection_name))
+                    "Collection {} does not exist. Please define one in collections.conf.".format(self.collection_name)
+                )
                 raise CachingException("Collection {} does not exist.".format(self.collection_name))
         except HTTPError as e:
             if e.status == 404:
@@ -471,11 +487,13 @@ class GreyNoiseFeedConfiguration(Validator):
 
     def get_kvstore_status(self):
         """Get kv store status."""
-        _, content = rest.simpleRequest("/services/kvstore/status",
-                                        sessionKey=self.session_key_obj.session_key,
-                                        method="GET",
-                                        getargs={"output_mode": "json"},
-                                        raiseAllErrors=True)
+        _, content = rest.simpleRequest(
+            "/services/kvstore/status",
+            sessionKey=self.session_key_obj.session_key,
+            method="GET",
+            getargs={"output_mode": "json"},
+            raiseAllErrors=True,
+        )
         data = json.loads(content)["entry"]
         return data[0]["content"]["current"].get("status")
 
@@ -484,7 +502,7 @@ class GreyNoiseFeedConfiguration(Validator):
         # Retrieve App Name
         try:
             # Get Conf object of apps settings
-            conf = get_conf_file(self.session_key_obj.session_key, file='app_greynoise_settings')
+            conf = get_conf_file(self.session_key_obj.session_key, file="app_greynoise_settings")
 
             try:
                 if not is_api_configured(conf):
@@ -496,8 +514,8 @@ class GreyNoiseFeedConfiguration(Validator):
                 return False
 
             parameters = conf.get("feed_configuration", {})
-            enable_feed_import = data.get('enable_feed_import', 0)
-            force_enable_ss = data.get('force_enable_ss', 0)
+            enable_feed_import = data.get("enable_feed_import", 0)
+            force_enable_ss = data.get("force_enable_ss", 0)
             job_id_feed = parameters.get("job_id_feed", None)
             job_id_feed_purge = parameters.get("job_id_feed_purge", None)
             feed_selection = data.get("feed_selection", "BENIGN")
@@ -527,7 +545,7 @@ class GreyNoiseFeedConfiguration(Validator):
 
                 self.logger.info("Saving query to KVStore: {}".format(query))
                 timestamp = int(datetime.datetime.now().timestamp() * 1000)
-                self.collection.data.insert({'created': timestamp, 'query': query})
+                self.collection.data.insert({"created": timestamp, "query": query})
 
                 # Enable the scheduled saved search
                 self.logger.debug("Initiating user action to enable the saved search: Feed Configuration.")
@@ -554,20 +572,20 @@ class GreyNoiseFeedConfiguration(Validator):
                         feed_once_savedsearch = service.saved_searches["greynoise_feed_once"]
                         job = feed_once_savedsearch.dispatch()
                         job_sid = job["sid"]
-                        conf.update("feed_configuration", {'job_id_feed': job_sid})
+                        conf.update("feed_configuration", {"job_id_feed": job_sid})
                         self.logger.info("Saved search for FEED dispatched successfully.")
                         return True
                     else:
                         try:
                             self.logger.debug("Dispatching a new search if the current one is expired.")
                             job_details = service.job(job_id_feed)
-                            status = job_details.state().content['dispatchState']
+                            status = job_details.state().content["dispatchState"]
 
-                            if status == 'PAUSED':
+                            if status == "PAUSED":
                                 # unpause the search in case of savedsearch job is paused by someone
                                 job_details.unpause()
                                 return True
-                            if status in ['QUEUED', 'PARSING', 'RUNNING']:
+                            if status in ["QUEUED", "PARSING", "RUNNING"]:
                                 return True
                         except Exception:
                             pass
@@ -580,8 +598,8 @@ class GreyNoiseFeedConfiguration(Validator):
                         job_purge = feed_purge_savedsearch.dispatch()
                         job_sid = job["sid"]
                         job_purge_sid = job_purge["sid"]
-                        conf.update("feed_configuration", {'job_id_feed': job_sid})
-                        conf.update("feed_configuration", {'job_id_feed_purge': job_purge_sid})
+                        conf.update("feed_configuration", {"job_id_feed": job_sid})
+                        conf.update("feed_configuration", {"job_id_feed_purge": job_purge_sid})
                         self.logger.info("Saved search for FEED dispatched successfully.")
                         return True
                 else:
@@ -600,8 +618,8 @@ class GreyNoiseFeedConfiguration(Validator):
                     job_purge = feed_purge_savedsearch.dispatch()
                     job_sid = job["sid"]
                     job_purge_sid = job_purge["sid"]
-                    conf.update("feed_configuration", {'job_id_feed': job_sid})
-                    conf.update("feed_configuration", {'job_id_feed_purge': job_purge_sid})
+                    conf.update("feed_configuration", {"job_id_feed": job_sid})
+                    conf.update("feed_configuration", {"job_id_feed_purge": job_purge_sid})
                     self.logger.info("Saved search for FEED dispatched successfully.")
             else:
                 self.logger.debug("Initiating user action to disable the saved search.")
@@ -614,24 +632,25 @@ class GreyNoiseFeedConfiguration(Validator):
                 if job_id_feed:
                     try:
                         job_details = service.job(job_id_feed)
-                        status = job_details.state().content['dispatchState']
-                        if status in ['QUEUED', 'PARSING', 'RUNNING', 'FINALIZING', 'PAUSED']:
+                        status = job_details.state().content["dispatchState"]
+                        if status in ["QUEUED", "PARSING", "RUNNING", "FINALIZING", "PAUSED"]:
                             job_details.cancel()
                     except Exception:
                         pass
                 if job_id_feed_purge:
                     try:
                         job_details = service.job(job_id_feed_purge)
-                        status = job_details.state().content['dispatchState']
-                        if status in ['QUEUED', 'PARSING', 'RUNNING', 'FINALIZING', 'PAUSED']:
+                        status = job_details.state().content["dispatchState"]
+                        if status in ["QUEUED", "PARSING", "RUNNING", "FINALIZING", "PAUSED"]:
                             job_details.cancel()
                     except Exception:
                         pass
                 self.logger.info("Saved search FEED disabled successfully.")
         except HTTPError:
-            self.logger.error("Error while retrieving Saved Search. Please "
-                              "check if the saved searches {} and {} exists.".format(
-                                  "greynoise_feed_once", "greynoise_feed"))
+            self.logger.error(
+                "Error while retrieving Saved Search. Please "
+                "check if the saved searches {} and {} exists.".format("greynoise_feed_once", "greynoise_feed")
+            )
             self.put_msg("Error while retrieving Saved Search. Kindly check greynoise_main.log for more details.")
             return False
         except Exception as e:

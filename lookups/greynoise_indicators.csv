@@ -1,1 +1,1 @@
-actor,ip,"last_seen",classification
+ip,actor,first_seen,last_seen,classification,tags,cve,source_country

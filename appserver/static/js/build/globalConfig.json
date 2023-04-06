@@ -196,13 +196,13 @@
                             "label":"Enable Feed Import",
                             "defaultValue": 0,
                             "required":false,
-                            "help":"Select this checkbox to enable the ingest of a GreyNoise Feed."
+                            "help":"Select this checkbox to enable the ingest of a GreyNoise Feed. IMPORTANT: Ensure your subscription includes an appropriate license."
                         },
                         {
                             "field": "force_enable_ss",
                             "label": "Force Feed Run Now",
                             "type": "checkbox",
-                            "help": "Select this checkbox to stop the current scan and forcefully initialize a new scan.",
+                            "help": "Select this checkbox to immediately begin a feed ingest based on the selected options.",
                             "required": false
                         },
                         {
@@ -232,7 +232,7 @@
                                 ],
                                 "disableSearch": true
                             },
-                            "help": "Specify the time range for scanning the indexed Splunk data."
+                            "help": "Select which GreyNoise feed type to ingest."
                         }
                     ], 
                     "title": "Feed Configuration",

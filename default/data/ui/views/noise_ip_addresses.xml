@@ -1,11 +1,10 @@
-<form isDashboard="true" version="1.1">
+<form isDashboard="true" version="1.1" theme="dark">
   <label>Noise IP Addresses</label>
   <fieldset submitButton="false">
-
     <input type="text" token="tkn_ip_address" searchWhenChanged="true">
       <label>IP Addresses</label>
       <default>*</default>
-      <!-- Reset token tkn_ip_for_request on any change in inputs 
+      <!-- Reset token tkn_ip_for_request on any change in inputs
       to disable the existing IP noise drilldown panel -->
       <change>
         <unset token="tkn_ip_for_request"></unset>
@@ -13,20 +12,18 @@
       <prefix>"</prefix>
       <suffix>"</suffix>
     </input>
-
     <input type="dropdown" token="tkn_noise" searchWhenChanged="true">
       <label>Noise status</label>
       <choice value="*">All</choice>
       <choice value="1">True</choice>
       <choice value="0">False</choice>
       <default>*</default>
-      <!-- Reset token tkn_ip_for_request on any change in inputs 
+      <!-- Reset token tkn_ip_for_request on any change in inputs
       to disable the existing IP noise drilldown panel -->
       <change>
         <unset token="tkn_ip_for_request"></unset>
       </change>
     </input>
-
     <input type="dropdown" token="tkn_riot" searchWhenChanged="true">
       <label>RIOT status</label>
       <choice value="*">All</choice>
@@ -51,7 +48,6 @@
       </change>
     </input>
   </fieldset>
-
   <row>
     <panel>
       <table>
@@ -69,10 +65,9 @@
           <earliest>0</earliest>
           <latest></latest>
         </search>
-        <option name="count">10</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="rowNumbers">true</option>
+        <option name="count">25</option>
         <option name="drilldown">cell</option>
+        <option name="rowNumbers">true</option>
         <drilldown>
           <condition field="IP">
             <unset token="tkn_ip_for_request"></unset>
@@ -82,7 +77,6 @@
               ]]>
             </link>
           </condition>
-
           <condition field="Noise">
             <unset token="tkn_ip_for_request"></unset>
             <link target="_blank">
@@ -91,7 +85,6 @@
               ]]>
             </link>
           </condition>
-
           <condition field="RIOT">
             <unset token="tkn_ip_for_request"></unset>
             <link target="_blank">
@@ -100,10 +93,8 @@
               ]]>
             </link>
           </condition>
-
           <!-- No drill down for Last Checked field -->
           <condition field="Last Checked"></condition>
-          
           <!-- No drill down for the Code Message field -->
           <condition field="Code Message"></condition>
           <condition field="Check Live Status">
@@ -113,7 +104,6 @@
       </table>
     </panel>
   </row>
-
   <row>
     <panel depends="$tkn_ip_for_request$">
       <single>

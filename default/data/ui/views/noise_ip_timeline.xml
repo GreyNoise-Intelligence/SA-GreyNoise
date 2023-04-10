@@ -1,4 +1,4 @@
-<form stylesheet="error_msg.css,daterangepicker.css" script="parameter_validator_modified.js" isDashboard="true" version="1.1">
+<form stylesheet="error_msg.css,daterangepicker.css" script="parameter_validator_modified.js" isDashboard="true" version="1.1" theme="dark">
   <label>IP Timeline Lookup</label>
   <description>Allows for an analyst to query the GreyNoise IP Timeline functionality to retrieve a daily summary of scanning activity for the submitted IP.  Requires an IP Timeline license to function.</description>
   <fieldset submitButton="true" autoRun="false">

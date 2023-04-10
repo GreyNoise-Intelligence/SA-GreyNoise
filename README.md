@@ -18,9 +18,12 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
  - Vendor Products: GreyNoise API
 
 # RELEASE NOTES (Version 2.2.0) #
- - Add new FEED component to create lookuptable based on GreyNoise indicators
+ - Added new FEED component to create lookuptable based on GreyNoise indicators
+ - Added new command `gnipsimilar` and new `Similar IP Lookup` dashboard
+ - Added new command `gniptimeline` and new `IP Timeline Lookup` dashboard
  - Updated `gnenrich` command to use batch lookups
  - Updated `gnquery` command with new parameters `page_size` and `exclude_raw`
+ - Updated GreyNoise SDK to v2.0.0
 
 # RELEASE NOTES (Version 2.1.5) #
  - Fix bug with `gnenrich`, `gnriot`, and `gnfilter` where proxy wasn't being used for API key validation

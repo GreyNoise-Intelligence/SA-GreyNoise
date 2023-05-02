@@ -142,12 +142,12 @@ class GNEnrichCommand(EventingCommand):
 
             except Exception:
                 logger.info(
-                    "Exception occurred while adding the noise and RIOT status to the events, Error: {}".format(
+                    "Exception occurred while adding the noise status to the events, Error: {}".format(
                         traceback.format_exc()
                     )
                 )
                 self.write_error(
-                    "Exception occurred while adding the noise and RIOT status of the "
+                    "Exception occurred while adding the noise status of the "
                     "IP addresses to events. See greynoise_main.log for more details."
                 )
 

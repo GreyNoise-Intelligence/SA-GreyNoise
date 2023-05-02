@@ -1,4 +1,4 @@
-#!/usr/local/opt/python@3.11/bin/python3.11
+#!/Users/bradchiappetta/repos/SA-GreyNoise/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

@@ -226,7 +226,7 @@
                                         "value": "MALICIOUS_BENIGN"
                                     },
                                     {
-                                        "label": "All Indicators",
+                                        "label": "All Indicators - Last 24 Hours",
                                         "value": "ALL"
                                     }
                                 ],

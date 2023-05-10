@@ -1,4 +1,4 @@
-<form stylesheet="error_msg.css,daterangepicker.css" script="parameter_validator.js" isDashboard="true" version="1.1">
+<form stylesheet="error_msg.css,daterangepicker.css" script="parameter_validator.js" isDashboard="true" version="1.1" theme="dark">
   <label>Live Investigation</label>
   <fieldset submitButton="true" autoRun="false">
     <input type="text" token="tkn_ip_address">
@@ -60,21 +60,21 @@
       <table rejects="$message$">
         <search id="gnquery_results">
           <query>
-    $token_search_trigger$ | gnquery 
-    [| makeresults 
-    | eval last_seen = " last_seen:"."["."$tkn_start_time$"." TO "."$tkn_end_time$"."]" 
+    $token_search_trigger$ | gnquery
+    [| makeresults
+    | eval last_seen = " last_seen:"."["."$tkn_start_time$"." TO "."$tkn_end_time$"."]"
     | eval ip_address = if(isnull("$tkn_ip_address_escaped$") OR "$tkn_ip_address_escaped$"=="", "", " ip:"."$tkn_ip_address_escaped$")
     | eval classification = " classification:"."$tkn_classification$"
-    | eval organization = if(isnull("$tkn_organization_escaped$") OR "$tkn_organization_escaped$"=="", "", " metadata.organization:"."$tkn_organization_escaped$") 
-    | eval actor = if(isnull("$tkn_actor_escaped$") OR "$tkn_actor_escaped$"=="", "", " actor:"."$tkn_actor_escaped$") 
-    | eval tag = if(isnull("$tkn_tag_escaped$") OR "$tkn_tag_escaped$"=="", "", " tags:"."$tkn_tag_escaped$") 
-    | eval os = if(isnull("$tkn_os_escaped$") OR "$tkn_os_escaped$"=="", "", " metadata.os:"."$tkn_os_escaped$") 
-    | eval category = if(isnull("$tkn_category_escaped$") OR "$tkn_category_escaped$"=="", "", " metadata.category:"."$tkn_category_escaped$") 
-    | eval country = if(isnull("$tkn_country_escaped$") OR "$tkn_country_escaped$"=="", "", " metadata.country:"."$tkn_country_escaped$") 
-    | eval asn = if(isnull("$tkn_asn_escaped$") OR "$tkn_asn_escaped$"=="", "", " metadata.asn:"."$tkn_asn_escaped$") 
-    | eval query = ip_address.classification.organization.actor.tag.os.category.country.asn.last_seen 
-    | return query ] 
-| eval noise = if(seen == "1", "True", "False") 
+    | eval organization = if(isnull("$tkn_organization_escaped$") OR "$tkn_organization_escaped$"=="", "", " metadata.organization:"."$tkn_organization_escaped$")
+    | eval actor = if(isnull("$tkn_actor_escaped$") OR "$tkn_actor_escaped$"=="", "", " actor:"."$tkn_actor_escaped$")
+    | eval tag = if(isnull("$tkn_tag_escaped$") OR "$tkn_tag_escaped$"=="", "", " tags:"."$tkn_tag_escaped$")
+    | eval os = if(isnull("$tkn_os_escaped$") OR "$tkn_os_escaped$"=="", "", " metadata.os:"."$tkn_os_escaped$")
+    | eval category = if(isnull("$tkn_category_escaped$") OR "$tkn_category_escaped$"=="", "", " metadata.category:"."$tkn_category_escaped$")
+    | eval country = if(isnull("$tkn_country_escaped$") OR "$tkn_country_escaped$"=="", "", " metadata.country:"."$tkn_country_escaped$")
+    | eval asn = if(isnull("$tkn_asn_escaped$") OR "$tkn_asn_escaped$"=="", "", " metadata.asn:"."$tkn_asn_escaped$")
+    | eval query = ip_address.classification.organization.actor.tag.os.category.country.asn.last_seen
+    | return query ]
+| eval noise = if(seen == "1", "True", "False")
 | table ip noise classification last_seen organization actor tags os category country asn message
 | rename ip AS "IP Address" noise AS "Noise" classification AS Classification last_seen AS "Last Seen" organization AS Organization actor AS Actor tags AS Tags os AS OS category AS Category country AS Country asn AS ASN
  </query>
@@ -95,7 +95,7 @@
         <option name="drilldown">cell</option>
         <drilldown>
           <link target="_blank">
-              <![CDATA[
+            <![CDATA[
                 /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=$row.IP Address$
               ]]>
           </link>

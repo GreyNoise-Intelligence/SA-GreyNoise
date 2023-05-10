@@ -7,22 +7,24 @@ DATE = {
     "LAST_TWENTY_FOUR_HOURS": "4",
     "LAST_SEVEN_DAYS": "5",
     "LAST_THIRTY_DAYS": "6",
-    "LAST_SIXTY_DAYS": "7"
+    "LAST_SIXTY_DAYS": "7",
 }
 
-TIME_MAP = {
-    "1": "0",
-    "2": "-5m",
-    "3": "-60m",
-    "4": "-24h",
-    "5": "-7d",
-    "6": "-30d",
-    "7": "-60d"
-}
+TIME_MAP = {"1": "0", "2": "-5m", "3": "-60m", "4": "-24h", "5": "-7d", "6": "-30d", "7": "-60d"}
 
 CIM_IP_FIELDS = [
-    "dest", "dvc", "src", "dest_ip", "src_ip", "dvc_ip", "orig_src", "orig_dest", "host", "source",
-    "dest_translated_ip", "src_translated_ip"
+    "dest",
+    "dvc",
+    "src",
+    "dest_ip",
+    "src_ip",
+    "dvc_ip",
+    "orig_src",
+    "orig_dest",
+    "host",
+    "source",
+    "dest_translated_ip",
+    "src_translated_ip",
 ]
 
 
@@ -101,7 +103,7 @@ def get_macro_string(data):
     :param data:
     :return string:
     """
-    return ','.join(str(s) for s in data)
+    return ",".join(str(s) for s in data)
 
 
 def get_macro_string_with_quotes(data):
@@ -111,7 +113,7 @@ def get_macro_string_with_quotes(data):
     :param data:
     :return string:
     """
-    return ','.join("'{0}'".format(s) for s in data)
+    return ",".join("'{0}'".format(s) for s in data)
 
 
 def handle_macros(data, service):
@@ -141,7 +143,7 @@ def handle_macros(data, service):
             field_name_validator.validate(field)
         all_fields = other_ip_fields.union(all_fields)
         other_ip_fields_string = get_macro_string_with_quotes(other_ip_fields)
-        all_cim_fields_string = f'{all_cim_fields_string},{other_ip_fields_string}'
+        all_cim_fields_string = f"{all_cim_fields_string},{other_ip_fields_string}"
 
     all_fields_string = get_macro_string(all_fields)
     service.post("properties/macros/greynoise_fields", definition=all_fields_string)

@@ -25,21 +25,26 @@ class Boolean(Validator):
     """
 
     truth_values = {
-        '1': True, '0': False,
-        't': True, 'f': False,
-        'true': True, 'false': False,
-        'y': True, 'n': False,
-        'yes': True, 'no': False
+        "1": True,
+        "0": False,
+        "t": True,
+        "f": False,
+        "true": True,
+        "false": False,
+        "y": True,
+        "n": False,
+        "yes": True,
+        "no": False,
     }
 
-    def __init__(self, option_name=''):
+    def __init__(self, option_name=""):
         """Initialize option name."""
         self.option_name = option_name
 
     def validate(self, value=None):
         """Validates boolean value passed to custom commands."""
         # For both optional and required options
-        if value == '':
+        if value == "":
             raise ValueError("Parameter {} should not be empty.".format(self.option_name))
 
         # This will only occur in the case of optional parameters
@@ -48,7 +53,8 @@ class Boolean(Validator):
             value = six.text_type(value).lower()
             if value not in Boolean.truth_values:
                 raise ValueError(
-                    'Please specify boolean value for parameter: {0}, given value: {1}'.format(self.option_name, value))
+                    "Please specify boolean value for parameter: {0}, given value: {1}".format(self.option_name, value)
+                )
             value = self.truth_values[value]
 
         return value
@@ -64,16 +70,16 @@ class Fieldname(Validator):
     :raises: ValueError when the value of the given Option is not acceptable
     """
 
-    pattern = re.compile(r'''^[_.a-zA-Z-][_.a-zA-Z0-9-]*$''')
+    pattern = re.compile(r"""^[_.a-zA-Z-][_.a-zA-Z0-9-]*$""")
 
-    def __init__(self, option_name=''):
+    def __init__(self, option_name=""):
         """Initialize option name."""
         self.option_name = option_name
 
     def validate(self, value=None):
         """Validates field name passed to custom commands."""
         # For both optional and required options
-        if value == '':
+        if value == "":
             raise ValueError("Parameter {} should not be empty.".format(self.option_name))
 
         # This will only occur in the case of optional parameters
@@ -82,8 +88,10 @@ class Fieldname(Validator):
             value = six.text_type(value)
             if self.pattern.match(value) is None:
                 raise ValueError(
-                    'Given value: \'{0}\' for parameter: {1} does not match the valid Splunk field pattern'.format(
-                        value, self.option_name))
+                    "Given value: '{0}' for parameter: {1} does not match the valid Splunk field pattern".format(
+                        value, self.option_name
+                    )
+                )
         return value
 
 
@@ -103,24 +111,40 @@ class Integer(Validator):
         self.option_name = option_name
 
         if minimum is not None and maximum is not None:
+
             def check_range(value):
                 if not (minimum <= value <= maximum):
-                    raise ValueError('Value of parameter {0} should be between {1} and {2}, given value: {3}'.format(
-                        self.option_name, minimum, maximum, value))
+                    raise ValueError(
+                        "Value of parameter {0} should be between {1} and {2}, given value: {3}".format(
+                            self.option_name, minimum, maximum, value
+                        )
+                    )
                 return
+
         elif minimum is not None:
+
             def check_range(value):
                 if value < minimum:
-                    raise ValueError('Value of parameter {0} should be greater than {1}, given value: {2}'.format(
-                        self.option_name, minimum, value))
+                    raise ValueError(
+                        "Value of parameter {0} should be greater than {1}, given value: {2}".format(
+                            self.option_name, minimum, value
+                        )
+                    )
                 return
+
         elif maximum is not None:
+
             def check_range(value):
                 if value > maximum:
-                    raise ValueError('Value of parameter {0} should be lesser than {1}, given value: {2}'.format(
-                        self.option_name, maximum, value))
+                    raise ValueError(
+                        "Value of parameter {0} should be lesser than {1}, given value: {2}".format(
+                            self.option_name, maximum, value
+                        )
+                    )
                 return
+
         else:
+
             def check_range(value):
                 return
 
@@ -130,7 +154,7 @@ class Integer(Validator):
     def validate(self, value=None):
         """Validates integer value passed to custom commands."""
         # For both optional and required options
-        if value == '':
+        if value == "":
             raise ValueError("Parameter {} should not be empty.".format(self.option_name))
 
         # This will only occur in the case of optional parameters
@@ -138,12 +162,13 @@ class Integer(Validator):
         if value is not None:
             try:
                 if six.PY2:
-                    value = long(value)   # noqa: F821
+                    value = long(value)  # noqa: F821
                 else:
                     value = int(value)
             except ValueError:
-                raise ValueError('Please specify integer value for parameter: {0}, given value: {1}'.format(
-                    self.option_name, value))
+                raise ValueError(
+                    "Please specify integer value for parameter: {0}, given value: {1}".format(self.option_name, value)
+                )
 
             self.check_range(value)
         return value

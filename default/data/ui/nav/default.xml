@@ -2,6 +2,8 @@
 <view name="overview" default="true"/>
 <view name="noise_ip_addresses"/>
 <view name="live_investigation"/>
+<view name="similar_ip_lookup"/>
+<view name="noise_ip_timeline"/>
 <view name="configuration"/>
 <view name="search" label="Search"/>
 </nav>

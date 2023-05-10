@@ -6,7 +6,7 @@ This is an app powered by the Splunk Add-on Builder.
 GreyNoise Splunk app provides multiple dashboards to effectively analyse and visualize the contextual and statistical data provided by GreyNoise. It also includes custom commands and alert actions which can be used along with Splunk searches to leverage GreyNoise APIs for custom use cases. It periodically scans the Splunk deployment through saved search to indicate the noise and RIOT IPs in the complete Splunk deployment. Along with this, the workflow action provided can be used to obtain live context information of any CIM compliant field containing an IP address.
 
  - Author: GreyNoise Intelligence Inc
- - Version: 2.1.5
+ - Version: 2.2.0
  - Creates Index: False
  - Has index-time operation: True
  - Implements summarization: False
@@ -17,8 +17,17 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
  - OS: Platform independent
  - Vendor Products: GreyNoise API
 
+# RELEASE NOTES (Version 2.2.0) #
+ - Added new FEED component to create lookuptable based on GreyNoise indicators
+ - Added new command `gnipsimilar` and new `Similar IP Lookup` dashboard
+ - Added new command `gniptimeline` and new `IP Timeline Lookup` dashboard
+ - Updated `gnenrich` command to use batch lookups
+ - Updated `gnquery` command with new parameters `page_size` and `exclude_raw`
+ - Updated GreyNoise SDK to v2.0.1
+
 # RELEASE NOTES (Version 2.1.5) #
  - Fix bug with `gnenrich`, `gnriot`, and `gnfilter` where proxy wasn't being used for API key validation
+ - Fix credentials.py to deal with null API keys on fresh install
 
 # RELEASE NOTES (Version 2.1.4) #
  - Add support for configuring proxy information in conf file
@@ -110,6 +119,10 @@ Follow the below-listed steps to install an app from the bundle:
 
 *Note: This app contains Adaptive Response Actions, which can be used along with Splunk Enterprise Security. To use these alert actions on the Splunk instance without Splunk Enterprise Security, kindly install `Splunk Common Information Model (CIM)`.*
 
+# UPGRADES #
+After applying an update to the app, ensure that the GreyNoise API key is re-entered on the Configuration page.
+
+
 # CONFIGURATION #
 The app can be configured in the following way:
 
@@ -134,6 +147,16 @@ This feature helps user to scan the Splunk Deployment and identify the noise and
     - Scan Start Time: Time range for scanning the indexed Splunk data.
     - Enable Scan Deployment: Checkbox to enable or disable scanning of the deployment.
     - Force Scan Deployment: This is useful when user wants to override current running scan immediately and start a new one.
+
+# FEED #
+This feature allows users to ingest GreyNoise indicators into a lookup table to be usage within the Splunk environment:
+
+ - From the Splunk UI navigate to `Apps > GreyNoise App for Splunk > Configuration`.
+ - Click on Feed Configuration tab.
+ - Enter the following details to set up the Feed:
+    - Enable Feed Import: turns the feature on to enable the daily ingest of GreyNoise indicators via feed
+    - Force Feed Run Now: starts a manual run of the feed import, rather than waiting for the daily scheduled run
+    - Feed Selection: select the appropriate option to choose which type of feed to ingest into the system
 
 # Caching #
 This feature helps user to enable/disable caching for all the custom commands and saved searches. It can be configured in the 
@@ -165,8 +188,8 @@ The following commands are included as a part of the app:
     - Search format: `| gnquick ip="<ip_address1>,<ip_address2>,<ip_address3>" [OR] SPL_QUERY | gnquick ip_field="<ip_field>"`
     - Purpose: Retrieve the noise and RIOT status of all the IP addresses as separate events [OR] Retrieve the noise and RIOT status for all the given IPs returned by the SPL_QUERY for specified ip_field. 
  - gnquery
-    - Search format: `| gnquery query="<GNQL_query>" result_size="<result_size>"`
-    - Purpose: Retrieve the results of the given GNQL query from GreyNoise. result_size denotes the number of results to be retrieved which is capped at 50,000. result_size is an optional parameter with default value of 50,000.
+    - Search format: `| gnquery query="<GNQL_query>" result_size="<result_size>" page_size="<page_size>"`
+    - Purpose: Retrieve the results of the given GNQL query from GreyNoise. result_size denotes the number of results to be retrieved which is capped at 50,000. result_size is an optional parameter with default value of 50,000. page_size is an option parameter with a default value of 1000.
  - gnstats
     - Search format: `| gnstats query="<GNQL_query>" count="<stats_count>"`
     - Purpose: Fetch the aggregate statistics for the top organizations, actors, tags, ASNs, countries, classifications, and operating systems of all the results for a given GNQL query. count denotes the number of stats to be retrieved. count is an optional parameter.
@@ -185,6 +208,12 @@ The following commands are included as a part of the app:
  - gnriot
     - Search format: `| gnriot ip="<ip_address>" [OR] SPL_QUERY | gnriot ip_field="<ip_field>"`
     - Purpose: Retrieves RIOT information for a given IP address from the GreyNoise [OR] Retrieves RIOT information for all the given IPs returned by the SPL_QUERY for specified ip_field. 
+ - gniptimeline
+    - Search format: `| gniptimeline ip_address="<ip_address>" days=<days> limit=<limit>`
+    - Purpose: Retrieves Timeline information for a given IP address from the GreyNoise Timeline API.
+ - gnipsimilar
+    - Search format: `| gnipsimilar ip_address="<ip_address>" min_score=<min_score> limit=<limit>`
+    - Purpose: Retrieves Similarity information for a given IP address from the GreyNoise Similarity API. 
 
 *Note : While executing the transforming commands from Splunk search UI, ensure that the event count passed to the command is less than 50,000, as per standard limits of Splunk. If the event count is higher than this number, user can create a Saved Search and pass higher number of Splunk statistical data to the command.* 
 
@@ -219,6 +248,9 @@ This app contains the following saved searches, which are used for populating da
  - greynoise_overview_once: Used to populate `gn_overview_lookup` lookup, and is triggered after configuring the API key.
  - greynoise_overview: Used to populate `gn_overview_lookup` lookup, and is triggered at an interval of 6 hours.
  - greynoise_cache_maintenance: Used to remove those responses whose TTL is expired from the Cache for all the custom commands, and is triggered at an interval of 60 minutes.
+ - greynoise_feed_once: Used to populate the `greynoise_indicators` lookup with feed results and is triggered on-demand when enabling a Feed.
+ - greynoise_feed: Used to populate the `greynoise_indicators` lookup with feed results 
+ - greynoise_feed_purge: Used to purge stale indicators (last_seen value over 7 days ago) from the `greynoise_indicators` lookup
 
 *Note : greynoise_scan_deployment_once and greynoise_scan_deployment savedsearches are used for scanning the data indexed in Splunk. So, in case when these saved searches are skipped, the data indexed during that interval will not be scanned for noise and RIOT status.* 
 

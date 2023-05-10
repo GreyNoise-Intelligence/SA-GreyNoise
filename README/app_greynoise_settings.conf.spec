@@ -14,6 +14,11 @@ force_enable_ss =
 job_id_overview = 
 job_id_scan_deployment =
 
+[feed_configuration]
+enable_feed_import =
+force_enable_ss =
+feed_selection =
+
 [caching]
 enable_caching =
 ttl =

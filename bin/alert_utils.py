@@ -1,17 +1,15 @@
-import app_greynoise_declare  # noqa # pylint: disable=unused-import
-
-import gzip
+import codecs
 import csv
+import gzip
 import logging
 import sys
-import codecs
 
+import app_greynoise_declare  # noqa # pylint: disable=unused-import
+import six
 from cim_actions import ModularAction
 from greynoise import GreyNoise
-import six
-
 from greynoise_constants import INTEGRATION_NAME
-from utility import get_log_level, get_api_key, get_proxy
+from utility import get_api_key, get_log_level, get_proxy
 
 
 class AlertBase(ModularAction):
@@ -42,7 +40,7 @@ class AlertBase(ModularAction):
         proxy = get_proxy(self.session_key, self.logger)
         if not api_key:
             self._handle_alert_exit(1)
-        if 'http' in proxy:
+        if "http" in proxy:
             api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
         else:
             api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
@@ -53,16 +51,15 @@ class AlertBase(ModularAction):
         ip_set = set()
 
         # Read results and append the ip fields to list
-        result_handle = gzip.open(self.results_file, 'rb')
+        result_handle = gzip.open(self.results_file, "rb")
         textfile = codecs.getreader("utf-8")(result_handle)
         for num, result in enumerate(csv.DictReader(textfile)):
             # set rid to row # (0->n) if unset
-            result.setdefault('rid', str(num))
+            result.setdefault("rid", str(num))
             self.update(result)
             self.invoke()
             if not result.get(self.ip_field):
-                self.logger.error(
-                    "Specified field could not be found in event or the field is empty")
+                self.logger.error("Specified field could not be found in event or the field is empty")
                 continue
             if isinstance(result[self.ip_field], six.string_types):
                 ip_set.add(result[self.ip_field])
@@ -76,23 +73,26 @@ class AlertBase(ModularAction):
         self._prepare_meta_for_cam()
 
         if err_flag == 3:
-            self.message("ip_field is a mandatory parameter, but its value is None.",
-                         status="failure", level=logging.ERROR)
+            self.message(
+                "ip_field is a mandatory parameter, but its value is None.", status="failure", level=logging.ERROR
+            )
         elif err_flag == 1:
-            self.message("API key not found. Please configure the GreyNoise App for Splunk.",
-                         status="failure", level=logging.ERROR)
+            self.message(
+                "API key not found. Please configure the GreyNoise App for Splunk.",
+                status="failure",
+                level=logging.ERROR,
+            )
         else:
-            self.message("Unexpected Error Occured.",
-                         status="failure", level=logging.ERROR)
+            self.message("Unexpected Error Occured.", status="failure", level=logging.ERROR)
         sys.exit(err_flag)
 
     def _prepare_meta_for_cam(self):
         """Prepare meta message when throwing the error to reflect in the Incident Review dashn=board."""
-        result_handle = gzip.open(self.results_file, 'rb')
+        result_handle = gzip.open(self.results_file, "rb")
         textfile = codecs.getreader("utf-8")(result_handle)
         for num, result in enumerate(csv.DictReader(textfile)):
             # set rid to row # (0->n) if unset
-            result.setdefault('rid', str(num))
+            result.setdefault("rid", str(num))
             self.update(result)
             self.invoke()
             break

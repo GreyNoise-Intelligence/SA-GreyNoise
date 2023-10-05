@@ -1,13 +1,12 @@
 import sys
-import traceback # noqa # pylint: disable=unused-import
+import traceback  # noqa # pylint: disable=unused-import
 
-import app_greynoise_declare # noqa # pylint: disable=unused-import
-from splunklib.searchcommands import dispatch, Configuration, Option
-from greynoise import GreyNoise
-
-from base_command_handler import BaseCommandHandler
-from greynoise_constants import INTEGRATION_NAME
+import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
+from base_command_handler import BaseCommandHandler
+from greynoise import GreyNoise
+from greynoise_constants import INTEGRATION_NAME
+from splunklib.searchcommands import Configuration, Option, dispatch
 from utility import get_response_for_generating
 
 
@@ -30,9 +29,10 @@ class IPContextCommand(BaseCommandHandler):
     """
 
     ip = Option(
-        doc='''**Syntax:** **ip=***<ip_address>*
-        **Description:** IP address for which context info needs to be retrieved from GreyNoise''',
-        name='ip', require=True
+        doc="""**Syntax:** **ip=***<ip_address>*
+        **Description:** IP address for which context info needs to be retrieved from GreyNoise""",
+        name="ip",
+        require=True,
     )
 
     def do_generate(self, api_key, proxy, logger):
@@ -52,16 +52,16 @@ class IPContextCommand(BaseCommandHandler):
             logger.info("Initiating to fetch context information for ip: {}".format(str(ip_address)))
             # TODO make proxy aware
             # Opting default timeout 60 seconds for the request
-            if 'http' in proxy:
+            if "http" in proxy:
                 api_client = GreyNoise(api_key=api_key, timeout=60, integration_name=INTEGRATION_NAME, proxy=proxy)
             else:
                 api_client = GreyNoise(api_key=api_key, timeout=60, integration_name=INTEGRATION_NAME)
             session_key = self._metadata.searchinfo.session_key
-            context_info = get_response_for_generating(session_key, api_client, ip_address, 'ip', logger)
+            context_info = get_response_for_generating(session_key, api_client, ip_address, "ip", logger)
             logger.info("Successfully retrieved the context information for ip={}".format(str(ip_address)))
 
             # Process the API response and send the context information of IP with extractions in the Splunk
-            results = event_generator.make_valid_event('ip', context_info, True)
+            results = event_generator.make_valid_event("ip", context_info, True)
             yield results
 
         except ValueError as e:

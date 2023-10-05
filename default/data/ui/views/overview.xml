@@ -1,13 +1,13 @@
-<form isDashboard="true" version="1.1">
+<form isDashboard="true" version="1.1" theme="dark">
   <label>Overview</label>
   <fieldset submitButton="false"></fieldset>
   <row>
-     <panel>
+    <panel>
       <single>
         <title># of IPs scanned in the deployment</title>
         <search>
           <query>
-            | inputlookup gn_scan_deployment_ip_lookup 
+            | inputlookup gn_scan_deployment_ip_lookup
             | stats count
           </query>
           <earliest>0</earliest>
@@ -24,9 +24,9 @@
         </drilldown>
       </single>
     </panel>
-         <panel>
+    <panel>
       <single>
-        <title># of indicators in GreyNoise Feedk lookup</title>
+        <title># of indicators in GreyNoise Feed lookup</title>
         <search>
           <query>
             | inputlookup greynoise_indicators.csv
@@ -35,15 +35,9 @@
           <earliest>0</earliest>
           <latest></latest>
         </search>
-        <option name="refresh.display">progressbar</option>
         <option name="drilldown">all</option>
-        <drilldown>
-          <link target="_blank">
-            <![CDATA[
-              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*
-            ]]>
-          </link>
-        </drilldown>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
       </single>
     </panel>
   </row>
@@ -53,7 +47,7 @@
         <title># of Noise IPs in the deployment</title>
         <search>
           <query>
-            | inputlookup gn_scan_deployment_ip_lookup where (noise="1") 
+            | inputlookup gn_scan_deployment_ip_lookup where (noise="1")
             | stats count
           </query>
           <earliest>0</earliest>
@@ -70,7 +64,6 @@
         </drilldown>
       </single>
     </panel>
-
     <panel>
       <single>
         <title>Percentage of Noise IPs in the deployment</title>
@@ -79,7 +72,7 @@
             | inputlookup gn_scan_deployment_ip_lookup
             | stats count(eval(noise=1)) AS noisy_ips, count(eval(noise=1 OR noise=0)) AS total_ips
             | eval noise_percent=((noisy_ips/total_ips)*100)
-            | eval noise_percent = if(noise_percent>0, noise_percent, 0)
+            | eval noise_percent = if(noise_percent&gt;0, noise_percent, 0)
             | table noise_percent
           </query>
           <earliest>0</earliest>
@@ -91,7 +84,6 @@
         <option name="unit">%</option>
       </single>
     </panel>
-
   </row>
   <row>
     <panel>
@@ -116,7 +108,6 @@
         </drilldown>
       </single>
     </panel>
-
     <panel>
       <single>
         <title>Percentage of RIOT IPs in the deployment</title>
@@ -125,7 +116,7 @@
             | inputlookup gn_scan_deployment_ip_lookup
             | stats count(eval(RIOT=1)) AS riot_ips, count(eval(RIOT=1 OR RIOT=0)) AS total_ips
             | eval riot_percent=((riot_ips/total_ips)*100)
-            | eval riot_percent = if(riot_percent>0, riot_percent, 0)
+            | eval riot_percent = if(riot_percent&gt;0, riot_percent, 0)
             | table riot_percent
           </query>
           <earliest>0</earliest>
@@ -141,7 +132,7 @@
   <row>
     <panel>
       <single>
-        <title># of Malicious IP Addresses today</title>
+        <title># of Malicious IP Addresses in GreyNoise today</title>
         <search>
           <query>
             | inputlookup gn_overview_lookup where (stats_field=classification AND classification=malicious)
@@ -150,14 +141,18 @@
           <earliest>0</earliest>
           <latest></latest>
         </search>
-        <option name="refresh.display">progressbar</option>
+        <option name="colorMode">none</option>
         <option name="drilldown">none</option>
+        <option name="rangeColors">["0x555","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
       </single>
     </panel>
-
     <panel>
       <single>
-        <title># of Benign IP Addresses today</title>
+        <title># of Benign IP Addresses in GreyNoise today</title>
         <search>
           <query>
             | inputlookup gn_overview_lookup where (stats_field=classification AND classification=benign)
@@ -166,14 +161,16 @@
           <earliest>0</earliest>
           <latest></latest>
         </search>
-        <option name="refresh.display">progressbar</option>
         <option name="drilldown">none</option>
+        <option name="rangeColors">["0x555","0x118832"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="useColors">1</option>
       </single>
     </panel>
-
     <panel>
       <single>
-        <title># of Unknown IP Addresses today</title>
+        <title># of Unknown IP Addresses in GreyNoise today</title>
         <search>
           <query>
             | inputlookup gn_overview_lookup where (stats_field=classification AND classification=unknown)
@@ -182,16 +179,13 @@
           <earliest>0</earliest>
           <latest></latest>
         </search>
-        <option name="refresh.display">progressbar</option>
         <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
       </single>
     </panel>
-
   </row>
   <row>
-
     <panel>
-      <html><p><i><b>Note:</b> The data in the panels below are updated every 6 hours. For the most recent information, visit the Trends page of the GreyNoise Visualizer.</i></p></html>
       <input type="dropdown" token="tkn_classification" searchWhenChanged="true">
         <label>Classification</label>
         <choice value="*">All</choice>
@@ -200,11 +194,15 @@
         <choice value="unknown">unknown</choice>
         <default>*</default>
       </input>
+      <html>
+        <p>
+          <i>
+            <b>Note:</b> The data in the panels below are updated every 6 hours. For the most recent information, visit the Trends page of the GreyNoise Visualizer.</i>
+        </p>
+      </html>
     </panel>
-
   </row>
   <row>
-
     <panel>
       <chart>
         <title>Top 10 Organizations</title>
@@ -232,7 +230,6 @@
         </drilldown>
       </chart>
     </panel>
-
     <panel>
       <chart>
         <title>Top 10 Actors</title>
@@ -241,7 +238,7 @@
             | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="actor")
             | stats sum(stats_count) as stats_count by stats_value
             | sort -stats_count
-            | head 10 
+            | head 10
             | rename stats_value as Actor, stats_count as count
             | table Actor, count
           </query>
@@ -260,10 +257,8 @@
         </drilldown>
       </chart>
     </panel>
-
   </row>
   <row>
-    
     <panel>
       <chart>
         <title>Top 10 Tags</title>
@@ -282,9 +277,7 @@
         <option name="charting.chart">bar</option>
         <option name="charting.axisY.scale">log</option>
         <option name="charting.legend.placement">none</option>
-        <option name="charting.seriesColors">
-          [0x669966]
-        </option>
+        <option name="charting.seriesColors">[0x669966]</option>
         <option name="charting.drilldown">all</option>
         <option name="refresh.display">progressbar</option>
         <drilldown>
@@ -296,7 +289,6 @@
         </drilldown>
       </chart>
     </panel>
-    
     <panel>
       <chart>
         <title>Top 10 ASN</title>
@@ -315,9 +307,7 @@
         <option name="charting.chart">column</option>
         <option name="charting.axisY.scale">log</option>
         <option name="charting.legend.placement">none</option>
-        <option name="charting.seriesColors">
-          [0x6B1037]
-        </option>
+        <option name="charting.seriesColors">[0x6B1037]</option>
         <option name="charting.drilldown">all</option>
         <option name="refresh.display">progressbar</option>
         <drilldown>
@@ -329,10 +319,8 @@
         </drilldown>
       </chart>
     </panel>
-
   </row>
   <row>
-    
     <panel>
       <chart>
         <title>Top 10 Categories</title>
@@ -351,14 +339,11 @@
         <option name="charting.chart">column</option>
         <option name="charting.axisY.scale">log</option>
         <option name="charting.legend.placement">none</option>
-        <option name="charting.seriesColors">
-          [0x067097]
-        </option>
+        <option name="charting.seriesColors">[0x067097]</option>
         <option name="charting.drilldown">none</option>
         <option name="refresh.display">progressbar</option>
       </chart>
     </panel>
-    
     <panel>
       <chart>
         <title>Top 10 OS</title>
@@ -377,13 +362,10 @@
         <option name="charting.chart">bar</option>
         <option name="charting.axisY.scale">log</option>
         <option name="charting.legend.placement">none</option>
-        <option name="charting.seriesColors">
-          [0x986B1C]
-        </option>
+        <option name="charting.seriesColors">[0x986B1C]</option>
         <option name="charting.drilldown">none</option>
         <option name="refresh.display">progressbar</option>
       </chart>
     </panel>
-
   </row>
 </form>

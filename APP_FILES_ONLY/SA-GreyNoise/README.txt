@@ -93,12 +93,12 @@ The third party library and its license information is as follows:
 
 # TOPOLOGY AND SETTING UP SPLUNK ENVIRONMENT #
 Standalone Mode
- 
+
  - Install GreyNoise App for Splunk. See INSTALLATION section for more details.
  - Configure the API key and log level. See CONFIGURATION section for details.
 
 Search Head Cluster
- 
+
  - In case of *Search Head Clustering*, make sure that the `GreyNoise Setup` and `Scan Deployment` is configured on only single search head. In such cases, the configuration will not be visible on other search heads. In case if user wants to configure the `Logging` (default is INFO), user can configure individually on every search head. This is recommended.
  - If user wants to replicate the configuration settings, follow these steps:
     - On search head deployer, extract the app at `$SPLUNK_HOME$/etc/shcluster/apps`.
@@ -115,7 +115,7 @@ Follow the below steps to upgrade the app to the latest version:
  - Follow the steps mentioned in CONFIGURATION section to reconfigure the app.
  - If SCAN DEPLOYMENT was configured before app upgrading then go to SCAN DEPLOYMENT tab inside the Configuration tab and Click on Save button to re-configure the scan deployment saved search in the backend.
 
-*Note: Upgrade is only supported from UI and not supported from the backend.* 
+*Note: Upgrade is only supported from UI and not supported from the backend.*
 
 # INSTALLATION #
 Follow the below-listed steps to install an app from the bundle:
@@ -153,7 +153,7 @@ This feature helps user to scan the Splunk Deployment and identify the noise and
  - Enter the following details to set up the Scan Deployment:
     - Indexes: Indexes to be scanned in the deployment.
     - CIM Fields:  CIM fields containing IP address to scan for noise status.
-    - Other Fields: Other comma(,) separated fields containing IP address to scan for noise and RIOT status. 
+    - Other Fields: Other comma(,) separated fields containing IP address to scan for noise and RIOT status.
     - Scan Start Time: Time range for scanning the indexed Splunk data.
     - Enable Scan Deployment: Checkbox to enable or disable scanning of the deployment.
     - Force Scan Deployment: This is useful when user wants to override current running scan immediately and start a new one.
@@ -169,7 +169,7 @@ This feature allows users to ingest GreyNoise indicators into a lookup table to 
     - Feed Selection: select the appropriate option to choose which type of feed to ingest into the system
 
 # Caching #
-This feature helps user to enable/disable caching for all the custom commands and saved searches. It can be configured in the 
+This feature helps user to enable/disable caching for all the custom commands and saved searches. It can be configured in the
 following way:
 
  - From the Splunk UI navigate to `Apps > GreyNoise App for Splunk > Configuration`.
@@ -196,7 +196,7 @@ The following commands are included as a part of the app:
     - Purpose: Retrieves context information for a given IP address from the GreyNoise.
  - gnquick
     - Search format: `| gnquick ip="<ip_address1>,<ip_address2>,<ip_address3>" [OR] SPL_QUERY | gnquick ip_field="<ip_field>"`
-    - Purpose: Retrieve the noise and RIOT status of all the IP addresses as separate events [OR] Retrieve the noise and RIOT status for all the given IPs returned by the SPL_QUERY for specified ip_field. 
+    - Purpose: Retrieve the noise and RIOT status of all the IP addresses as separate events [OR] Retrieve the noise and RIOT status for all the given IPs returned by the SPL_QUERY for specified ip_field.
  - gnquery
     - Search format: `| gnquery query="<GNQL_query>" result_size="<result_size>" page_size="<page_size>"`
     - Purpose: Retrieve the results of the given GNQL query from GreyNoise. result_size denotes the number of results to be retrieved which is capped at 50,000. result_size is an optional parameter with default value of 50,000. page_size is an option parameter with a default value of 1000.
@@ -211,21 +211,21 @@ The following commands are included as a part of the app:
     - Purpose: Retrieves context information for a given IP address from the GreyNoise.
  - gnfilter
     - Search format: `SPL_QUERY | gnfilter ip_field="<ip_field>" noise_events="<true/false>"`
-    - Purpose: Filter Splunk events returned by given SPL_QUERY based on the noise status of IP address present in ip_field of the events. noise_events is an optional parameter with default value true. So, it will return events with noise IP addresses by default. 
+    - Purpose: Filter Splunk events returned by given SPL_QUERY based on the noise status of IP address present in ip_field of the events. noise_events is an optional parameter with default value true. So, it will return events with noise IP addresses by default.
  - gnenrich
     - Search format: `SPL_QUERY | gnenrich ip_field="<ip_field>"`
     - Purpose: Enrich the Splunk events returned by given SPL_QUERY with the context information of IP address represented by ip_field in Splunk Search.
  - gnriot
     - Search format: `| gnriot ip="<ip_address>" [OR] SPL_QUERY | gnriot ip_field="<ip_field>"`
-    - Purpose: Retrieves RIOT information for a given IP address from the GreyNoise [OR] Retrieves RIOT information for all the given IPs returned by the SPL_QUERY for specified ip_field. 
+    - Purpose: Retrieves RIOT information for a given IP address from the GreyNoise [OR] Retrieves RIOT information for all the given IPs returned by the SPL_QUERY for specified ip_field.
  - gniptimeline
     - Search format: `| gniptimeline ip_address="<ip_address>" days=<days> limit=<limit>`
     - Purpose: Retrieves Timeline information for a given IP address from the GreyNoise Timeline API.
  - gnipsimilar
     - Search format: `| gnipsimilar ip_address="<ip_address>" min_score=<min_score> limit=<limit>`
-    - Purpose: Retrieves Similarity information for a given IP address from the GreyNoise Similarity API. 
+    - Purpose: Retrieves Similarity information for a given IP address from the GreyNoise Similarity API.
 
-*Note : While executing the transforming commands from Splunk search UI, ensure that the event count passed to the command is less than 50,000, as per standard limits of Splunk. If the event count is higher than this number, user can create a Saved Search and pass higher number of Splunk statistical data to the command.* 
+*Note : While executing the transforming commands from Splunk search UI, ensure that the event count passed to the command is less than 50,000, as per standard limits of Splunk. If the event count is higher than this number, user can create a Saved Search and pass higher number of Splunk statistical data to the command.*
 
 # ALERT ACTIONS #
 The following alert actions are included as a part of the app:
@@ -239,7 +239,7 @@ The two sources for these adaptive response actions are: `source=greynoise_conte
 Usage with Splunk Enterprise Security:
  - These actions can be executed from Incident Review, and results can be accessed directly by refreshing the "Adaptive Responses" panel and clicking the appropriate link.
 
-# WORKFLOW ACTION  
+# WORKFLOW ACTION
 Identify Noise workflow action is enabled for all the CIM compliant IP fields which can be used to fetch the context information for the corresponding IP addresses.
 
 # DASHBOARDS #
@@ -249,7 +249,7 @@ This app contains the following three dashboards:
  - Noise IP Addresses: This dashboard displays all the IP addresses along with their noise and RIOT status scanned by GreyNoise through Scan Deployment feature in the current Splunk deployment. This dashboard will be populated when Scan Deployment feature is enabled.
  - Live Investigation: This dashboard can be used to obtain context information fetched dynamically from the GreyNoise platform based on the form input provided.
 
-*Note : In Overview, Percentage of RIOT IPs is calculated only for the new IPs scanned after the App was upgraded. Also in the Noise IP Addresses, the RIOT status won't be shown for those IPs that were scanned before the App was upgraded.* 
+*Note : In Overview, Percentage of RIOT IPs is calculated only for the new IPs scanned after the App was upgraded. Also in the Noise IP Addresses, the RIOT status won't be shown for those IPs that were scanned before the App was upgraded.*
 # SAVED SEARCHES #
 This app contains the following saved searches, which are used for populating data in the dashboard:
 
@@ -259,17 +259,17 @@ This app contains the following saved searches, which are used for populating da
  - greynoise_overview: Used to populate `gn_overview_lookup` lookup, and is triggered at an interval of 6 hours.
  - greynoise_cache_maintenance: Used to remove those responses whose TTL is expired from the Cache for all the custom commands, and is triggered at an interval of 60 minutes.
  - greynoise_feed_once: Used to populate the `greynoise_indicators` lookup with feed results and is triggered on-demand when enabling a Feed.
- - greynoise_feed: Used to populate the `greynoise_indicators` lookup with feed results 
+ - greynoise_feed: Used to populate the `greynoise_indicators` lookup with feed results
  - greynoise_feed_purge: Used to purge stale indicators (last_seen value over 7 days ago) from the `greynoise_indicators` lookup
 
-*Note : greynoise_scan_deployment_once and greynoise_scan_deployment savedsearches are used for scanning the data indexed in Splunk. So, in case when these saved searches are skipped, the data indexed during that interval will not be scanned for noise and RIOT status.* 
+*Note : greynoise_scan_deployment_once and greynoise_scan_deployment savedsearches are used for scanning the data indexed in Splunk. So, in case when these saved searches are skipped, the data indexed during that interval will not be scanned for noise and RIOT status.*
 
 # UNINSTALL APP #
-To uninstall app, user can follow below steps: 
+To uninstall app, user can follow below steps:
 
- - SSH to the Splunk instance 
- - Go to folder apps($SPLUNK_HOME/etc/apps) 
- - Remove the SA-GreyNoise folder from apps directory 
+ - SSH to the Splunk instance
+ - Go to folder apps($SPLUNK_HOME/etc/apps)
+ - Remove the SA-GreyNoise folder from apps directory
  - Restart Splunk
 
 # TROUBLESHOOTING #
@@ -280,9 +280,9 @@ To uninstall app, user can follow below steps:
     - Ensure that `greynoise_overview` Saved Search is enabled.
  - Data in Noise IP Address dashboard is not being populated.
     - Ensure that the Scan Deployment feature is enabled. The data must populate in an hour. In case the issue still persists, make sure that `greynoise_scan_deployment` Saved Search is enabled.
-    - Ensure that the KV store is enabled. 
+    - Ensure that the KV store is enabled.
  - Custom commands are not being executed and failing with unknown exception. For example: `Exception occurred while fetching the context of the ip=<ip>. See greynoise_main.log for more details.`
-    - Ensure that the user executing custom command has list_storage_passwords capability. 
+    - Ensure that the user executing custom command has list_storage_passwords capability.
  - Noise and RIOT information of some of the IP addresses is being missed in Noise IP Address dashboard.
     - Ensure that the corresponding index and fields are entered as per the format while enabling Scan Deployment feature.
  - Custom commands exited unexpectedly.
@@ -301,7 +301,7 @@ To uninstall app, user can follow below steps:
       ```
       [search]
       max_rawsize_perchunk = 500000000
-      ```  
+      ```
 
 # SUPPORT #
 

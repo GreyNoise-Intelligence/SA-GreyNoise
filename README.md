@@ -18,7 +18,7 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
  - Vendor Products: GreyNoise API
 
 # RELEASE NOTES (Version 2.2.4) #
- - Rollback GreyNoise SDK to v2.0.1 to keep python3.7 compatibility
+ - Correct python3.7 compatibility issue
 
 # RELEASE NOTES (Version 2.2.3) #
  - Upgrade GreyNoise SDK to v2.1.0

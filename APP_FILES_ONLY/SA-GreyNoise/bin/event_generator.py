@@ -84,7 +84,7 @@ def exception_handler(method):
 
 
 @exception_handler
-def pull_data_from_api_other(fetch_method, cache_enabled, cache, ip, logger, params, api_sleep_timer=3):
+def pull_data_from_api_other(fetch_method, cache_enabled, cache, ip, logger, params=None, api_sleep_timer=0):
     """
     Pull the data from the GreyNoise SDK and return it.
 
@@ -114,7 +114,7 @@ def pull_data_from_api_other(fetch_method, cache_enabled, cache, ip, logger, par
 
 
 @exception_handler
-def pull_data_from_api_multi(fetch_method, cache_enabled, cache, params, logger, api_sleep_timer=3):
+def pull_data_from_api_multi(fetch_method, cache_enabled, cache, params, logger, api_sleep_timer=0):
     """
     Pull the data from the GreyNoise SDK and return it.
 
@@ -157,14 +157,14 @@ def pull_data_from_api_multi(fetch_method, cache_enabled, cache, params, logger,
     return {"message": "ok", "response": response}
 
 
-def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger, threads=3):
+def get_all_events(session_key, api_client, method, field_name, chunk_dict, logger, threads=3):
     """
     Driver method for the transforming commands that use the threading mechanism to retrieve data from GreyNoise SDK.
 
     :param session_key: session key information
     :param api_client: API client instance
     :param method: method from which threading driver is invoked
-    :param ip_field: Field representing the IP address
+    :param field_name: Field representing the value to query
     :param chunk_dict: dict used to manage the records in the chunks
     :param logger: logger instance
     :param threads: number of threads to use
@@ -178,11 +178,13 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
         fetch_method = api_client.riot
     elif method == "ip_multi":
         fetch_method = api_client.ip_multi
+    elif method == "cve":
+        fetch_method = api_client.cve
     else:
         # For 'multi' and 'filter' commands
         fetch_method = api_client.quick
 
-    logger.info("Fetching noise/RIOT status for {} chunk(s) with {} thread(s)".format(len(chunk_dict), threads))
+    logger.info("Fetching {} API status for {} chunk(s) with {} thread(s)".format(method, len(chunk_dict), threads))
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
         # Doing this to pass the multiple arguments to method used in map method
@@ -215,10 +217,28 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
                 cache_enabled,
                 cache,
                 logger=logger,
-                params=ips_not_in_cache,
+                params=list(chunk_dict.values()),
                 api_sleep_timer=0,
             )
             results = executor.map(pull_data, ips)
+        elif method in ["cve"]:
+            cves = []
+            for cve_list in list(chunk_dict.values()):
+                try:
+                    cves.append(cve_list[1][0])
+                except IndexError:
+                    # That means the particular record does not have any value
+                    # It will not instantiate the unnecessary API call as this will not match with the regex itself.
+                    cves.append("")
+            pull_data = partial(
+                pull_data_from_api_other,
+                fetch_method,
+                cache_enabled,
+                cache,
+                logger=logger,
+                api_sleep_timer=0,
+            )
+            results = executor.map(pull_data, cves)
         else:
             pull_data = partial(pull_data_from_api_multi, fetch_method, cache_enabled, cache, logger=logger)
             # Default API sleep timer will be of 3 seconds for each request here
@@ -236,7 +256,7 @@ def get_all_events(session_key, api_client, method, ip_field, chunk_dict, logger
         else:
             for index, result in zip(list(chunk_dict.keys()), results):
                 logger.debug("Successfully retrieved response for chunk {}".format(index + 1))
-                for event in event_processor(chunk_dict[index], result, method, ip_field, logger):
+                for event in event_processor(chunk_dict[index], result, method, field_name, logger):
                     yield event
 
                 # Deleting the chunk records which have been already sent to Splunk
@@ -254,7 +274,7 @@ def method_response_mapper(method, result, logger):
     """
     generate_missing_events = False
 
-    if method in ["enrich", "greynoise_riot"]:
+    if method in ["enrich", "greynoise_riot", "cve"]:
         # Response from the ip and riot method used for enrich and riot will have single dict in response
         # but the event_processor will expect a list of dicts
         # Therefore masking the response to the list if the API response is proper and intact
@@ -273,14 +293,14 @@ def method_response_mapper(method, result, logger):
     return generate_missing_events, result
 
 
-def event_processor(records_dict, result, method, ip_field, logger):
+def event_processor(records_dict, result, method, field_name, logger):
     """
     Process on each chunk, format response retrieved from API and Send the results of transforming command to Splunk.
 
     :param records_dict: Tuple having all the records of the chunk and all the IP addresses present in the ip_field
     :param result: result information
     :param method: method used for the API invocation
-    :param ip_field: name of the field representing the IP address in Splunk events
+    :param field_name: name of the field representing the value in Splunk events
     :param logger: logger instance
     :return: dict denoting the event to send to Splunk
     """
@@ -299,19 +319,26 @@ def event_processor(records_dict, result, method, ip_field, logger):
     else:
         api_results = result["response"]
     error_flag = True
-    # Before yielding events, make the ip lookup dict which will have the following format:
-    # {<ip-address>: <API response for that IP address>}
-    ip_lookup = {}
-    if result["message"] == "ok":
-        error_flag = False
-        for event in api_results:
-            ip_lookup[event["ip"]] = event
+    # Before yielding events, make the  lookup dict which will have the following format:
+    # {<id>: <API response for that id>}
+    if method in ["cve"]:
+        cve_lookup = {}
+        if result["message"] == "ok":
+            error_flag = False
+            for event in api_results:
+                cve_lookup[event["id"]] = event
+    else:
+        ip_lookup = {}
+        if result["message"] == "ok":
+            error_flag = False
+            for event in api_results:
+                ip_lookup[event["ip"]] = event
 
     # This will be called per chunk to yield the events as per the objective of transforming command
     for record in records_dict[0]:
         if error_flag:
             # Exception has occurred while fetching the data
-            if ip_field in record and record[ip_field]:
+            if field_name in record and record[field_name]:
                 event = {"ip": record[ip_field], "error": api_results}
                 yield make_invalid_event(method, event, True, record)
             else:
@@ -320,27 +347,30 @@ def event_processor(records_dict, result, method, ip_field, logger):
                 yield make_invalid_event(method, {}, True, record)
         else:
             # Successful execution of the API call
-            if ip_field in record and record[ip_field]:
+            if field_name in record and record[field_name]:
+                if method in ["cve"]:
+                    if isinstance(record[field_name], six.string_types) and record[field_name] in cve_lookup:
+                        yield make_valid_event(method, cve_lookup[record[field_name]], True, record)
                 # Check if the IP field is not an iterable to avoid any error while referencing ip in ip_lookup
-                if isinstance(record[ip_field], six.string_types) and record[ip_field] in ip_lookup:
+                elif isinstance(record[field_name], six.string_types) and record[field_name] in ip_lookup:
                     # Deleting the raw_data from the response when the request method is enrich
-                    if method == "enrich" and "raw_data" in ip_lookup[record[ip_field]]:
-                        del ip_lookup[record[ip_field]]["raw_data"]
+                    if method == "enrich" and "raw_data" in ip_lookup[record[field_name]]:
+                        del ip_lookup[record[field_name]]["raw_data"]
 
                     # Deleting the raw_data from the response when the request method is ip_multi
-                    if method == "ip_multi" and "raw_data" in ip_lookup[record[ip_field]]:
-                        del ip_lookup[record[ip_field]]["raw_data"]
+                    if method == "ip_multi" and "raw_data" in ip_lookup[record[field_name]]:
+                        del ip_lookup[record[field_name]]["raw_data"]
 
-                    yield make_valid_event(method, ip_lookup[record[ip_field]], True, record)
+                    yield make_valid_event(method, ip_lookup[record[field_name]], True, record)
                 else:
                     # Meaning ip is either invalid or not returned by the API,
                     # happens when quick method is used while retrieving data
                     if generate_missing_events:
                         try:
-                            validate_ip(record[ip_field], strict=True)
+                            validate_ip(record[field_name], strict=True)
                         except ValueError as e:
                             error_msg = str(e).split(":")
-                            event = {"ip": record[ip_field], "error": error_msg[0]}
+                            event = {"ip": record[field_name], "error": error_msg[0]}
                             yield make_invalid_event(method, event, True, record)
             else:
                 # Either the record is not having IP field or the value of the IP field is ''
@@ -424,13 +454,13 @@ def make_invalid_event(method, data, first_event=False, record=None):
         return record
 
 
-def batch(iterable, ip_field, events_per_chunk, logger, optimize_requests=True):
+def batch(iterable, field_name, events_per_chunk, logger, optimize_requests=True):
     """
     Divide all the records into chunk and return them into the dict having following format.
 
     {<chunk_index>: ([<event-1>, <event-2>, ... , <event-N>], [<ip-1>, <ip-2>, <ip-4>, ... , <ip-1000>])}
     :param iterable: Records sent to the command by Splunk
-    :param ip_field: Field representing the IP address
+    :param field_name: Field representing the value
     :param events_per_chunk: Size of each chunk
     :param logger: logger information
     :param optimize_requests: Specify whether to reduce the chunk to one when distinct IPs are below 1000,
@@ -444,39 +474,39 @@ def batch(iterable, ip_field, events_per_chunk, logger, optimize_requests=True):
     chunk_dict = {}
     chunk_index = 0
     records = []
-    ip_set = set()
+    value_set = set()
 
-    all_unique_ips = set()
+    all_unique_values = set()
 
     for record in iterable_list:
         records.append(record)
 
-        if ip_field in record and record[ip_field] and isinstance(record[ip_field], six.string_types):
-            ip_set.add(record[ip_field])
+        if field_name in record and record[field_name] and isinstance(record[field_name], six.string_types):
+            value_set.add(record[field_name])
 
-        if len(ip_set) == events_per_chunk:
-            chunk_dict[chunk_index] = (records, list(ip_set))
+        if len(value_set) == events_per_chunk:
+            chunk_dict[chunk_index] = (records, list(value_set))
 
-            if not len(all_unique_ips) > 5001:
-                all_unique_ips.update(ip_set)
+            if not len(all_unique_values) > 5001:
+                all_unique_values.update(value_set)
 
             chunk_index = chunk_index + 1
             records = []
-            ip_set = set()
+            value_set = set()
 
     # When the remaining records are not enough to have length save as events_per_chunk
     if len(records) > 0:
-        chunk_dict[chunk_index] = (records, list(ip_set))
+        chunk_dict[chunk_index] = (records, list(value_set))
 
-        if not len(all_unique_ips) > 5000:
-            all_unique_ips.update(ip_set)
+        if not len(all_unique_values) > 5000:
+            all_unique_values.update(value_set)
 
-    if optimize_requests and len(all_unique_ips) <= 5000:
+    if optimize_requests and len(all_unique_values) <= 5000:
         all_records = []
         # Return records in only one chunk if the deployment less than 1000 unique IP addresses
         for records, _ in list(chunk_dict.values()):
             for event in records:
                 all_records.append(event)
-        return {0: (all_records, list(all_unique_ips))}
+        return {0: (all_records, list(all_unique_values))}
 
     return chunk_dict

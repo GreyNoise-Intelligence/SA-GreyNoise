@@ -6,7 +6,7 @@ This is an app powered by the Splunk Add-on Builder.
 GreyNoise Splunk app provides multiple dashboards to effectively analyse and visualize the contextual and statistical data provided by GreyNoise. It also includes custom commands and alert actions which can be used along with Splunk searches to leverage GreyNoise APIs for custom use cases. It periodically scans the Splunk deployment through saved search to indicate the noise and RIOT IPs in the complete Splunk deployment. Along with this, the workflow action provided can be used to obtain live context information of any CIM compliant field containing an IP address.
 
  - Author: GreyNoise Intelligence Inc
- - Version: 2.2.4
+ - Version: 2.3.0
  - Creates Index: False
  - Has index-time operation: True
  - Implements summarization: False

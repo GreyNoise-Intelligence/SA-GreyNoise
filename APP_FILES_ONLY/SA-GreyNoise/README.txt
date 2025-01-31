@@ -6,7 +6,7 @@ This is an app powered by the Splunk Add-on Builder.
 GreyNoise Splunk app provides multiple dashboards to effectively analyse and visualize the contextual and statistical data provided by GreyNoise. It also includes custom commands and alert actions which can be used along with Splunk searches to leverage GreyNoise APIs for custom use cases. It periodically scans the Splunk deployment through saved search to indicate the noise and RIOT IPs in the complete Splunk deployment. Along with this, the workflow action provided can be used to obtain live context information of any CIM compliant field containing an IP address.
 
  - Author: GreyNoise Intelligence Inc
- - Version: 2.2.4
+ - Version: 2.3.0
  - Creates Index: False
  - Has index-time operation: True
  - Implements summarization: False
@@ -16,6 +16,12 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
  - Splunk Enterprise version: 9.2, 9.1, 9.0, 8.2, 8.1, 8.0
  - OS: Platform independent
  - Vendor Products: GreyNoise API
+
+# RELEASE NOTES (Version 2.3.0) #
+ - Add new `gncve` command to support GreyNoise CVE API lookups
+ - Update dashboards and commands to support new Suspicious classification
+ - Update Splunk SDK to version 2.1.0
+ - Update GreyNoise SDK to version 2.3.0
 
 # RELEASE NOTES (Version 2.2.4) #
  - Correct python3.7 compatibility issue
@@ -227,6 +233,9 @@ The following commands are included as a part of the app:
  - gnipsimilar
     - Search format: `| gnipsimilar ip_address="<ip_address>" min_score=<min_score> limit=<limit>`
     - Purpose: Retrieves Similarity information for a given IP address from the GreyNoise Similarity API.
+ - gncve
+    - Search format: `| gncve cve="<cve_id>" [OR] SPL_QUERY | gncve cve_field="<cve_field>"`
+    - Purpose: Retrieves CVE information for a given CVE ID from the GreyNoise [OR] for all the given IPs returned by the SPL_QUERY for specified ip_field.
 
 *Note : While executing the transforming commands from Splunk search UI, ensure that the event count passed to the command is less than 50,000, as per standard limits of Splunk. If the event count is higher than this number, user can create a Saved Search and pass higher number of Splunk statistical data to the command.*
 
@@ -314,4 +323,4 @@ To uninstall app, user can follow below steps:
 
 # COPYRIGHT #
 
- - Copyright (C) 2024 GreyNoise Intelligence Inc. All Rights Reserved.
+ - Copyright (C) 2025 GreyNoise Intelligence Inc. All Rights Reserved.

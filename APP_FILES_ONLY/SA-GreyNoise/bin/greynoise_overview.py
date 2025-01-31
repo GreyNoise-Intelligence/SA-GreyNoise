@@ -76,6 +76,7 @@ class OverviewCommand(GeneratingCommand):
 
                 queries = {
                     "malicious": "classification:malicious last_seen:1d",
+                    "suspicious": "classification:suspicious last_seen:1d",
                     "benign": "classification:benign last_seen:1d",
                     "unknown": "classification:unknown last_seen:1d",
                 }

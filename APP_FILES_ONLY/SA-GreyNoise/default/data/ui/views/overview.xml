@@ -1,6 +1,10 @@
 <form isDashboard="true" version="1.1" theme="dark">
   <label>Overview</label>
-  <fieldset submitButton="false"></fieldset>
+  <row>
+      <html>
+        <center><h1>The tiles below represent data about the Scan Deployment and Feed functions of this app and deployment.</h1></center>
+      </html>
+  </row>
   <row>
     <panel>
       <single>
@@ -129,6 +133,11 @@
       </single>
     </panel>
   </row>
+    <row>
+      <html>
+        <center><h1>The information below represents the state of the GreyNoise service today.</h1></center>
+      </html>
+  </row>
   <row>
     <panel>
       <single>
@@ -144,6 +153,26 @@
         <option name="colorMode">none</option>
         <option name="drilldown">none</option>
         <option name="rangeColors">["0x555","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title># of Suspicious IP Addresses in GreyNoise today</title>
+        <search>
+          <query>
+            | inputlookup gn_overview_lookup where (stats_field=classification AND classification=suspicious)
+            | table stats_count
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x555","0xcba700"]</option>
         <option name="rangeValues">[0]</option>
         <option name="refresh.display">progressbar</option>
         <option name="unitPosition">after</option>
@@ -190,6 +219,7 @@
         <label>Classification</label>
         <choice value="*">All</choice>
         <choice value="malicious">malicious</choice>
+        <choice value="suspicious">suspicious</choice>
         <choice value="benign">benign</choice>
         <choice value="unknown">unknown</choice>
         <default>*</default>

@@ -1,0 +1,284 @@
+import sys
+import time  # noqa # pylint: disable=unused-import
+import traceback
+
+import app_greynoise_declare  # noqa # pylint: disable=unused-import
+import event_generator
+import utility
+import validator
+from greynoise import GreyNoise
+from greynoise.exceptions import RateLimitError, RequestFailure
+from greynoise.util import validate_cve_id
+from greynoise_constants import INTEGRATION_NAME
+from greynoise_exceptions import APIKeyNotFoundError
+from requests.exceptions import ConnectionError, RequestException
+from splunklib.binding import HTTPError
+from splunklib.searchcommands import Configuration, EventingCommand, Option, dispatch
+
+
+@Configuration()
+class GNCVECommand(EventingCommand):
+    """
+    gncve - Generating and Transforming Command.
+
+    This command can be used as generating command as well as transforming command,
+    When used as generating command, it returns CVE context data of the given CVE,
+    When used as transforming command, it adds the CVE context data to
+    the events that are returned from Splunk search.
+    Data pulled from /v1/cve/<cve> using GreyNoise Python SDK
+
+    **Syntax**::
+    `| gncve cve="CVE-1234-23453"`
+    `| gncve cve="CVE-1234-23453,CVE-2343-25235"`
+    `index=_internal | gncve cve_field="cve-id"`
+
+    **Description**::
+    When used as generating command, gncve command uses the CVE IDs or  cve field to return
+    CVE context information, when used as transforming command, gncve command uses the field representing CVE
+    presented by cve_field to add CVE context information to each event.
+    The CVE context information is pulled using method :method:cve from GreyNoise Python SDK.
+    """
+
+    cve = Option(
+        doc="""**Syntax:** **cve=***<cve_id>*
+        **Description:** CVE ID to retrieve context for  from GreyNoise""",
+        name="cve",
+        require=False,
+    )
+
+    cve_field = Option(
+        doc="""
+        **Syntax:** **cve_field=***<cve_id>*
+        **Description:** Name of the field representing CVE ID in Splunk events""",
+        name="cve_field",
+        require=False,
+    )
+
+    api_validation_flag = False
+
+    def transform(self, records):
+        """Method that processes and yield event records to the Splunk events pipeline."""
+        cve_id = self.cve
+        cve_field = self.cve_field
+        api_key = ""
+        events_per_chunk = 1
+        threads = 3
+        use_cache = False
+        logger = utility.setup_logger(
+            session_key=self._metadata.searchinfo.session_key, log_context=self._metadata.searchinfo.command
+        )
+
+        if cve_id and cve_field:
+            logger.error(
+                "Please use parameter cve to work gncve as generating command or "
+                "use parameter cve_field to work gncve as transforming command."
+            )
+            self.write_error(
+                "Please use parameter cve to work gncve as generating command or "
+                "use parameter cve_field to work gncve as transforming command"
+            )
+            exit(1)
+
+        try:
+            message = ""
+            api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
+            proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
+        except APIKeyNotFoundError as e:
+            message = str(e)
+        except HTTPError as e:
+            message = str(e)
+
+        if message:
+            self.write_error(message)
+            logger.error("Error occurred while retrieving API key, Error: {}".format(message))
+            exit(1)
+
+        if cve_id and not cve_field:
+            # This piece of code will work as generating command and will not use the Splunk events.
+            # Splitting the cves by commas and stripping spaces from both the sides for each cve id
+            cve_ids = [cve.strip() for cve in cve_id.split(",")]
+
+            logger.info("Started retrieving results")
+            try:
+                logger.debug(
+                    "Initiating to CVE lookup for CVE ID(s): {}".format(str(cve_ids))
+                )
+
+                if "http" in proxy:
+                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+                else:
+                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+
+                cve_responses = []
+                for cve_id in cve_ids:
+                    cve_response = api_client.cve(cve_id)
+                    cve_responses.append(cve_response)
+                logger.info("Retrieved results successfully")
+
+                # Process the API response and send the CVE information of CVE with extractions
+                # to the Splunk, Using this flag to handle the field extraction issue in custom commands
+                # Only the fields extracted from the first event of generated by custom command
+                # will be extracted from all events
+                first_record_flag = True
+
+                # Flag to indicate whether erroneous CVE IDs are present
+                erroneous_cve_present = False
+                for cve_id in cve_ids:
+                    for sample in cve_responses:
+                        if cve_id == sample["id"]:
+                            yield event_generator.make_valid_event("cve", sample, first_record_flag)
+                            if first_record_flag:
+                                first_record_flag = False
+                            logger.debug("Fetched CVE information for CVE ID={} from GreyNoise API".format(str(cve_id)))
+                            break
+                    else:
+                        erroneous_cve_present = True
+                        try:
+                            validate_cve_id(cve_id, strict=True)
+                        except ValueError as e:
+                            error_msg = str(e).split(":")
+                            logger.debug("Generating CVE information for CVE ID={} manually".format(str(cve_id)))
+                            event = {"id": cve_id, "error": error_msg[0]}
+                            yield event_generator.make_invalid_event("cve", event, first_record_flag)
+
+                            if first_record_flag:
+                                first_record_flag = False
+
+                if erroneous_cve_present:
+                    logger.warn("Value of one or more CVE ID(s) is invalid")
+                    self.write_warning(
+                        "Value of one or more CVE ID(s) passed to {command_name} "
+                        "is invalid".format(command_name=str(self._metadata.searchinfo.command))
+                    )
+
+            except RateLimitError:
+                logger.error(
+                    "Rate limit error occurred while fetching the context information for cves={}".format(
+                        str(cve_id)
+                    )
+                )
+                self.write_error("The Rate Limit has been exceeded. Please contact the Administrator")
+            except RequestFailure as e:
+                response_code, response_message = e.args
+                if response_code == 401:
+                    msg = "Unauthorized. Please check your API key."
+                else:
+                    # Need to handle this, as splunklib is unable to handle the exception with
+                    # (400, {'error': 'error_reason'}) format
+                    msg = (
+                        "The API call to the GreyNoise platform have been failed " "with status_code: {} and error: {}"
+                    ).format(
+                        response_code,
+                        response_message["error"] if isinstance(response_message, dict) else response_message,
+                    )
+
+                logger.error("{}".format(str(msg)))
+                self.write_error(msg)
+            except ConnectionError:
+                logger.error("Error while connecting to the Server. Please check your connection and try again.")
+                self.write_error("Error while connecting to the Server. Please check your connection and try again.")
+            except RequestException:
+                logger.error(
+                    "There was an ambiguous exception that occurred while handling your Request. Please try again."
+                )
+                self.write_error(
+                    "There was an ambiguous exception that occurred while handling your Request. Please try again."
+                )
+            except Exception:
+                logger.error("Exception: {} ".format(str(traceback.format_exc())))
+                self.write_error(
+                    f"Exception occurred while fetching the CVE information. Exception: {str(traceback.format_exc())}"
+                    "See greynoise_main.log for more details."
+                )
+
+        elif cve_field:
+            # Enter the mechanism only when the Search is complete and all the events are available
+            if self.search_results_info and not self.metadata.preview:
+                try:
+                    # Strip the spaces from the parameter value if given
+                    cve_field = cve_field.strip()
+                    # Validating the given parameter
+                    try:
+                        cve_field = validator.Fieldname(option_name="cve_field").validate(cve_field)
+                    except ValueError as e:
+                        # Validator will throw ValueError with error message when the parameters are not proper
+                        logger.error(str(e))
+                        self.write_error(str(e))
+                        exit(1)
+
+                    # API key validation
+                    if not self.api_validation_flag:
+                        proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
+                        api_key_validation, message = utility.validate_api_key(api_key, logger, proxy)
+                        logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
+                        self.api_validation_flag = True
+                        if not api_key_validation:
+                            logger.info(message)
+                            self.write_error(message)
+                            exit(1)
+
+                    # This piece of code will work as transforming command and will use
+                    # the Splunk ingested events and field which is specified in ip_field.
+                    chunk_dict = event_generator.batch(records, cve_field, events_per_chunk, logger, optimize_requests=False)
+
+                    # This means there are only 1000 or below IPs to call in the entire bunch of records
+                    # Use one thread with single thread with caching mechanism enabled for the chunk
+                    if len(chunk_dict) == 1:
+                        logger.info(
+                            "Less then 1000 distinct CVEs are present, "
+                            "optimizing the CVE requests call to GreyNoise API..."
+                        )
+                        threads = 1
+                        use_cache = True
+
+                    if "http" in proxy:
+                        api_client = GreyNoise(
+                            api_key=api_key,
+                            timeout=120,
+                            use_cache=use_cache,
+                            integration_name=INTEGRATION_NAME,
+                            proxy=proxy,
+                        )
+                    else:
+                        api_client = GreyNoise(
+                            api_key=api_key, timeout=120, use_cache=use_cache, integration_name=INTEGRATION_NAME
+                        )
+
+                    # When no records found, batch will return {0:([],[])}
+                    tot_time_start = time.time()
+                    if len(chunk_dict) > 0:
+                        for event in event_generator.get_all_events(
+                            self._metadata.searchinfo.session_key,
+                            api_client,
+                            "cve",
+                            cve_field,
+                            chunk_dict,
+                            logger,
+                            threads=threads,
+                        ):
+                            yield event
+                    else:
+                        logger.info("No events found, please increase the search timespan to have more search results.")
+                    tot_time_end = time.time()
+                    logger.debug("Total execution time => {}".format(tot_time_end - tot_time_start))
+                except Exception:
+                    logger.info(
+                        "Exception occurred while adding the CVE information to the events, Error: {}".format(
+                            traceback.format_exc()
+                        )
+                    )
+                    self.write_error(
+                        "Exception occurred while adding the CVE Information to events. "
+                        "See greynoise_main.log for more details."
+                    )
+
+        else:
+            logger.error("Please specify exactly one parameter from cve and cve_field with some value.")
+            self.write_error("Please specify exactly one parameter from cve and cve_field with some value.")
+
+    def __init__(self):
+        """Initialize custom command class."""
+        super(GNCVECommand, self).__init__()
+
+
+dispatch(GNCVECommand, sys.argv, sys.stdin, sys.stdout, __name__)

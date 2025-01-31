@@ -10,6 +10,7 @@
       <label>Classification</label>
       <choice value="*">All</choice>
       <choice value="malicious">malicious</choice>
+      <choice value="suspicious">suspicious</choice>
       <choice value="benign">benign</choice>
       <choice value="unknown">unknown</choice>
       <default>*</default>

@@ -153,7 +153,7 @@ class GNFilterCommand(EventingCommand):
 
                 if message:
                     self.write_error(message)
-                    logger.error("Error occured while retrieving API key, Error: {}".format(message))
+                    logger.error("Error occurred while retrieving API key, Error: {}".format(message))
                     exit(1)
 
                 # API key validation
@@ -180,7 +180,7 @@ class GNFilterCommand(EventingCommand):
                     THREADS = 1
                     USE_CACHE = True
 
-                # Opting timout 120 seconds for the requests
+                # Opting timeout 120 seconds for the requests
                 if "http" in proxy:
                     api_client = GreyNoise(
                         api_key=api_key,

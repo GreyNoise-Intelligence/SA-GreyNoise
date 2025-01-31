@@ -523,8 +523,12 @@ class GreyNoiseFeedConfiguration(Validator):
                 query = "last_seen:1d"
             elif feed_selection == "MALICIOUS":
                 query = "last_seen:1d classification:malicious"
+            elif feed_selection == "SUSPICIOUS":
+                query = "last_seen:1d classification:suspicious"
             elif feed_selection == "MALICIOUS_BENIGN":
                 query = "last_seen:1d (classification:benign OR classification:malicious)"
+            elif feed_selection == "MALICIOUS_SUSPICIOUS_BENIGN":
+                query = "last_seen:1d (-classification:unknown)"
             else:
                 query = "last_seen:1d classification:benign"
 

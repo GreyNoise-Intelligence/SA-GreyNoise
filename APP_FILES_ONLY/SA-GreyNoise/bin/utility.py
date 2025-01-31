@@ -329,7 +329,7 @@ def get_caching(session_key, method, logger):
 
     :returns: cache_enabled flag,cache object.
     """
-    if method in ["filter", "similar", "timeline"]:
+    if method in ["filter", "similar", "timeline", "cve"]:
         cache_enabled = 0
         cache = None
     else:

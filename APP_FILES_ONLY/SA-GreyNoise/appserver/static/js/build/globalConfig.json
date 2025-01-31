@@ -222,8 +222,16 @@
                                         "value": "MALICIOUS"
                                     },
                                     {
+                                        "label": "Suspicious Indicators - Last 24 Hours",
+                                        "value": "SUSPICIOUS"
+                                    },
+                                    {
                                         "label": "Malicious and Benign Indicators - Last 24 Hours",
                                         "value": "MALICIOUS_BENIGN"
+                                    },
+                                    {
+                                        "label": "Malicious, Suspicious, and Benign Indicators - Last 24 Hours",
+                                        "value": "MALICIOUS_SUSPICIOUS_BENIGN"
                                     },
                                     {
                                         "label": "All Indicators - Last 24 Hours",
@@ -324,7 +332,7 @@
     }, 
     "meta": {
         "displayName": "GreyNoise App for Splunk", 
-        "version": "2.2.4",
+        "version": "2.3.0",
         "restRoot": "app_greynoise", 
         "name": "SA-GreyNoise", 
         "apiVersion": "3.0.0"

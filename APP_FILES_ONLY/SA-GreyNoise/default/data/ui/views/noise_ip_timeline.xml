@@ -59,7 +59,7 @@
         <option name="drilldown">none</option>
         <option name="rowNumbers">false</option>
         <format type="color" field="Classification">
-          <colorPalette type="map">{"malicious":#D41F1F,"benign":#277C52,"unknown":#65778A}</colorPalette>
+          <colorPalette type="map">{"malicious":#D41F1F,"benign":#277C52,"suspicious":#E3D922"unknown":#65778A}</colorPalette>
         </format>
         <fields>["Event Date","Classification","Tag(s)","rDNS","Organization","ASN","Port(s) Scanned","Web Path(s)","User Agent(s)"]</fields>
         <drilldown>

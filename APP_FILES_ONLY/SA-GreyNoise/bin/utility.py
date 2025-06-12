@@ -3,6 +3,7 @@ utility.py .
 
 Helper file containing useful methods
 """
+
 import collections
 import logging
 import traceback
@@ -232,6 +233,16 @@ def nested_dict_iter(nested, prefix=""):
         return parsed_dict
 
     return nester_method(api_response, prefix)
+
+
+def map_fields_to_cim(data):
+    """Return a dict with additional CIM field names mapped from GreyNoise fields."""
+    cim_data = {}
+    for key, value in data.items():
+        mapped = fields.CIM_FIELD_MAPPING.get(key)
+        if mapped:
+            cim_data[mapped] = value
+    return cim_data
 
 
 def validate_api_key(api_key, logger=None, proxy=None):

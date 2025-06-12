@@ -223,29 +223,45 @@ TIMELINE_FIELDS = {
 }
 
 SIMILAR_FIELDS = {
-    'ip': None,
-    'actor': None,
-    'classification': None,
-    'first_seen': None,
-    'last_seen': None,
-    'asn': None,
-    'city': None,
-    'country': None,
-    'country_code': None,
-    'organization': None,
-    'similar_ips': None
+    "ip": None,
+    "actor": None,
+    "classification": None,
+    "first_seen": None,
+    "last_seen": None,
+    "asn": None,
+    "city": None,
+    "country": None,
+    "country_code": None,
+    "organization": None,
+    "similar_ips": None,
 }
 
 GREYNOISE_SIMILAR_FIELDS = {
-    'greynoise_ip': None,
-    'greynoise_actor': None,
-    'greynoise_classification': None,
-    'greynoise_first_seen': None,
-    'greynoise_last_seen': None,
-    'greynoise_asn': None,
-    'greynoise_city': None,
-    'greynoise_country': None,
-    'greynoise_country_code': None,
-    'greynoise_organization': None,
-    'greynoise_similar_ips': None
+    "greynoise_ip": None,
+    "greynoise_actor": None,
+    "greynoise_classification": None,
+    "greynoise_first_seen": None,
+    "greynoise_last_seen": None,
+    "greynoise_asn": None,
+    "greynoise_city": None,
+    "greynoise_country": None,
+    "greynoise_country_code": None,
+    "greynoise_organization": None,
+    "greynoise_similar_ips": None,
+}
+
+# Mapping between GreyNoise response fields and Splunk CIM fields
+CIM_FIELD_MAPPING = {
+    "ip": "src_ip",
+    "country": "src_country",
+    "country_code": "src_country_code",
+    "city": "src_city",
+    "region": "src_region",
+    "organization": "src_org",
+    "asn": "src_asn",
+    "actor": "threat_actor",
+    "tags": "signature",
+    "classification": "threat_category",
+    "vpn": "is_vpn",
+    "tor": "is_tor",
 }

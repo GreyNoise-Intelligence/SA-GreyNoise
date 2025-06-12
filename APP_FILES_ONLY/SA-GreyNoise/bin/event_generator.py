@@ -1,4 +1,5 @@
 """This file helps custom commands generate events by passing simple API responses to it."""
+
 import threading  # noqa # pylint: disable=unused-import
 import time
 import traceback
@@ -15,6 +16,7 @@ from utility import (
     get_caching,
     get_dict,
     get_ips_not_in_cache,
+    map_fields_to_cim,
     nested_dict_iter,
 )
 
@@ -310,7 +312,7 @@ def event_processor(records_dict, result, method, field_name, logger):
     # This will either have API response for the chunk or
     # the exception message denoting exception occurred while fetching the data
     if result["response"]:
-        if type(result["response"][0]) == list:
+        if isinstance(result["response"][0], list):
             api_results = []
             for each in result["response"][0]:
                 api_results.append(each)
@@ -339,7 +341,7 @@ def event_processor(records_dict, result, method, field_name, logger):
         if error_flag:
             # Exception has occurred while fetching the data
             if field_name in record and record[field_name]:
-                event = {"ip": record[ip_field], "error": api_results}
+                event = {"ip": record[field_name], "error": api_results}
                 yield make_invalid_event(method, event, True, record)
             else:
                 # Either the record is not having IP field or the value of the IP field is ''
@@ -399,6 +401,8 @@ def make_valid_event(method, data, first_event=False, record=None):
             # so that Splunk can get the values of the fields from it
             results = nested_dict_iter(data)
 
+        results.update(map_fields_to_cim(results))
+
         results["source"] = "greynoise"
         results["sourcetype"] = "greynoise"
         results["_time"] = time.time()
@@ -408,7 +412,9 @@ def make_valid_event(method, data, first_event=False, record=None):
     else:
         # Irrespective of first_record_flag, we will always retrieve the default dictionary for the generating commands
         results = dict(get_dict(method))
-        results.update(nested_dict_iter(data, prefix="greynoise_"))
+        parsed = nested_dict_iter(data)
+        results.update({"greynoise_" + k: v for k, v in parsed.items()})
+        results.update(map_fields_to_cim(parsed))
 
         record.update(results)
 
@@ -435,6 +441,7 @@ def make_invalid_event(method, data, first_event=False, record=None):
             event = {}
 
         event.update(data)
+        event.update(map_fields_to_cim(data))
 
         event["source"] = "greynoise"
         event["sourcetype"] = "greynoise"
@@ -448,6 +455,8 @@ def make_invalid_event(method, data, first_event=False, record=None):
 
         for field, value in list(data.items()):
             event["greynoise_" + field] = value
+
+        event.update(map_fields_to_cim(data))
 
         record.update(event)
 

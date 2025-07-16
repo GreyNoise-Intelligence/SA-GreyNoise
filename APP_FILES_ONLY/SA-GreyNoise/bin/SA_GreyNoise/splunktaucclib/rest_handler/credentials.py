@@ -14,7 +14,8 @@
 # limitations under the License.
 #
 
-"""Credentials Management for REST Endpoint"""
+"""Credentials Management for REST Endpoint
+"""
 
 
 import json
@@ -150,7 +151,9 @@ class RestCredentials:
                 else:
                     # if the field value is '******', keep the original value
                     original_clear_password = self._get(name)
-                    if original_clear_password and original_clear_password.get(field_name):
+                    if original_clear_password and original_clear_password.get(
+                        field_name
+                    ):
                         encrypting[field_name] = original_clear_password[field_name]
                     else:
                         # original password does not exist, use '******' as password
@@ -307,7 +310,9 @@ class RestCredentials:
         # merge clear passwords to response data
         changed_item_list = []
 
-        password_dict = {pwd["username"]: json.loads(pwd["clear_password"]) for pwd in passwords}
+        password_dict = {
+            pwd["username"]: json.loads(pwd["clear_password"]) for pwd in passwords
+        }
         # existed passwords models: previously has encrypted value
         existing_encrypted_items = [x for x in data if x["name"] in password_dict]
 

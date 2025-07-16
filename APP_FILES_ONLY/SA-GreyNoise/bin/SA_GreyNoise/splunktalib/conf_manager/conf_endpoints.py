@@ -44,7 +44,9 @@ def reload_conf(splunkd_uri, session_key, app_name, conf_name, throw=False):
             raise
 
 
-def create_stanza(splunkd_uri, session_key, owner, app_name, conf_name, stanza, key_values):
+def create_stanza(
+    splunkd_uri, session_key, owner, app_name, conf_name, stanza, key_values
+):
     """
     :param splunkd_uri: splunkd uri, e.g. https://127.0.0.1:8089
     :param session_key: splunkd session key
@@ -93,7 +95,9 @@ def get_conf(splunkd_uri, session_key, owner, app_name, conf_name, stanza=None):
     return xdp.parse_conf_xml_dom(content)
 
 
-def update_stanza(splunkd_uri, session_key, owner, app_name, conf_name, stanza, key_values):
+def update_stanza(
+    splunkd_uri, session_key, owner, app_name, conf_name, stanza, key_values
+):
     """
     :param splunkd_uri: splunkd uri, e.g. https://127.0.0.1:8089
     :param session_key: splunkd session key
@@ -111,7 +115,9 @@ def update_stanza(splunkd_uri, session_key, owner, app_name, conf_name, stanza, 
     return content_request(uri, session_key, "POST", key_values, msg)
 
 
-def delete_stanza(splunkd_uri, session_key, owner, app_name, conf_name, stanza, throw=False):
+def delete_stanza(
+    splunkd_uri, session_key, owner, app_name, conf_name, stanza, throw=False
+):
     """
     :param splunkd_uri: splunkd uri, e.g. https://127.0.0.1:8089
     :param session_key: splunkd session key
@@ -136,7 +142,9 @@ def stanza_exist(splunkd_uri, session_key, owner, app_name, conf_name, stanza):
         return False
 
 
-def operate_conf(splunkd_uri, session_key, owner, app_name, conf_name, stanza, operation):
+def operate_conf(
+    splunkd_uri, session_key, owner, app_name, conf_name, stanza, operation
+):
     """
     :param splunkd_uri: splunkd uri, e.g. https://127.0.0.1:8089
     :param session_key: splunkd session key

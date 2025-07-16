@@ -26,7 +26,9 @@ class TARestHelper:
     def _init_request_session(self, proxy_uri=None):
         self.http_session = requests.Session()
         self.http_session.mount("http://", requests.adapters.HTTPAdapter(max_retries=3))
-        self.http_session.mount("https://", requests.adapters.HTTPAdapter(max_retries=3))
+        self.http_session.mount(
+            "https://", requests.adapters.HTTPAdapter(max_retries=3)
+        )
         if proxy_uri:
             self.requests_proxy = {"http": proxy_uri, "https": proxy_uri}
 

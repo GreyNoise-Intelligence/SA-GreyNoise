@@ -16,7 +16,6 @@ import sys
 import traceback
 
 from splunklib.utils import ensure_str
-
 from .event import ET
 
 
@@ -34,7 +33,7 @@ class EventWriter:
     ERROR = "ERROR"
     FATAL = "FATAL"
 
-    def __init__(self, output=sys.stdout, error=sys.stderr):
+    def __init__(self, output = sys.stdout, error = sys.stderr):
         """
         :param output: Where to write the output; defaults to sys.stdout.
         :param error: Where to write any errors; defaults to sys.stderr.

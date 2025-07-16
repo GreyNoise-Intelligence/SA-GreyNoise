@@ -20,6 +20,7 @@ import logging
 import sys
 
 from solnlib import log
+
 from splunktaucclib.cim_actions import ModularAction
 from splunktaucclib.rest_handler import util
 from splunktaucclib.splunk_aoblib.rest_helper import TARestHelper
@@ -160,7 +161,10 @@ class ModularAlertBase(ModularAction):
     def get_events(self):
         try:
             self.result_handle = gzip.open(self.results_file, "rt")
-            return (self.pre_handle(num, result) for num, result in enumerate(csv.DictReader(self.result_handle)))
+            return (
+                self.pre_handle(num, result)
+                for num, result in enumerate(csv.DictReader(self.result_handle))
+            )
         except OSError:
             msg = "Error: {}."
             self.log_error(msg.format("No search result. Cannot send alert action."))

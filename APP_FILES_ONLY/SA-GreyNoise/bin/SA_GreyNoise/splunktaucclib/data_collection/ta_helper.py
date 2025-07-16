@@ -20,8 +20,9 @@ import re
 from calendar import timegm
 from datetime import datetime
 
-import splunktaucclib.config as sc
 from splunktalib.common import util
+
+import splunktaucclib.config as sc
 from splunktaucclib.data_collection import ta_consts as c
 
 
@@ -106,7 +107,9 @@ class ConfigSchemaHandler:
         division_schema = self._client_schema[c.division]
         division_settings = dict()
         for division_endpoint, division_contents in division_schema.items():
-            division_settings[division_endpoint] = self._process_division(division_endpoint, division_contents)
+            division_settings[division_endpoint] = self._process_division(
+                division_endpoint, division_contents
+            )
         return division_settings
 
     def _load_conf_contents(self):

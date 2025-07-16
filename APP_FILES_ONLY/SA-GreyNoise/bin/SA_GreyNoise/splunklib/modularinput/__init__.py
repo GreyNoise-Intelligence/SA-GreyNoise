@@ -3,7 +3,6 @@ the splunklib.modularinput package like so:
 
 from splunklib.modularinput import *
 """
-
 from .argument import Argument
 from .event import Event
 from .event_writer import EventWriter

@@ -38,7 +38,8 @@ def log_enter_exit(logger):
     Log decorator to log function enter and exit
     """
     warnings.warn(
-        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. "
+        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -94,9 +95,13 @@ class Logs:
         logfile = make_splunkhome_path(["var", "log", "splunk", name])
         logger = logging.getLogger(name)
 
-        handler_exists = any([True for h in logger.handlers if h.baseFilename == logfile])
+        handler_exists = any(
+            [True for h in logger.handlers if h.baseFilename == logfile]
+        )
         if not handler_exists:
-            file_handler = handlers.RotatingFileHandler(logfile, mode="a", maxBytes=maxBytes, backupCount=backupCount)
+            file_handler = handlers.RotatingFileHandler(
+                logfile, mode="a", maxBytes=maxBytes, backupCount=backupCount
+            )
 
             formatter = logging.Formatter(
                 "%(asctime)s +0000 log_level=%(levelname)s, pid=%(process)d, tid=%(threadName)s, "
@@ -149,7 +154,8 @@ def reset_logger(name):
     Reset global logger.
     """
     warnings.warn(
-        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. "
+        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )

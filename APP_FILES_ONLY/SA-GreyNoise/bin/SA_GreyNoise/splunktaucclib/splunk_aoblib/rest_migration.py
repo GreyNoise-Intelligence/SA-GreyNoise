@@ -21,6 +21,7 @@ from urllib.parse import urlparse
 from solnlib.conf_manager import ConfManager
 from solnlib.splunk_rest_client import SplunkRestClient
 from solnlib.splunkenv import get_splunkd_uri
+
 from splunktaucclib.rest_handler import util
 from splunktaucclib.rest_handler.admin_external import AdminExternalHandler
 from splunktaucclib.rest_handler.error import RestError
@@ -51,7 +52,10 @@ class ConfigMigrationHandler(AdminExternalHandler):
     @_migrate_error_handle
     def _migrate(self):
         internal_endpoint = self.endpoint.internal_endpoint
-        if not (internal_endpoint.endswith("settings") or internal_endpoint.endswith("account")):
+        if not (
+            internal_endpoint.endswith("settings")
+            or internal_endpoint.endswith("account")
+        ):
             return
 
         splunkd_info = urlparse(get_splunkd_uri())

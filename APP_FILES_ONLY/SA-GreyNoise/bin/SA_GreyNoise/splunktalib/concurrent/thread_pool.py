@@ -161,7 +161,9 @@ class ThreadPool:
             return
 
         if self._lock.locked() or not self._started:
-            log.logger.info("Try to resize thread pool during the tear " "down process, do nothing")
+            log.logger.info(
+                "Try to resize thread pool during the tear " "down process, do nothing"
+            )
             return
 
         with self._lock:
@@ -202,7 +204,10 @@ class ThreadPool:
             self._thrs = live_thrs
 
     def _do_resize_according_to_loads(self):
-        if self._last_resize_time and time() - self._last_resize_time < self._resize_window:
+        if (
+            self._last_resize_time
+            and time() - self._last_resize_time < self._resize_window
+        ):
             return
 
         thr_size = self._last_size
@@ -242,7 +247,9 @@ class ThreadPool:
                 break
             else:
                 self._do_resize_according_to_loads()
-        log.logger.info("ThreadPool admin thread=%s stopped.", threading.current_thread().getName())
+        log.logger.info(
+            "ThreadPool admin thread=%s stopped.", threading.current_thread().getName()
+        )
 
     def _run(self):
         """
@@ -275,7 +282,9 @@ class ThreadPool:
             log.logger.debug("Done with exec job")
             log.logger.info("Thread work_queue_size=%d", work_queue.qsize())
 
-        log.logger.debug("Worker thread %s stopped.", threading.current_thread().getName())
+        log.logger.debug(
+            "Worker thread %s stopped.", threading.current_thread().getName()
+        )
 
 
 class AsyncResult:

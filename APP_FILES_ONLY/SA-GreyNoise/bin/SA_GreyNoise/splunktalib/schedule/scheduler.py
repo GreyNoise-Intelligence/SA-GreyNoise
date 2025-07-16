@@ -112,7 +112,8 @@ class Scheduler:
 
         if ready_jobs:
             log.logger.info(
-                "Get %d ready jobs, next duration is %f, " "and there are %s jobs scheduling",
+                "Get %d ready jobs, next duration is %f, "
+                "and there are %s jobs scheduling",
                 len(ready_jobs),
                 sleep_time,
                 total_jobs,

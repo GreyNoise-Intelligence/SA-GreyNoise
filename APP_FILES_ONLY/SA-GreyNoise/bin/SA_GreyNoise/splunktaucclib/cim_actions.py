@@ -54,7 +54,9 @@ class ModularAction:
         "action_mode",
         "action_status",
     ]
-    DEFAULT_MESSAGE = "sendmodaction - " + " ".join(['{i}="{{d[{i}]}}"'.format(i=i) for i in DEFAULT_MSGFIELDS])
+    DEFAULT_MESSAGE = "sendmodaction - " + " ".join(
+        ['{i}="{{d[{i}]}}"'.format(i=i) for i in DEFAULT_MSGFIELDS]
+    )
     # The above yields a string.format() compatible format string:
     #
     #   'sendmodaction - signature="{d[signature]}" action_name="{d[action_name]}"
@@ -142,7 +144,9 @@ class ModularAction:
         ## info
         self.info = {}
         if self.results_file:
-            self.info_file = os.path.join(os.path.dirname(self.results_file), "info.csv")
+            self.info_file = os.path.join(
+                os.path.dirname(self.results_file), "info.csv"
+            )
         self.search_name = self.settings.get("search_name")
         self.app = self.settings.get("app")
         self.user = self.settings.get("user") or self.settings.get("owner")
@@ -207,7 +211,9 @@ class ModularAction:
                     self.message("Successfully retrieved search job info")
                     self.logger.debug(self.job)
                 else:
-                    self.message("Could not retrieve search job info", level=logging.WARN)
+                    self.message(
+                        "Could not retrieve search job info", level=logging.WARN
+                    )
             except Exception as e:
                 self.message("Could not retrieve search job info", level=logging.WARN)
 
@@ -236,7 +242,11 @@ class ModularAction:
             rids = [self.rid_ntuple(self.orig_sid, self.rid, self.orig_rid)]
         ## kwargs - prune any duplicate keys based on DEFAULT_MSGFIELDS
         ##          prune any keys with special characters [A-Za-z_]+
-        newargs = [x for x in kwargs if (x not in ModularAction.DEFAULT_MSGFIELDS) and re.match("[A-Za-z_]+", x)]
+        newargs = [
+            x
+            for x in kwargs
+            if (x not in ModularAction.DEFAULT_MSGFIELDS) and re.match("[A-Za-z_]+", x)
+        ]
         ## MSG
         msg = "{} {}".format(
             ModularAction.DEFAULT_MESSAGE,
@@ -333,7 +343,9 @@ class ModularAction:
         """
         self.message("Invoking modular action")
 
-    def result2stash(self, result, dropexp=DEFAULT_DROPEXP, mapexp=DEFAULT_MAPEXP, addinfo=False):
+    def result2stash(
+        self, result, dropexp=DEFAULT_DROPEXP, mapexp=DEFAULT_MAPEXP, addinfo=False
+    ):
         """The purpose of this method is to formulate an event in stash format
 
         @param result:  The result dictionary to generate a stash event for.
@@ -359,7 +371,9 @@ class ModularAction:
         """
         dropexp = dropexp or (lambda x: False)
         mapexp = mapexp or (lambda x: False)
-        orig_dropexp = lambda x: x.startswith("orig_") and x[5:] in result and mapexp(x[5:])
+        orig_dropexp = (
+            lambda x: x.startswith("orig_") and x[5:] in result and mapexp(x[5:])
+        )
 
         ## addinfo
         if addinfo:
@@ -379,7 +393,13 @@ class ModularAction:
         for key, val in sorted(result.items()):
             vals = []
             ## if we have a proper mv field
-            if key.startswith("__mv_") and val and isinstance(val, str) and val.startswith("$") and val.endswith("$"):
+            if (
+                key.startswith("__mv_")
+                and val
+                and isinstance(val, str)
+                and val.startswith("$")
+                and val.endswith("$")
+            ):
                 real_key = key[5:]
                 vals = val[1:-1].split("$;$")
             ## if proper sv field
@@ -389,7 +409,12 @@ class ModularAction:
 
             ## if we have vals and key hasn't been processed
             ## and key is not to be dropped...
-            if vals and (real_key not in processed_keys) and not dropexp(real_key) and not orig_dropexp(real_key):
+            if (
+                vals
+                and (real_key not in processed_keys)
+                and not dropexp(real_key)
+                and not orig_dropexp(real_key)
+            ):
                 ## iterate vals
                 for val in vals:
                     ## format literal '$'
@@ -443,7 +468,9 @@ class ModularAction:
         else:
             self.events.append(raw)
 
-    def writeevents(self, index="summary", host=None, source=None, fext="common_action_model"):
+    def writeevents(
+        self, index="summary", host=None, source=None, fext="common_action_model"
+    ):
         """The purpose of this method is to create arbitrary splunk events
         from the list of events in the ModularAction instance.
 
@@ -468,7 +495,6 @@ class ModularAction:
         @return bool:  Returns True if all events were successfully written
                        Returns False if any errors were encountered
         """
-
         ## internal makeevents method for normalizing strings
         ## that will be used in the various headers we write out
         def get_string(input, default):
@@ -480,7 +506,9 @@ class ModularAction:
         if self.events:
             ## sanitize file extension
             if not fext or not re.match(r"^[\w-]+$", fext):
-                self.logger.warn("Requested file extension was ignored due to invalid characters")
+                self.logger.warn(
+                    "Requested file extension was ignored due to invalid characters"
+                )
                 fext = "common_action_model"
             elif len(fext) > 200:
                 self.logger.warn("Requested file extension was ignored due to length")
@@ -515,7 +543,9 @@ class ModularAction:
                     self.message(signature, level=logging.ERROR, file_path=fp)
                     self.logger.exception(signature + " file_path=%s" % fp)
                     return False
-            self.message("Successfully created splunk events", event_count=len(self.events))
+            self.message(
+                "Successfully created splunk events", event_count=len(self.events)
+            )
             return True
         return False
 
@@ -530,7 +560,9 @@ class ModularAction:
         return
 
     @staticmethod
-    def setup_logger(name, level=logging.INFO, maxBytes=25000000, backupCount=5, format=SHORT_FORMAT):
+    def setup_logger(
+        name, level=logging.INFO, maxBytes=25000000, backupCount=5, format=SHORT_FORMAT
+    ):
         """Set up a logging instance.
 
         @param name:        The log file name.
@@ -547,9 +579,13 @@ class ModularAction:
         logger.propagate = False  # Prevent the log messages from being duplicated in the python.log file
 
         # Prevent re-adding handlers to the logger object, which can cause duplicate log lines.
-        handler_exists = any([True for h in logger.handlers if h.baseFilename == logfile])
+        handler_exists = any(
+            [True for h in logger.handlers if h.baseFilename == logfile]
+        )
         if not handler_exists:
-            file_handler = logging.handlers.RotatingFileHandler(logfile, maxBytes=maxBytes, backupCount=backupCount)
+            file_handler = logging.handlers.RotatingFileHandler(
+                logfile, maxBytes=maxBytes, backupCount=backupCount
+            )
             formatter = logging.Formatter(format)
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)

@@ -53,7 +53,9 @@ class TeardownHandler(base.BaseRestHandler):
         )
 
         if self.requestedAction != admin.ACTION_LIST:
-            RH_Err.ctl(1101, msgx='Only "list" action is supported', logLevel=logging.INFO)
+            RH_Err.ctl(
+                1101, msgx='Only "list" action is supported', logLevel=logging.INFO
+            )
 
     def setup(self):
         for arg in self.requiredArgs:

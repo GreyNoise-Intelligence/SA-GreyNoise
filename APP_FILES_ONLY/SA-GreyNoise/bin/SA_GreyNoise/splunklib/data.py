@@ -59,8 +59,8 @@ def hasattrs(element):
 
 
 def localname(xname):
-    rcurly = xname.find("}")
-    return xname if rcurly == -1 else xname[rcurly + 1 :]
+    rcurly = xname.find('}')
+    return xname if rcurly == -1 else xname[rcurly + 1:]
 
 
 def load(text, match=None):
@@ -75,12 +75,13 @@ def load(text, match=None):
     :param match: A tag name or path to match (optional).
     :type match: ``string``
     """
-    if text is None:
-        return None
+    if text is None: return None
     text = text.strip()
-    if len(text) == 0:
-        return None
-    nametable = {"namespaces": [], "names": {}}
+    if len(text) == 0: return None
+    nametable = {
+        'namespaces': [],
+        'names': {}
+    }
 
     root = XML(text)
     items = [root] if match is None else root.findall(match)
@@ -94,8 +95,7 @@ def load(text, match=None):
 
 # Load the attributes of the given element.
 def load_attrs(element):
-    if not hasattrs(element):
-        return None
+    if not hasattrs(element): return None
     attrs = record()
     for key, value in element.attrib.items():
         attrs[key] = value
@@ -118,10 +118,8 @@ def load_elem(element, nametable=None):
     name = localname(element.tag)
     attrs = load_attrs(element)
     value = load_value(element, nametable)
-    if attrs is None:
-        return name, value
-    if value is None:
-        return name, attrs
+    if attrs is None: return name, value
+    if value is None: return name, attrs
     # If value is simple, merge into attrs dict using special key
     if isinstance(value, str):
         attrs["$text"] = value
@@ -153,10 +151,8 @@ def load_list(element, nametable=None):
 # Load the given root element.
 def load_root(element, nametable=None):
     tag = element.tag
-    if isdict(tag):
-        return load_dict(element, nametable)
-    if islist(tag):
-        return load_list(element, nametable)
+    if isdict(tag): return load_dict(element, nametable)
+    if islist(tag): return load_list(element, nametable)
     k, v = load_elem(element, nametable)
     return Record.fromkv(k, v)
 
@@ -180,10 +176,8 @@ def load_value(element, nametable=None):
     if count == 1:
         child = children[0]
         tag = child.tag
-        if isdict(tag):
-            return load_dict(child, nametable)
-        if islist(tag):
-            return load_list(child, nametable)
+        if isdict(tag): return load_dict(child, nametable)
+        if islist(tag): return load_list(child, nametable)
 
     value = record()
     for child in children:
@@ -219,12 +213,10 @@ class Record(dict):
     one is placed into a nested dictionary, so you can write ``r.bar.qux`` or
     ``r['bar.qux']`` interchangeably.
     """
-
-    sep = "."
+    sep = '.'
 
     def __call__(self, *args):
-        if len(args) == 0:
-            return self
+        if len(args) == 0: return self
         return Record((key, self[key]) for key in args)
 
     def __getattr__(self, name):
@@ -253,8 +245,8 @@ class Record(dict):
         for k, v in self.items():
             if not k.startswith(key):
                 continue
-            suffix = k[len(key) :]
-            if "." in suffix:
+            suffix = k[len(key):]
+            if '.' in suffix:
                 ks = suffix.split(self.sep)
                 z = result
                 for x in ks[:-1]:
@@ -276,6 +268,5 @@ def record(value=None):
     :param value: An initial record value.
     :type value: ``dict``
     """
-    if value is None:
-        value = {}
+    if value is None: value = {}
     return Record(value)

@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import xml.etree.ElementTree as ET
 from io import TextIOBase
+import xml.etree.ElementTree as ET
 
 from splunklib.utils import ensure_str
 
@@ -23,19 +23,8 @@ class Event:
 
     To write an input to a stream, call the ``write_to`` function, passing in a stream.
     """
-
-    def __init__(
-        self,
-        data=None,
-        stanza=None,
-        time=None,
-        host=None,
-        index=None,
-        source=None,
-        sourcetype=None,
-        done=True,
-        unbroken=True,
-    ):
+    def __init__(self, data=None, stanza=None, time=None, host=None, index=None, source=None,
+                 sourcetype=None, done=True, unbroken=True):
         """There are no required parameters for constructing an Event
 
         **Example with minimal configuration**::
@@ -106,7 +95,7 @@ class Event:
             ("sourcetype", self.sourceType),
             ("index", self.index),
             ("host", self.host),
-            ("data", self.data),
+            ("data", self.data)
         ]
         for node, value in subelements:
             if value is not None:

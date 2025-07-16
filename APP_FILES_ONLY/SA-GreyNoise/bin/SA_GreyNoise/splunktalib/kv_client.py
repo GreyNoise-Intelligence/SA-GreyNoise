@@ -18,8 +18,9 @@ import json
 import re
 import warnings
 
-import splunktalib.rest as rest
 from defusedxml import ElementTree as et
+
+import splunktalib.rest as rest
 
 
 class KVException(Exception):
@@ -153,7 +154,9 @@ class KVClient:
         k = self._do_request(uri, "GET")
         return json.loads(k)
 
-    def _do_request(self, uri, method, data=None, content_type="application/x-www-form-urlencoded"):
+    def _do_request(
+        self, uri, method, data=None, content_type="application/x-www-form-urlencoded"
+    ):
         headers = {"Content-Type": content_type}
 
         resp = rest.splunkd_request(uri, self._session_key, method, headers, data)
@@ -167,7 +170,9 @@ class KVClient:
         elif resp.status_code == 404:
             raise KVNotExists("{}-{} not exists".format(uri, data))
         else:
-            raise KVException("Failed to {} {}, reason={}".format(method, uri, resp.reason))
+            raise KVException(
+                "Failed to {} {}, reason={}".format(method, uri, resp.reason)
+            )
 
     def _get_config_endpoint(self, app, owner, collection=None):
         uri = "{0}/servicesNS/{1}/{2}/storage/collections/config"
@@ -195,7 +200,8 @@ class KVClient:
 
 def create_collection(kv_client, collection, appname):
     warnings.warn(
-        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. "
+        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )

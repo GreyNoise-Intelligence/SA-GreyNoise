@@ -20,6 +20,7 @@ from traceback import format_exc
 from typing import Optional
 
 import requests
+
 import splunktalib.common.log as log
 
 
@@ -67,7 +68,9 @@ def splunkd_request(
         else:
             if resp.status_code not in (200, 201):
                 if not (method == "GET" and resp.status_code == 404):
-                    log.logger.debug(msg_temp, splunkd_uri, resp.status_code, code_to_msg(resp))
+                    log.logger.debug(
+                        msg_temp, splunkd_uri, resp.status_code, code_to_msg(resp)
+                    )
             else:
                 return resp
     else:
@@ -83,7 +86,10 @@ def code_to_msg(response: requests.Response):
         404: "Requested endpoint does not exist.",
         409: "Invalid operation for this endpoint. reason={}".format(response.text),
         500: "Unspecified internal server error. reason={}".format(response.text),
-        503: ("Feature is disabled in the configuration file. " "reason={}".format(response.text)),
+        503: (
+            "Feature is disabled in the configuration file. "
+            "reason={}".format(response.text)
+        ),
     }
 
     return code_msg_tbl.get(response.status_code, response.text)

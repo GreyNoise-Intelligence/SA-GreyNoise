@@ -20,6 +20,7 @@ import urllib.parse
 import urllib.request
 
 import splunktalib.state_store as ss
+
 import splunktaucclib.common.log as stulog
 
 from . import ta_consts as c
@@ -30,14 +31,20 @@ class TACheckPointMgr:
 
     def __init__(self, meta_config, task_config):
         self._task_config = task_config
-        self._store = ss.get_state_store(meta_config, task_config[c.appname], use_kv_store=self._use_kv_store())
+        self._store = ss.get_state_store(
+            meta_config, task_config[c.appname], use_kv_store=self._use_kv_store()
+        )
         if isinstance(self._store, ss.CachedFileStateStore):
             stulog.logger.info("State store type is CachedFileStateStore")
 
     def _use_kv_store(self):
         use_kv_store = self._task_config.get(c.use_kv_store, False)
         if use_kv_store:
-            stulog.logger.info("Stanza={} Using KV store for checkpoint".format(self._task_config[c.stanza_name]))
+            stulog.logger.info(
+                "Stanza={} Using KV store for checkpoint".format(
+                    self._task_config[c.stanza_name]
+                )
+            )
         return use_kv_store
 
     def get_ckpt_key(self):

@@ -18,12 +18,13 @@
 from collections import OrderedDict
 from inspect import getmembers, isclass, isfunction
 
+
 from .internals import ConfigurationSettingsType, json_encode_string
 from .validators import OptionName
 
 
 class Configuration:
-    """Defines the configuration settings for a search command.
+    """ Defines the configuration settings for a search command.
 
     Documents, validates, and ensures that only relevant configuration settings are applied. Adds a :code:`name` class
     variable to search command classes that don't have one. The :code:`name` is derived from the name of the class.
@@ -32,7 +33,6 @@ class Configuration:
     <http://docs.splunk.com/Documentation/Splunk/latest/Search/Searchcommandstyleguide>`__
 
     """
-
     def __init__(self, o=None, **kwargs):
         #
         # The o argument enables the configuration decorator to be used with or without parentheses. For example, it
@@ -64,27 +64,28 @@ class Configuration:
             # Set command name
 
             name = o.__name__
-            if name.endswith("Command"):
-                name = name[: -len("Command")]
+            if name.endswith('Command'):
+                name = name[:-len('Command')]
             o.name = str(name.lower())
 
             # Construct ConfigurationSettings instance for the command class
 
             o.ConfigurationSettings = ConfigurationSettingsType(
-                module=o.__module__ + "." + o.__name__, name="ConfigurationSettings", bases=(o.ConfigurationSettings,)
-            )
+                module=o.__module__ + '.' + o.__name__,
+                name='ConfigurationSettings',
+                bases=(o.ConfigurationSettings,))
 
             ConfigurationSetting.fix_up(o.ConfigurationSettings, self.settings)
             o.ConfigurationSettings.fix_up(o)
             Option.fix_up(o)
         else:
-            raise TypeError(f"Incorrect usage: Configuration decorator applied to {type(o)}")
+            raise TypeError(f'Incorrect usage: Configuration decorator applied to {type(o)}')
 
         return o
 
 
 class ConfigurationSetting(property):
-    """Generates a :class:`property` representing the named configuration setting
+    """ Generates a :class:`property` representing the named configuration setting
 
     This is a convenience function designed to reduce the amount of boiler-plate code you must write; most notably for
     property setters.
@@ -104,7 +105,6 @@ class ConfigurationSetting(property):
     :rtype: property
 
     """
-
     def __init__(self, fget=None, fset=None, fdel=None, doc=None, name=None, readonly=None, value=None):
         property.__init__(self, fget=fget, fset=fset, fdel=fdel, doc=doc)
         self._readonly = readonly
@@ -138,7 +138,7 @@ class ConfigurationSetting(property):
                 name = setting._name
 
             validate, specification = setting._get_specification()
-            backing_field_name = "_" + name
+            backing_field_name = '_' + name
 
             if setting.fget is None and setting.fset is None and setting.fdel is None:
 
@@ -184,15 +184,15 @@ class ConfigurationSetting(property):
                 continue
 
             if setting.fset is None:
-                raise ValueError(f"The value of configuration setting {name} is fixed")
+                raise ValueError(f'The value of configuration setting {name} is fixed')
 
             setattr(cls, backing_field_name, validate(specification, name, value))
             del values[name]
 
         if len(values) > 0:
             settings = sorted(list(values.items()))
-            settings = [f"{n_v[0]}={n_v[1]}" for n_v in settings]
-            raise AttributeError("Inapplicable configuration settings: " + ", ".join(settings))
+            settings = [f'{n_v[0]}={n_v[1]}' for n_v in settings]
+            raise AttributeError('Inapplicable configuration settings: ' + ', '.join(settings))
 
         cls.configuration_setting_definitions = definitions
 
@@ -209,13 +209,13 @@ class ConfigurationSetting(property):
         try:
             specification = ConfigurationSettingsType.specification_matrix[name]
         except KeyError:
-            raise AttributeError(f"Unknown configuration setting: {name}={repr(self._value)}")
+            raise AttributeError(f'Unknown configuration setting: {name}={repr(self._value)}')
 
         return ConfigurationSettingsType.validate_configuration_setting, specification
 
 
 class Option(property):
-    """Represents a search command option.
+    """ Represents a search command option.
 
     Required options must be specified on the search command line.
 
@@ -267,7 +267,6 @@ class Option(property):
             self._logging_configuration = None
 
     """
-
     def __init__(self, fget=None, fset=None, fdel=None, doc=None, name=None, default=None, require=None, validate=None):
         property.__init__(self, fget, fset, fdel, doc)
         self.name = name
@@ -305,7 +304,7 @@ class Option(property):
                 validate_option_name(option.name)
 
             if option.fget is None and option.fset is None and option.fdel is None:
-                backing_field_name = "_" + name
+                backing_field_name = '_' + name
 
                 def fget(bfn):
                     return lambda this: getattr(this, bfn, None)
@@ -345,12 +344,11 @@ class Option(property):
     # region Types
 
     class Item:
-        """Presents an instance/class view over a search command `Option`.
+        """ Presents an instance/class view over a search command `Option`.
 
         This class is used by SearchCommand.process to parse and report on option values.
 
         """
-
         def __init__(self, command, option):
             self._command = command
             self._option = option
@@ -359,12 +357,12 @@ class Option(property):
             self._format = str if validator is None else validator.format
 
         def __repr__(self):
-            return "(" + repr(self.name) + ", " + repr(self._format(self.value)) + ")"
+            return '(' + repr(self.name) + ', ' + repr(self._format(self.value)) + ')'
 
         def __str__(self):
             value = self.value
-            value = "None" if value is None else json_encode_string(self._format(value))
-            return self.name + "=" + value
+            value = 'None' if value is None else json_encode_string(self._format(value))
+            return self.name + '=' + value
 
         # region Properties
 
@@ -374,7 +372,9 @@ class Option(property):
 
         @property
         def is_set(self):
-            """Indicates whether an option value was provided as argument."""
+            """ Indicates whether an option value was provided as argument.
+
+            """
             return self._is_set
 
         @property
@@ -405,23 +405,22 @@ class Option(property):
         # endregion
 
     class View(OrderedDict):
-        """Presents an ordered dictionary view of the set of :class:`Option` arguments to a search command.
+        """ Presents an ordered dictionary view of the set of :class:`Option` arguments to a search command.
 
         This class is used by SearchCommand.process to parse and report on option values.
 
         """
-
         def __init__(self, command):
             definitions = type(command).option_definitions
             item_class = Option.Item
             OrderedDict.__init__(self, ((option.name, item_class(command, option)) for (name, option) in definitions))
 
         def __repr__(self):
-            text = "Option.View([" + ",".join([repr(item) for item in self.values()]) + "])"
+            text = 'Option.View([' + ','.join([repr(item) for item in self.values()]) + '])'
             return text
 
         def __str__(self):
-            text = " ".join([str(item) for item in self.values() if item.is_set])
+            text = ' '.join([str(item) for item in self.values() if item.is_set])
             return text
 
         # region Methods
@@ -436,7 +435,8 @@ class Option(property):
 
         # endregion
 
+
     # endregion
 
 
-__all__ = ["Configuration", "Option"]
+__all__ = ['Configuration', 'Option']

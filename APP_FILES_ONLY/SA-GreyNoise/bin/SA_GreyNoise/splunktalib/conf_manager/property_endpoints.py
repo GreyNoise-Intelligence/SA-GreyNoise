@@ -63,7 +63,9 @@ def get_property(splunkd_uri, session_key, owner, app_name, conf_name, stanza, k
     return content_request(uri, session_key, "GET", None, msg)
 
 
-def update_properties(splunkd_uri, session_key, owner, app_name, conf_name, stanza, key_values):
+def update_properties(
+    splunkd_uri, session_key, owner, app_name, conf_name, stanza, key_values
+):
     """
     :param splunkd_uri: splunkd uri, e.g. https://127.0.0.1:8089
     :param session_key: splunkd session key

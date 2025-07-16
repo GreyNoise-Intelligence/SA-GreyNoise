@@ -25,6 +25,7 @@ from solnlib import utils as sutils
 from solnlib.log import Logs
 from solnlib.modular_input import checkpointer
 from splunklib import modularinput as smi
+
 from splunktaucclib.global_config import GlobalConfig, GlobalConfigSchema
 from splunktaucclib.splunk_aoblib.rest_helper import TARestHelper
 from splunktaucclib.splunk_aoblib.setup_util import Setup_Util
@@ -140,7 +141,9 @@ class BaseModInput(smi.Script):
         except Exception as e:
             import traceback
 
-            self.log_error("Get error when collecting events.\n" + traceback.format_exc())
+            self.log_error(
+                "Get error when collecting events.\n" + traceback.format_exc()
+            )
             print(traceback.format_exc(), file=sys.stderr)
             # print >> sys.stderr, traceback.format_exc()
             raise RuntimeError(str(e))
@@ -231,7 +234,9 @@ class BaseModInput(smi.Script):
                         arg_value_trans = arg_value
                     stanza_params[arg_name] = arg_value_trans
                     if arg_name in account_fields:
-                        stanza_params[arg_name] = self.get_user_credential_by_id(arg_value_trans)
+                        stanza_params[arg_name] = self.get_user_credential_by_id(
+                            arg_value_trans
+                        )
                     elif arg_name in checkbox_fields:
                         stanza_params[arg_name] = sutils.is_true(arg_value_trans)
                 self.input_stanzas[kind_and_name[1]] = stanza_params
@@ -431,7 +436,11 @@ class BaseModInput(smi.Script):
         :return: `dict` or `string` or None
         """
         if input_stanza_name is None:
-            args_dict = {k: args[arg_name] for k, args in self.input_stanzas.items() if arg_name in args}
+            args_dict = {
+                k: args[arg_name]
+                for k, args in self.input_stanzas.items()
+                if arg_name in args
+            }
             if self.use_single_instance:
                 return args_dict
             else:
@@ -527,7 +536,9 @@ class BaseModInput(smi.Script):
                     raise ValueError("server_uri not found in input meta.")
                 if "session_key" not in self.context_meta:
                     raise ValueError("session_key not found in input meta.")
-                dscheme, dhost, dport = sutils.extract_http_scheme_host_port(self.context_meta["server_uri"])
+                dscheme, dhost, dport = sutils.extract_http_scheme_host_port(
+                    self.context_meta["server_uri"]
+                )
                 self.ckpt = checkpointer.KVStoreCheckpointer(
                     self.app + "_checkpointer",
                     self.context_meta["session_key"],

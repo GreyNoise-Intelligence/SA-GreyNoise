@@ -14,7 +14,8 @@
 # limitations under the License.
 #
 
-"""Credential Management for REST Endpoint"""
+"""Credential Management for REST Endpoint
+"""
 
 
 import json
@@ -61,7 +62,9 @@ class CredMgmt:
             for decrypt & delete.
         :return: a tuple (realm, username, password)
         """
-        realm = CredMgmt.REALM_TEMPLATE.format(baseApp=getBaseAppName(), endpoint=self._endpoint, stanzaName=stanzaName)
+        realm = CredMgmt.REALM_TEMPLATE.format(
+            baseApp=getBaseAppName(), endpoint=self._endpoint, stanzaName=stanzaName
+        )
         username = "username"
         password = "" if data is None else json.dumps(data)
         return realm, username, password

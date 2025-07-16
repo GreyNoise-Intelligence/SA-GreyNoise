@@ -134,7 +134,12 @@ def html_escape(text: object) -> str:
     if not isinstance(text, str):
         text = f"{text}"
 
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
 
 
 FORMATTER = HTMLFormatter()

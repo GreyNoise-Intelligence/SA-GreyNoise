@@ -93,7 +93,10 @@ def button_dialog(
     dialog = Dialog(
         title=title,
         body=Label(text=text, dont_extend_height=True),
-        buttons=[Button(text=t, handler=functools.partial(button_handler, v)) for t, v in buttons],
+        buttons=[
+            Button(text=t, handler=functools.partial(button_handler, v))
+            for t, v in buttons
+        ],
         with_background=True,
     )
 
@@ -252,7 +255,9 @@ def checkboxlist_dialog(
 def progress_dialog(
     title: AnyFormattedText = "",
     text: AnyFormattedText = "",
-    run_callback: Callable[[Callable[[int], None], Callable[[str], None]], None] = (lambda *a: None),
+    run_callback: Callable[[Callable[[int], None], Callable[[str], None]], None] = (
+        lambda *a: None
+    ),
     style: BaseStyle | None = None,
 ) -> Application[None]:
     """

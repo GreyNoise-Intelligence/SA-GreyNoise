@@ -53,7 +53,9 @@ def _implementation():
             sys.pypy_version_info.micro,
         )
         if sys.pypy_version_info.releaselevel != "final":
-            implementation_version = "".join([implementation_version, sys.pypy_version_info.releaselevel])
+            implementation_version = "".join(
+                [implementation_version, sys.pypy_version_info.releaselevel]
+            )
     elif implementation == "Jython":
         implementation_version = platform.python_version()  # Complete Guess
     elif implementation == "IronPython":

@@ -72,7 +72,9 @@ class AutoSuggest(metaclass=ABCMeta):
         :param document: The :class:`~prompt_toolkit.document.Document` instance.
         """
 
-    async def get_suggestion_async(self, buff: Buffer, document: Document) -> Suggestion | None:
+    async def get_suggestion_async(
+        self, buff: Buffer, document: Document
+    ) -> Suggestion | None:
         """
         Return a :class:`.Future` which is set when the suggestions are ready.
         This function can be overloaded in order to provide an asynchronous
@@ -94,7 +96,9 @@ class ThreadedAutoSuggest(AutoSuggest):
     def get_suggestion(self, buff: Buffer, document: Document) -> Suggestion | None:
         return self.auto_suggest.get_suggestion(buff, document)
 
-    async def get_suggestion_async(self, buff: Buffer, document: Document) -> Suggestion | None:
+    async def get_suggestion_async(
+        self, buff: Buffer, document: Document
+    ) -> Suggestion | None:
         """
         Run the `get_suggestion` function in a thread.
         """
@@ -166,6 +170,8 @@ class DynamicAutoSuggest(AutoSuggest):
         auto_suggest = self.get_auto_suggest() or DummyAutoSuggest()
         return auto_suggest.get_suggestion(buff, document)
 
-    async def get_suggestion_async(self, buff: Buffer, document: Document) -> Suggestion | None:
+    async def get_suggestion_async(
+        self, buff: Buffer, document: Document
+    ) -> Suggestion | None:
         auto_suggest = self.get_auto_suggest() or DummyAutoSuggest()
         return await auto_suggest.get_suggestion_async(buff, document)

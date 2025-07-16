@@ -22,7 +22,9 @@ __all__ = [
 ]
 
 
-def create_output(stdout: TextIO | StdoutProxy | None = None, always_prefer_tty: bool = False) -> Output:
+def create_output(
+    stdout: TextIO | StdoutProxy | None = None, always_prefer_tty: bool = False
+) -> Output:
     """
     Return an :class:`~prompt_toolkit.output.Output` instance for the command
     line.
@@ -82,7 +84,9 @@ def create_output(stdout: TextIO | StdoutProxy | None = None, always_prefer_tty:
                 Windows10_Output(stdout, default_color_depth=color_depth_from_env),
             )
         if is_conemu_ansi():
-            return cast(Output, ConEmuOutput(stdout, default_color_depth=color_depth_from_env))
+            return cast(
+                Output, ConEmuOutput(stdout, default_color_depth=color_depth_from_env)
+            )
         else:
             return Win32Output(stdout, default_color_depth=color_depth_from_env)
     else:

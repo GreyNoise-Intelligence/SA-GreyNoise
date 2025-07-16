@@ -28,7 +28,9 @@ class Optimizer(NodeTransformer):
     def __init__(self, environment: "t.Optional[Environment]") -> None:
         self.environment = environment
 
-    def generic_visit(self, node: nodes.Node, *args: t.Any, **kwargs: t.Any) -> nodes.Node:
+    def generic_visit(
+        self, node: nodes.Node, *args: t.Any, **kwargs: t.Any
+    ) -> nodes.Node:
         node = super().generic_visit(node, *args, **kwargs)
 
         # Do constant folding. Some other nodes besides Expr have

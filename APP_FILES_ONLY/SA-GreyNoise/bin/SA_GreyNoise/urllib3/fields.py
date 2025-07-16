@@ -12,7 +12,9 @@ _TYPE_FIELD_VALUE_TUPLE = typing.Union[
 ]
 
 
-def guess_content_type(filename: str | None, default: str = "application/octet-stream") -> str:
+def guess_content_type(
+    filename: str | None, default: str = "application/octet-stream"
+) -> str:
     """
     Guess the "Content-Type" of a file.
 
@@ -185,7 +187,8 @@ class RequestField:
             import warnings
 
             warnings.warn(
-                "The 'header_formatter' parameter is deprecated and " "will be removed in urllib3 v2.1.0.",
+                "The 'header_formatter' parameter is deprecated and "
+                "will be removed in urllib3 v2.1.0.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -231,7 +234,9 @@ class RequestField:
             content_type = None
             data = value
 
-        request_param = cls(fieldname, data, filename=filename, header_formatter=header_formatter)
+        request_param = cls(
+            fieldname, data, filename=filename, header_formatter=header_formatter
+        )
         request_param.make_multipart(content_type=content_type)
 
         return request_param
@@ -254,7 +259,10 @@ class RequestField:
 
     def _render_parts(
         self,
-        header_parts: dict[str, _TYPE_FIELD_VALUE | None] | typing.Sequence[tuple[str, _TYPE_FIELD_VALUE | None]],
+        header_parts: (
+            dict[str, _TYPE_FIELD_VALUE | None]
+            | typing.Sequence[tuple[str, _TYPE_FIELD_VALUE | None]]
+        ),
     ) -> str:
         """
         Helper function to format and quote a single header.
@@ -322,7 +330,9 @@ class RequestField:
         content_disposition = (content_disposition or "form-data") + "; ".join(
             [
                 "",
-                self._render_parts((("name", self._name), ("filename", self._filename))),
+                self._render_parts(
+                    (("name", self._name), ("filename", self._filename))
+                ),
             ]
         )
 

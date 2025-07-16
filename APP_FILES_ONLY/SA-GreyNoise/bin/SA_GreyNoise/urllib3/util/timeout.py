@@ -142,12 +142,16 @@ class Timeout:
             return value
 
         if isinstance(value, bool):
-            raise ValueError("Timeout cannot be a boolean value. It must " "be an int, float or None.")
+            raise ValueError(
+                "Timeout cannot be a boolean value. It must "
+                "be an int, float or None."
+            )
         try:
             float(value)
         except (TypeError, ValueError):
             raise ValueError(
-                "Timeout value %s was %s, but it must be an " "int, float or None." % (name, value)
+                "Timeout value %s was %s, but it must be an "
+                "int, float or None." % (name, value)
             ) from None
 
         try:
@@ -159,7 +163,8 @@ class Timeout:
                 )
         except TypeError:
             raise ValueError(
-                "Timeout value %s was %s, but it must be an " "int, float or None." % (name, value)
+                "Timeout value %s was %s, but it must be an "
+                "int, float or None." % (name, value)
             ) from None
 
         return value
@@ -214,7 +219,9 @@ class Timeout:
             to get duration for a timer that hasn't been started.
         """
         if self._start_connect is None:
-            raise TimeoutStateError("Can't get connect duration for timer that has not started.")
+            raise TimeoutStateError(
+                "Can't get connect duration for timer that has not started."
+            )
         return time.monotonic() - self._start_connect
 
     @property

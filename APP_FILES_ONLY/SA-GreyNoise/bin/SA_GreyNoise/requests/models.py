@@ -6,6 +6,7 @@ This module contains the primary objects that power Requests.
 """
 
 import datetime
+
 # Import encoding now, to avoid implicit import later.
 # Implicit import within threads may cause LookupError when standard library is in a ZIP,
 # such as in Embedded Python. See https://github.com/psf/requests/issues/3578.
@@ -162,7 +163,9 @@ class RequestEncodingMixin:
 
                     new_fields.append(
                         (
-                            field.decode("utf-8") if isinstance(field, bytes) else field,
+                            field.decode("utf-8")
+                            if isinstance(field, bytes)
+                            else field,
                             v.encode("utf-8") if isinstance(v, str) else v,
                         )
                     )
@@ -432,7 +435,10 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             raise InvalidURL(*e.args)
 
         if not scheme:
-            raise MissingSchema(f"Invalid URL {url!r}: No scheme supplied. " f"Perhaps you meant https://{url}?")
+            raise MissingSchema(
+                f"Invalid URL {url!r}: No scheme supplied. "
+                f"Perhaps you meant https://{url}?"
+            )
 
         if not host:
             raise InvalidURL(f"Invalid URL {url!r}: No host supplied")
@@ -535,7 +541,9 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
                     self._body_position = object()
 
             if files:
-                raise NotImplementedError("Streamed bodies and files are mutually exclusive.")
+                raise NotImplementedError(
+                    "Streamed bodies and files are mutually exclusive."
+                )
 
             if length:
                 self.headers["Content-Length"] = builtin_str(length)
@@ -569,7 +577,10 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
                 # If length exists, set it. Otherwise, we fallback
                 # to Transfer-Encoding: chunked.
                 self.headers["Content-Length"] = builtin_str(length)
-        elif self.method not in ("GET", "HEAD") and self.headers.get("Content-Length") is None:
+        elif (
+            self.method not in ("GET", "HEAD")
+            and self.headers.get("Content-Length") is None
+        ):
             # Set Content-Length to 0 for methods that can have a body
             # but don't provide one. (i.e. not GET or HEAD)
             self.headers["Content-Length"] = "0"
@@ -828,7 +839,9 @@ class Response:
         if self._content_consumed and isinstance(self._content, bool):
             raise StreamConsumedError()
         elif chunk_size is not None and not isinstance(chunk_size, int):
-            raise TypeError(f"chunk_size must be an int, it is instead a {type(chunk_size)}.")
+            raise TypeError(
+                f"chunk_size must be an int, it is instead a {type(chunk_size)}."
+            )
         # simulate reading small chunks of the content
         reused_chunks = iter_slices(self._content, chunk_size)
 
@@ -841,7 +854,9 @@ class Response:
 
         return chunks
 
-    def iter_lines(self, chunk_size=ITER_CHUNK_SIZE, decode_unicode=False, delimiter=None):
+    def iter_lines(
+        self, chunk_size=ITER_CHUNK_SIZE, decode_unicode=False, delimiter=None
+    ):
         """Iterates over the response data, one line at a time.  When
         stream=True is set on the request, this avoids reading the
         content at once into memory for large responses.
@@ -851,7 +866,9 @@ class Response:
 
         pending = None
 
-        for chunk in self.iter_content(chunk_size=chunk_size, decode_unicode=decode_unicode):
+        for chunk in self.iter_content(
+            chunk_size=chunk_size, decode_unicode=decode_unicode
+        ):
             if pending is not None:
                 chunk = pending + chunk
 
@@ -996,10 +1013,14 @@ class Response:
             reason = self.reason
 
         if 400 <= self.status_code < 500:
-            http_error_msg = f"{self.status_code} Client Error: {reason} for url: {self.url}"
+            http_error_msg = (
+                f"{self.status_code} Client Error: {reason} for url: {self.url}"
+            )
 
         elif 500 <= self.status_code < 600:
-            http_error_msg = f"{self.status_code} Server Error: {reason} for url: {self.url}"
+            http_error_msg = (
+                f"{self.status_code} Server Error: {reason} for url: {self.url}"
+            )
 
         if http_error_msg:
             raise HTTPError(http_error_msg, response=self)

@@ -21,7 +21,9 @@ class CertificateError(ValueError):
     pass
 
 
-def _dnsname_match(dn: typing.Any, hostname: str, max_wildcards: int = 1) -> typing.Match[str] | None | bool:
+def _dnsname_match(
+    dn: typing.Any, hostname: str, max_wildcards: int = 1
+) -> typing.Match[str] | None | bool:
     """Matching according to RFC 6125, section 6.4.3
 
     http://tools.ietf.org/html/rfc6125#section-6.4.3
@@ -42,7 +44,9 @@ def _dnsname_match(dn: typing.Any, hostname: str, max_wildcards: int = 1) -> typ
         # than one wildcard per fragment.  A survey of established
         # policy among SSL implementations showed it to be a
         # reasonable choice.
-        raise CertificateError("too many wildcards in certificate DNS name: " + repr(dn))
+        raise CertificateError(
+            "too many wildcards in certificate DNS name: " + repr(dn)
+        )
 
     # speed up common case w/o wildcards
     if not wildcards:
@@ -145,7 +149,10 @@ def match_hostname(
                     dnsnames.append(value)  # Defensive: for Python < 3.9.3
 
     if len(dnsnames) > 1:
-        raise CertificateError("hostname %r " "doesn't match either of %s" % (hostname, ", ".join(map(repr, dnsnames))))
+        raise CertificateError(
+            "hostname %r "
+            "doesn't match either of %s" % (hostname, ", ".join(map(repr, dnsnames)))
+        )
     elif len(dnsnames) == 1:
         raise CertificateError(f"hostname {hostname!r} doesn't match {dnsnames[0]!r}")
     else:

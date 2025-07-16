@@ -14,7 +14,6 @@ from .utils import (
     is_arabic_isolated_form,
     is_case_variable,
     is_cjk,
-    is_cjk_uncommon,
     is_emoticon,
     is_hangul,
     is_hiragana,
@@ -27,6 +26,7 @@ from .utils import (
     is_unprintable,
     remove_accent,
     unicode_range,
+    is_cjk_uncommon,
 )
 
 
@@ -79,10 +79,17 @@ class TooManySymbolOrPunctuationPlugin(MessDetectorPlugin):
     def feed(self, character: str) -> None:
         self._character_count += 1
 
-        if character != self._last_printable_char and character not in COMMON_SAFE_ASCII_CHARACTERS:
+        if (
+            character != self._last_printable_char
+            and character not in COMMON_SAFE_ASCII_CHARACTERS
+        ):
             if is_punctuation(character):
                 self._punctuation_count += 1
-            elif character.isdigit() is False and is_symbol(character) and is_emoticon(character) is False:
+            elif (
+                character.isdigit() is False
+                and is_symbol(character)
+                and is_emoticon(character) is False
+            ):
                 self._symbol_count += 2
 
         self._last_printable_char = character
@@ -97,7 +104,9 @@ class TooManySymbolOrPunctuationPlugin(MessDetectorPlugin):
         if self._character_count == 0:
             return 0.0
 
-        ratio_of_punctuation: float = (self._punctuation_count + self._symbol_count) / self._character_count
+        ratio_of_punctuation: float = (
+            self._punctuation_count + self._symbol_count
+        ) / self._character_count
 
         return ratio_of_punctuation if ratio_of_punctuation >= 0.3 else 0.0
 
@@ -202,7 +211,11 @@ class SuspiciousRange(MessDetectorPlugin):
     def feed(self, character: str) -> None:
         self._character_count += 1
 
-        if character.isspace() or is_punctuation(character) or character in COMMON_SAFE_ASCII_CHARACTERS:
+        if (
+            character.isspace()
+            or is_punctuation(character)
+            or character in COMMON_SAFE_ASCII_CHARACTERS
+        ):
             self._last_printable_seen = None
             return
 
@@ -228,7 +241,9 @@ class SuspiciousRange(MessDetectorPlugin):
         if self._character_count <= 13:
             return 0.0
 
-        ratio_of_suspicious_range_usage: float = (self._suspicious_successive_range_count * 2) / self._character_count
+        ratio_of_suspicious_range_usage: float = (
+            self._suspicious_successive_range_count * 2
+        ) / self._character_count
 
         return ratio_of_suspicious_range_usage
 
@@ -278,7 +293,9 @@ class SuperWeirdWordPlugin(MessDetectorPlugin):
             return
         if not self._buffer:
             return
-        if (character.isspace() or is_punctuation(character) or is_separator(character)) and self._buffer:
+        if (
+            character.isspace() or is_punctuation(character) or is_separator(character)
+        ) and self._buffer:
             self._word_count += 1
             buffer_length: int = len(self._buffer)
 
@@ -300,7 +317,11 @@ class SuperWeirdWordPlugin(MessDetectorPlugin):
                     self._is_current_word_bad = True
                     self._foreign_long_count += 1
             if buffer_length >= 24 and self._foreign_long_watch:
-                camel_case_dst = [i for c, i in zip(self._buffer, range(0, buffer_length)) if c.isupper()]
+                camel_case_dst = [
+                    i
+                    for c, i in zip(self._buffer, range(0, buffer_length))
+                    if c.isupper()
+                ]
                 probable_camel_cased: bool = False
 
                 if camel_case_dst and (len(camel_case_dst) / buffer_length <= 0.3):
@@ -407,7 +428,9 @@ class ArchaicUpperLowerPlugin(MessDetectorPlugin):
                 and character.isdigit() is False
                 and self._current_ascii_only is False
             ):
-                self._successive_upper_lower_count_final += self._successive_upper_lower_count
+                self._successive_upper_lower_count_final += (
+                    self._successive_upper_lower_count
+                )
 
             self._successive_upper_lower_count = 0
             self._character_count_since_last_sep = 0
@@ -483,7 +506,9 @@ class ArabicIsolatedFormPlugin(MessDetectorPlugin):
 
 
 @lru_cache(maxsize=1024)
-def is_suspiciously_successive_range(unicode_range_a: str | None, unicode_range_b: str | None) -> bool:
+def is_suspiciously_successive_range(
+    unicode_range_a: str | None, unicode_range_b: str | None
+) -> bool:
     """
     Determine if two Unicode range seen next to each other can be considered as suspicious.
     """
@@ -526,7 +551,9 @@ def is_suspiciously_successive_range(unicode_range_a: str | None, unicode_range_
         ),
         unicode_range_b in ("Hiragana", "Katakana"),
     )
-    if (range_a_jp_chars or range_b_jp_chars) and ("CJK" in unicode_range_a or "CJK" in unicode_range_b):
+    if (range_a_jp_chars or range_b_jp_chars) and (
+        "CJK" in unicode_range_a or "CJK" in unicode_range_b
+    ):
         return False
     if range_a_jp_chars and range_b_jp_chars:
         return False
@@ -539,7 +566,8 @@ def is_suspiciously_successive_range(unicode_range_a: str | None, unicode_range_
 
     # Chinese/Japanese use dedicated range for punctuation and/or separators.
     if ("CJK" in unicode_range_a or "CJK" in unicode_range_b) or (
-        unicode_range_a in ["Katakana", "Hiragana"] and unicode_range_b in ["Katakana", "Hiragana"]
+        unicode_range_a in ["Katakana", "Hiragana"]
+        and unicode_range_b in ["Katakana", "Hiragana"]
     ):
         if "Punctuation" in unicode_range_a or "Punctuation" in unicode_range_b:
             return False
@@ -552,12 +580,16 @@ def is_suspiciously_successive_range(unicode_range_a: str | None, unicode_range_
 
 
 @lru_cache(maxsize=2048)
-def mess_ratio(decoded_sequence: str, maximum_threshold: float = 0.2, debug: bool = False) -> float:
+def mess_ratio(
+    decoded_sequence: str, maximum_threshold: float = 0.2, debug: bool = False
+) -> float:
     """
     Compute a mess ratio given a decoded bytes sequence. The maximum threshold does stop the computation earlier.
     """
 
-    detectors: list[MessDetectorPlugin] = [md_class() for md_class in MessDetectorPlugin.__subclasses__()]
+    detectors: list[MessDetectorPlugin] = [
+        md_class() for md_class in MessDetectorPlugin.__subclasses__()
+    ]
 
     length: int = len(decoded_sequence) + 1
 
@@ -575,7 +607,9 @@ def mess_ratio(decoded_sequence: str, maximum_threshold: float = 0.2, debug: boo
             if detector.eligible(character):
                 detector.feed(character)
 
-        if (index > 0 and index % intermediary_mean_mess_ratio_calc == 0) or index == length - 1:
+        if (
+            index > 0 and index % intermediary_mean_mess_ratio_calc == 0
+        ) or index == length - 1:
             mean_mess_ratio = sum(dt.ratio for dt in detectors)
 
             if mean_mess_ratio >= maximum_threshold:

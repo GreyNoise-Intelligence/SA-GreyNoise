@@ -1,55 +1,55 @@
 """
-click_default_group
-~~~~~~~~~~~~~~~~~~~
+   click_default_group
+   ~~~~~~~~~~~~~~~~~~~
 
-Define a default subcommand by `default=True`:
+   Define a default subcommand by `default=True`:
 
-.. sourcecode:: python
+   .. sourcecode:: python
 
-   import click
-   from click_default_group import DefaultGroup
+      import click
+      from click_default_group import DefaultGroup
 
-   @click.group(cls=DefaultGroup, default_if_no_args=True)
-   def cli():
-       pass
+      @click.group(cls=DefaultGroup, default_if_no_args=True)
+      def cli():
+          pass
 
-   @cli.command(default=True)
-   def foo():
-       click.echo('foo')
+      @cli.command(default=True)
+      def foo():
+          click.echo('foo')
 
-   @cli.command()
-   def bar():
-       click.echo('bar')
+      @cli.command()
+      def bar():
+          click.echo('bar')
 
-Then you can invoke that without explicit subcommand name:
+   Then you can invoke that without explicit subcommand name:
 
-.. sourcecode:: console
+   .. sourcecode:: console
 
-   $ cli.py --help
-   Usage: cli.py [OPTIONS] COMMAND [ARGS]...
+      $ cli.py --help
+      Usage: cli.py [OPTIONS] COMMAND [ARGS]...
 
-   Options:
-     --help    Show this message and exit.
+      Options:
+        --help    Show this message and exit.
 
-   Command:
-     foo*
-     bar
+      Command:
+        foo*
+        bar
 
-   $ cli.py
-   foo
-   $ cli.py foo
-   foo
-   $ cli.py bar
-   bar
+      $ cli.py
+      foo
+      $ cli.py foo
+      foo
+      $ cli.py bar
+      bar
 
 """
-
 import warnings
 
 import click
 
-__all__ = ["DefaultGroup"]
-__version__ = "1.2.4"
+
+__all__ = ['DefaultGroup']
+__version__ = '1.2.4'
 
 
 class DefaultGroup(click.Group):
@@ -63,11 +63,11 @@ class DefaultGroup(click.Group):
 
     def __init__(self, *args, **kwargs):
         # To resolve as the default command.
-        if not kwargs.get("ignore_unknown_options", True):
-            raise ValueError("Default group accepts unknown options")
+        if not kwargs.get('ignore_unknown_options', True):
+            raise ValueError('Default group accepts unknown options')
         self.ignore_unknown_options = True
-        self.default_cmd_name = kwargs.pop("default", None)
-        self.default_if_no_args = kwargs.pop("default_if_no_args", False)
+        self.default_cmd_name = kwargs.pop('default', None)
+        self.default_if_no_args = kwargs.pop('default_if_no_args', False)
         super(DefaultGroup, self).__init__(*args, **kwargs)
 
     def set_default_command(self, command):
@@ -91,21 +91,22 @@ class DefaultGroup(click.Group):
     def resolve_command(self, ctx, args):
         base = super(DefaultGroup, self)
         cmd_name, cmd, args = base.resolve_command(ctx, args)
-        if hasattr(ctx, "arg0"):
+        if hasattr(ctx, 'arg0'):
             args.insert(0, ctx.arg0)
             cmd_name = cmd.name
         return cmd_name, cmd, args
 
     def format_commands(self, ctx, formatter):
-        formatter = DefaultCommandFormatter(self, formatter, mark="*")
+        formatter = DefaultCommandFormatter(self, formatter, mark='*')
         return super(DefaultGroup, self).format_commands(ctx, formatter)
 
     def command(self, *args, **kwargs):
-        default = kwargs.pop("default", False)
+        default = kwargs.pop('default', False)
         decorator = super(DefaultGroup, self).command(*args, **kwargs)
         if not default:
             return decorator
-        warnings.warn("Use default param of DefaultGroup or " "set_default_command() instead", DeprecationWarning)
+        warnings.warn('Use default param of DefaultGroup or '
+                      'set_default_command() instead', DeprecationWarning)
 
         def _decorator(f):
             cmd = decorator(f)
@@ -118,7 +119,7 @@ class DefaultGroup(click.Group):
 class DefaultCommandFormatter(object):
     """Wraps a formatter to mark a default command."""
 
-    def __init__(self, group, formatter, mark="*"):
+    def __init__(self, group, formatter, mark='*'):
         self.group = group
         self.formatter = formatter
         self.mark = mark

@@ -15,7 +15,11 @@ _NORMALIZABLE_SCHEMES = ("http", "https", None)
 _PERCENT_RE = re.compile(r"%[a-fA-F0-9]{2}")
 _SCHEME_RE = re.compile(r"^(?:[a-zA-Z][a-zA-Z0-9+-]*:|/)")
 _URI_RE = re.compile(
-    r"^(?:([a-zA-Z][a-zA-Z0-9+.-]*):)?" r"(?://([^\\/?#]*))?" r"([^?#]*)" r"(?:\?([^#]*))?" r"(?:#(.*))?$",
+    r"^(?:([a-zA-Z][a-zA-Z0-9+.-]*):)?"
+    r"(?://([^\\/?#]*))?"
+    r"([^?#]*)"
+    r"(?:\?([^#]*))?"
+    r"(?:#(.*))?$",
     re.UNICODE | re.DOTALL,
 )
 
@@ -64,7 +68,9 @@ _HOST_PORT_PAT = ("^(%s|%s|%s)(?::0*?(|0|[1-9][0-9]{0,4}))?$") % (
 )
 _HOST_PORT_RE = re.compile(_HOST_PORT_PAT, re.UNICODE | re.DOTALL)
 
-_UNRESERVED_CHARS = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-~")
+_UNRESERVED_CHARS = set(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-~"
+)
 _SUB_DELIM_CHARS = set("!$&'()*+,;=")
 _USERINFO_CHARS = _UNRESERVED_CHARS | _SUB_DELIM_CHARS | {":"}
 _PATH_CHARS = _USERINFO_CHARS | {"@", "/"}
@@ -205,16 +211,22 @@ class Url(
 
 
 @typing.overload
-def _encode_invalid_chars(component: str, allowed_chars: typing.Container[str]) -> str:  # Abstract
+def _encode_invalid_chars(
+    component: str, allowed_chars: typing.Container[str]
+) -> str:  # Abstract
     ...
 
 
 @typing.overload
-def _encode_invalid_chars(component: None, allowed_chars: typing.Container[str]) -> None:  # Abstract
+def _encode_invalid_chars(
+    component: None, allowed_chars: typing.Container[str]
+) -> None:  # Abstract
     ...
 
 
-def _encode_invalid_chars(component: str | None, allowed_chars: typing.Container[str]) -> str | None:
+def _encode_invalid_chars(
+    component: str | None, allowed_chars: typing.Container[str]
+) -> str | None:
     """Percent-encodes a URI component without reapplying
     onto an already percent-encoded component.
     """
@@ -226,7 +238,9 @@ def _encode_invalid_chars(component: str | None, allowed_chars: typing.Container
     # Normalize existing percent-encoded bytes.
     # Try to see if the component we're encoding is already percent-encoded
     # so we can skip all '%' characters but still encode all others.
-    component, percent_encodings = _PERCENT_RE.subn(lambda match: match.group(0).upper(), component)
+    component, percent_encodings = _PERCENT_RE.subn(
+        lambda match: match.group(0).upper(), component
+    )
 
     uri_bytes = component.encode("utf-8", "surrogatepass")
     is_percent_encoded = percent_encodings == uri_bytes.count(b"%")
@@ -236,7 +250,9 @@ def _encode_invalid_chars(component: str | None, allowed_chars: typing.Container
         # Will return a single character bytestring
         byte = uri_bytes[i : i + 1]
         byte_ord = ord(byte)
-        if (is_percent_encoded and byte == b"%") or (byte_ord < 128 and byte.decode() in allowed_chars):
+        if (is_percent_encoded and byte == b"%") or (
+            byte_ord < 128 and byte.decode() in allowed_chars
+        ):
             encoded_component += byte
             continue
         encoded_component.extend(b"%" + (hex(byte_ord)[2:].encode().zfill(2).upper()))
@@ -316,12 +332,16 @@ def _idna_encode(name: str) -> bytes:
         try:
             import idna
         except ImportError:
-            raise LocationParseError("Unable to parse URL without the 'idna' module") from None
+            raise LocationParseError(
+                "Unable to parse URL without the 'idna' module"
+            ) from None
 
         try:
             return idna.encode(name.lower(), strict=True, std3_rules=True)
         except idna.IDNAError:
-            raise LocationParseError(f"Name '{name}' is not a valid IDNA label") from None
+            raise LocationParseError(
+                f"Name '{name}' is not a valid IDNA label"
+            ) from None
 
     return name.lower().encode("ascii")
 

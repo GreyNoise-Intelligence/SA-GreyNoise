@@ -48,7 +48,9 @@ class _HTTP2ProbeCache:
 
         return value
 
-    def set_and_release(self, host: str, port: int, supports_http2: bool | None) -> None:
+    def set_and_release(
+        self, host: str, port: int, supports_http2: bool | None
+    ) -> None:
         key = (host, port)
         key_lock = self._cache_locks[key]
         with key_lock:  # Uses an RLock, so can be locked again from same thread.

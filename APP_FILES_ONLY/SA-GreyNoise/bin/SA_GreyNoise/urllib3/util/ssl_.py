@@ -22,7 +22,8 @@ _TYPE_VERSION_INFO = tuple[int, int, int, str, int]
 
 # Maps the length of a digest to a possible hash function producing this digest
 HASHFUNC_MAP = {
-    length: getattr(hashlib, algorithm, None) for length, algorithm in ((32, "md5"), (40, "sha1"), (64, "sha256"))
+    length: getattr(hashlib, algorithm, None)
+    for length, algorithm in ((32, "md5"), (40, "sha1"), (64, "sha256"))
 }
 
 
@@ -69,7 +70,8 @@ def _is_has_never_check_common_name_reliable(
     is_openssl_issue_14579_fixed = openssl_version_number >= 0x101010CF
 
     return is_openssl and (
-        is_openssl_issue_14579_fixed or _is_bpo_43522_fixed(implementation_name, version_info, pypy_version_info)
+        is_openssl_issue_14579_fixed
+        or _is_bpo_43522_fixed(implementation_name, version_info, pypy_version_info)
     )
 
 
@@ -126,7 +128,9 @@ try:  # Do we have ssl at all?
     # removed in future 'ssl' module implementations.
     for attr in ("TLSv1", "TLSv1_1", "TLSv1_2"):
         try:
-            _SSL_VERSION_TO_TLS_VERSION[getattr(ssl, f"PROTOCOL_{attr}")] = getattr(TLSVersion, attr)
+            _SSL_VERSION_TO_TLS_VERSION[getattr(ssl, f"PROTOCOL_{attr}")] = getattr(
+                TLSVersion, attr
+            )
         except AttributeError:  # Defensive:
             continue
 
@@ -164,7 +168,9 @@ def assert_fingerprint(cert: bytes | None, fingerprint: str) -> None:
         raise SSLError(f"Fingerprint of invalid length: {fingerprint}")
     hashfunc = HASHFUNC_MAP.get(digest_length)
     if hashfunc is None:
-        raise SSLError(f"Hash function implementation unavailable for fingerprint length: {digest_length}")
+        raise SSLError(
+            f"Hash function implementation unavailable for fingerprint length: {digest_length}"
+        )
 
     # We need encode() here for py32; works on py2 and p33.
     fingerprint_bytes = unhexlify(fingerprint.encode())
@@ -172,7 +178,9 @@ def assert_fingerprint(cert: bytes | None, fingerprint: str) -> None:
     cert_digest = hashfunc(cert).digest()
 
     if not hmac.compare_digest(cert_digest, fingerprint_bytes):
-        raise SSLError(f'Fingerprints did not match. Expected "{fingerprint}", got "{cert_digest.hex()}"')
+        raise SSLError(
+            f'Fingerprints did not match. Expected "{fingerprint}", got "{cert_digest.hex()}"'
+        )
 
 
 def resolve_cert_reqs(candidate: None | int | str) -> VerifyMode:
@@ -262,14 +270,19 @@ def create_urllib3_context(
         # to avoid conflicts.
         if ssl_minimum_version is not None or ssl_maximum_version is not None:
             raise ValueError(
-                "Can't specify both 'ssl_version' and either " "'ssl_minimum_version' or 'ssl_maximum_version'"
+                "Can't specify both 'ssl_version' and either "
+                "'ssl_minimum_version' or 'ssl_maximum_version'"
             )
 
         # 'ssl_version' is deprecated and will be removed in the future.
         else:
             # Use 'ssl_minimum_version' and 'ssl_maximum_version' instead.
-            ssl_minimum_version = _SSL_VERSION_TO_TLS_VERSION.get(ssl_version, TLSVersion.MINIMUM_SUPPORTED)
-            ssl_maximum_version = _SSL_VERSION_TO_TLS_VERSION.get(ssl_version, TLSVersion.MAXIMUM_SUPPORTED)
+            ssl_minimum_version = _SSL_VERSION_TO_TLS_VERSION.get(
+                ssl_version, TLSVersion.MINIMUM_SUPPORTED
+            )
+            ssl_maximum_version = _SSL_VERSION_TO_TLS_VERSION.get(
+                ssl_version, TLSVersion.MAXIMUM_SUPPORTED
+            )
 
             # This warning message is pushing users to use 'ssl_minimum_version'
             # instead of both min/max. Best practice is to only set the minimum version and
@@ -501,7 +514,9 @@ def _ssl_wrap_socket_impl(
     if tls_in_tls:
         if not SSLTransport:
             # Import error, ssl is not available.
-            raise ProxySchemeUnsupported("TLS in TLS requires support for the 'ssl' module")
+            raise ProxySchemeUnsupported(
+                "TLS in TLS requires support for the 'ssl' module"
+            )
 
         SSLTransport._validate_ssl_context_for_tls_in_tls(ssl_context)
         return SSLTransport(sock, ssl_context, server_hostname)

@@ -7,22 +7,26 @@ import typing
 import typing as t
 from collections import abc
 from inspect import getattr_static
-from itertools import chain, groupby
+from itertools import chain
+from itertools import groupby
 
-from markupsafe import Markup, escape, soft_str
+from markupsafe import escape
+from markupsafe import Markup
+from markupsafe import soft_str
 
-from .async_utils import async_variant, auto_aiter, auto_await, auto_to_list
+from .async_utils import async_variant
+from .async_utils import auto_aiter
+from .async_utils import auto_await
+from .async_utils import auto_to_list
 from .exceptions import FilterArgumentError
 from .runtime import Undefined
-from .utils import (
-    htmlsafe_json_dumps,
-    pass_context,
-    pass_environment,
-    pass_eval_context,
-    pformat,
-    url_quote,
-    urlize,
-)
+from .utils import htmlsafe_json_dumps
+from .utils import pass_context
+from .utils import pass_environment
+from .utils import pass_eval_context
+from .utils import pformat
+from .utils import url_quote
+from .utils import urlize
 
 if t.TYPE_CHECKING:
     import typing_extensions as te
@@ -166,11 +170,15 @@ def do_urlencode(
     else:
         items = value  # type: ignore
 
-    return "&".join(f"{url_quote(k, for_qs=True)}={url_quote(v, for_qs=True)}" for k, v in items)
+    return "&".join(
+        f"{url_quote(k, for_qs=True)}={url_quote(v, for_qs=True)}" for k, v in items
+    )
 
 
 @pass_eval_context
-def do_replace(eval_ctx: "EvalContext", s: str, old: str, new: str, count: t.Optional[int] = None) -> str:
+def do_replace(
+    eval_ctx: "EvalContext", s: str, old: str, new: str, count: t.Optional[int] = None
+) -> str:
     """Return a copy of the value with all occurrences of a substring
     replaced with a new one. The first argument is the substring
     that should be replaced, the second is the replacement string.
@@ -191,7 +199,11 @@ def do_replace(eval_ctx: "EvalContext", s: str, old: str, new: str, count: t.Opt
     if not eval_ctx.autoescape:
         return str(s).replace(str(old), str(new), count)
 
-    if hasattr(old, "__html__") or hasattr(new, "__html__") and not hasattr(s, "__html__"):
+    if (
+        hasattr(old, "__html__")
+        or hasattr(new, "__html__")
+        and not hasattr(s, "__html__")
+    ):
         s = escape(s)
     else:
         s = soft_str(s)
@@ -245,7 +257,9 @@ _attr_key_re = re.compile(r"[\s/>=]", flags=re.ASCII)
 
 
 @pass_eval_context
-def do_xmlattr(eval_ctx: "EvalContext", d: t.Mapping[str, t.Any], autospace: bool = True) -> str:
+def do_xmlattr(
+    eval_ctx: "EvalContext", d: t.Mapping[str, t.Any], autospace: bool = True
+) -> str:
     """Create an SGML/XML attribute string based on the items in a dict.
 
     **Values** that are neither ``none`` nor ``undefined`` are automatically
@@ -318,7 +332,13 @@ def do_title(s: str) -> str:
     """Return a titlecased version of the value. I.e. words will start with
     uppercase letters, all remaining characters are lowercase.
     """
-    return "".join([item[0].upper() + item[1:].lower() for item in _word_beginning_split_re.split(soft_str(s)) if item])
+    return "".join(
+        [
+            item[0].upper() + item[1:].lower()
+            for item in _word_beginning_split_re.split(soft_str(s))
+            if item
+        ]
+    )
 
 
 def do_dictsort(
@@ -412,7 +432,9 @@ def do_sort(
     .. versionchanged:: 2.6
        The ``attribute`` parameter was added.
     """
-    key_func = make_multi_attrgetter(environment, attribute, postprocess=ignore_case if not case_sensitive else None)
+    key_func = make_multi_attrgetter(
+        environment, attribute, postprocess=ignore_case if not case_sensitive else None
+    )
     return sorted(value, key=key_func, reverse=reverse)
 
 
@@ -436,7 +458,9 @@ def sync_do_unique(
     :param case_sensitive: Treat upper and lower case strings as distinct.
     :param attribute: Filter objects with unique values for this attribute.
     """
-    getter = make_attrgetter(environment, attribute, postprocess=ignore_case if not case_sensitive else None)
+    getter = make_attrgetter(
+        environment, attribute, postprocess=ignore_case if not case_sensitive else None
+    )
     seen = set()
 
     for item in value:
@@ -454,7 +478,9 @@ async def do_unique(
     case_sensitive: bool = False,
     attribute: t.Optional[t.Union[str, int]] = None,
 ) -> "t.Iterator[V]":
-    return sync_do_unique(environment, await auto_to_list(value), case_sensitive, attribute)
+    return sync_do_unique(
+        environment, await auto_to_list(value), case_sensitive, attribute
+    )
 
 
 def _min_or_max(
@@ -471,7 +497,9 @@ def _min_or_max(
     except StopIteration:
         return environment.undefined("No aggregated item, sequence was empty.")
 
-    key_func = make_attrgetter(environment, attribute, postprocess=ignore_case if not case_sensitive else None)
+    key_func = make_attrgetter(
+        environment, attribute, postprocess=ignore_case if not case_sensitive else None
+    )
     return func(chain([first], it), key=key_func)
 
 
@@ -622,7 +650,9 @@ def do_center(value: str, width: int = 80) -> str:
 
 
 @pass_environment
-def sync_do_first(environment: "Environment", seq: "t.Iterable[V]") -> "t.Union[V, Undefined]":
+def sync_do_first(
+    environment: "Environment", seq: "t.Iterable[V]"
+) -> "t.Union[V, Undefined]":
     """Return the first item of a sequence."""
     try:
         return next(iter(seq))
@@ -641,7 +671,9 @@ async def do_first(
 
 
 @pass_environment
-def do_last(environment: "Environment", seq: "t.Reversible[V]") -> "t.Union[V, Undefined]":
+def do_last(
+    environment: "Environment", seq: "t.Reversible[V]"
+) -> "t.Union[V, Undefined]":
     """Return the last item of a sequence.
 
     Note: Does not work with generators. You may want to explicitly
@@ -790,7 +822,9 @@ def do_urlize(
     return rv
 
 
-def do_indent(s: str, width: t.Union[int, str] = 4, first: bool = False, blank: bool = False) -> str:
+def do_indent(
+    s: str, width: t.Union[int, str] = 4, first: bool = False, blank: bool = False
+) -> str:
     """Return a copy of the string with each line indented by 4 spaces. The
     first line and blank lines are not indented by default.
 
@@ -826,7 +860,9 @@ def do_indent(s: str, width: t.Union[int, str] = 4, first: bool = False, blank: 
         rv = lines.pop(0)
 
         if lines:
-            rv += newline + newline.join(indention + line if line else line for line in lines)
+            rv += newline + newline.join(
+                indention + line if line else line for line in lines
+            )
 
     if first:
         rv = indention + rv
@@ -1000,7 +1036,9 @@ def do_format(value: str, *args: t.Any, **kwargs: t.Any) -> str:
         #printf-style-string-formatting
     """
     if args and kwargs:
-        raise FilterArgumentError("can't handle positional and keyword arguments at the same time")
+        raise FilterArgumentError(
+            "can't handle positional and keyword arguments at the same time"
+        )
 
     return soft_str(value) % (kwargs or args)
 
@@ -1018,7 +1056,9 @@ def do_striptags(value: "t.Union[str, HasHTML]") -> str:
     return Markup(str(value)).striptags()
 
 
-def sync_do_slice(value: "t.Collection[V]", slices: int, fill_with: "t.Optional[V]" = None) -> "t.Iterator[t.List[V]]":
+def sync_do_slice(
+    value: "t.Collection[V]", slices: int, fill_with: "t.Optional[V]" = None
+) -> "t.Iterator[t.List[V]]":
     """Slice an iterator and return a list of lists containing
     those items. Useful if you want to create a div containing
     three ul tags that represent columns:
@@ -1068,7 +1108,9 @@ async def do_slice(
     return sync_do_slice(await auto_to_list(value), slices, fill_with)
 
 
-def do_batch(value: "t.Iterable[V]", linecount: int, fill_with: "t.Optional[V]" = None) -> "t.Iterator[t.List[V]]":
+def do_batch(
+    value: "t.Iterable[V]", linecount: int, fill_with: "t.Optional[V]" = None
+) -> "t.Iterator[t.List[V]]":
     """
     A filter that batches items. It works pretty much like `slice`
     just the other way round. It returns a list of lists with the
@@ -1227,7 +1269,10 @@ def sync_do_groupby(
         postprocess=ignore_case if not case_sensitive else None,
         default=default,
     )
-    out = [_GroupTuple(key, list(values)) for key, values in groupby(sorted(value, key=expr), expr)]
+    out = [
+        _GroupTuple(key, list(values))
+        for key, values in groupby(sorted(value, key=expr), expr)
+    ]
 
     if not case_sensitive:
         # Return the real key from the first value instead of the lowercase key.
@@ -1364,7 +1409,9 @@ def do_reverse(value: t.Union[str, t.Iterable[V]]) -> t.Union[str, t.Iterable[V]
 
 
 @pass_environment
-def do_attr(environment: "Environment", obj: t.Any, name: str) -> t.Union[Undefined, t.Any]:
+def do_attr(
+    environment: "Environment", obj: t.Any, name: str
+) -> t.Union[Undefined, t.Any]:
     """Get an attribute of an object. ``foo|attr("bar")`` works like
     ``foo.bar``, but returns undefined instead of falling back to ``foo["bar"]``
     if the attribute doesn't exist.
@@ -1407,7 +1454,9 @@ def sync_do_map(
 
 
 @pass_context
-def sync_do_map(context: "Context", value: t.Iterable[t.Any], *args: t.Any, **kwargs: t.Any) -> t.Iterable[t.Any]:
+def sync_do_map(
+    context: "Context", value: t.Iterable[t.Any], *args: t.Any, **kwargs: t.Any
+) -> t.Iterable[t.Any]:
     """Applies a filter on a sequence of objects or looks up an attribute.
     This is useful when dealing with lists of objects but you are really
     only interested in a certain value of it.
@@ -1489,7 +1538,9 @@ async def do_map(
 
 
 @pass_context
-def sync_do_select(context: "Context", value: "t.Iterable[V]", *args: t.Any, **kwargs: t.Any) -> "t.Iterator[V]":
+def sync_do_select(
+    context: "Context", value: "t.Iterable[V]", *args: t.Any, **kwargs: t.Any
+) -> "t.Iterator[V]":
     """Filters a sequence of objects by applying a test to each object,
     and only selecting the objects with the test succeeding.
 
@@ -1528,7 +1579,9 @@ async def do_select(
 
 
 @pass_context
-def sync_do_reject(context: "Context", value: "t.Iterable[V]", *args: t.Any, **kwargs: t.Any) -> "t.Iterator[V]":
+def sync_do_reject(
+    context: "Context", value: "t.Iterable[V]", *args: t.Any, **kwargs: t.Any
+) -> "t.Iterator[V]":
     """Filters a sequence of objects by applying a test to each object,
     and rejecting the objects with the test succeeding.
 
@@ -1562,7 +1615,9 @@ async def do_reject(
 
 
 @pass_context
-def sync_do_selectattr(context: "Context", value: "t.Iterable[V]", *args: t.Any, **kwargs: t.Any) -> "t.Iterator[V]":
+def sync_do_selectattr(
+    context: "Context", value: "t.Iterable[V]", *args: t.Any, **kwargs: t.Any
+) -> "t.Iterator[V]":
     """Filters a sequence of objects by applying a test to the specified
     attribute of each object, and only selecting the objects with the
     test succeeding.
@@ -1600,7 +1655,9 @@ async def do_selectattr(
 
 
 @pass_context
-def sync_do_rejectattr(context: "Context", value: "t.Iterable[V]", *args: t.Any, **kwargs: t.Any) -> "t.Iterator[V]":
+def sync_do_rejectattr(
+    context: "Context", value: "t.Iterable[V]", *args: t.Any, **kwargs: t.Any
+) -> "t.Iterator[V]":
     """Filters a sequence of objects by applying a test to the specified
     attribute of each object, and rejecting the objects with the test
     succeeding.
@@ -1636,7 +1693,9 @@ async def do_rejectattr(
 
 
 @pass_eval_context
-def do_tojson(eval_ctx: "EvalContext", value: t.Any, indent: t.Optional[int] = None) -> Markup:
+def do_tojson(
+    eval_ctx: "EvalContext", value: t.Any, indent: t.Optional[int] = None
+) -> Markup:
     """Serialize an object to a string of JSON, and mark it safe to
     render in HTML. This filter is only for use in HTML documents.
 
@@ -1670,7 +1729,9 @@ def prepare_map(
         default = kwargs.pop("default", None)
 
         if kwargs:
-            raise FilterArgumentError(f"Unexpected keyword argument {next(iter(kwargs))!r}")
+            raise FilterArgumentError(
+                f"Unexpected keyword argument {next(iter(kwargs))!r}"
+            )
 
         func = make_attrgetter(context.environment, attribute, default=default)
     else:
@@ -1681,7 +1742,9 @@ def prepare_map(
             raise FilterArgumentError("map requires a filter argument") from None
 
         def func(item: t.Any) -> t.Any:
-            return context.environment.call_filter(name, item, args, kwargs, context=context)
+            return context.environment.call_filter(
+                name, item, args, kwargs, context=context
+            )
 
     return func
 

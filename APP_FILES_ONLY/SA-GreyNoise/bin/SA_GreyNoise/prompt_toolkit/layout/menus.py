@@ -98,16 +98,22 @@ class CompletionsMenuControl(UIControl):
 
             # Calculate width of completions menu.
             menu_width = self._get_menu_width(width, complete_state)
-            menu_meta_width = self._get_menu_meta_width(width - menu_width, complete_state)
+            menu_meta_width = self._get_menu_meta_width(
+                width - menu_width, complete_state
+            )
             show_meta = self._show_meta(complete_state)
 
             def get_line(i: int) -> StyleAndTextTuples:
                 c = completions[i]
                 is_current_completion = i == index
-                result = _get_menu_item_fragments(c, is_current_completion, menu_width, space_after=True)
+                result = _get_menu_item_fragments(
+                    c, is_current_completion, menu_width, space_after=True
+                )
 
                 if show_meta:
-                    result += self._get_menu_item_meta_fragments(c, is_current_completion, menu_meta_width)
+                    result += self._get_menu_item_meta_fragments(
+                        c, is_current_completion, menu_meta_width
+                    )
                 return result
 
             return UIContent(
@@ -136,7 +142,9 @@ class CompletionsMenuControl(UIControl):
             ),
         )
 
-    def _get_menu_meta_width(self, max_width: int, complete_state: CompletionState) -> int:
+    def _get_menu_meta_width(
+        self, max_width: int, complete_state: CompletionState
+    ) -> int:
         """
         Return the width of the meta column.
         """
@@ -208,7 +216,9 @@ def _get_menu_item_fragments(
     else:
         style_str = "class:completion-menu.completion " + completion.style
 
-    text, tw = _trim_formatted_text(completion.display, (width - 2 if space_after else width - 1))
+    text, tw = _trim_formatted_text(
+        completion.display, (width - 2 if space_after else width - 1)
+    )
 
     padding = " " * (width - 1 - tw)
 
@@ -218,7 +228,9 @@ def _get_menu_item_fragments(
     )
 
 
-def _trim_formatted_text(formatted_text: StyleAndTextTuples, max_width: int) -> tuple[StyleAndTextTuples, int]:
+def _trim_formatted_text(
+    formatted_text: StyleAndTextTuples, max_width: int
+) -> tuple[StyleAndTextTuples, int]:
     """
     Trim the text to `max_width`, append dots when the text is too long.
     Returns (text, width) tuple.
@@ -316,9 +328,9 @@ class MultiColumnCompletionMenuControl(UIControl):
         # (map `completion_state` to `(completion_count, width)`. We remember
         # the count, because a completer can add new completions to the
         # `CompletionState` while loading.)
-        self._column_width_for_completion_state: WeakKeyDictionary[CompletionState, tuple[int, int]] = (
-            WeakKeyDictionary()
-        )
+        self._column_width_for_completion_state: WeakKeyDictionary[
+            CompletionState, tuple[int, int]
+        ] = WeakKeyDictionary()
 
         # Info of last rendering.
         self._rendered_rows = 0
@@ -345,12 +357,18 @@ class MultiColumnCompletionMenuControl(UIControl):
             return 0
 
         column_width = self._get_column_width(complete_state)
-        result = int(column_width * math.ceil(len(complete_state.completions) / float(self.min_rows)))
+        result = int(
+            column_width
+            * math.ceil(len(complete_state.completions) / float(self.min_rows))
+        )
 
         # When the desired width is still more than the maximum available,
         # reduce by removing columns until we are less than the available
         # width.
-        while result > column_width and result > max_available_width - self._required_margin:
+        while (
+            result > column_width
+            and result > max_available_width - self._required_margin
+        ):
             result -= column_width
         return result + self._required_margin
 
@@ -386,7 +404,9 @@ class MultiColumnCompletionMenuControl(UIControl):
 
         _T = TypeVar("_T")
 
-        def grouper(n: int, iterable: Iterable[_T], fillvalue: _T | None = None) -> Iterable[Sequence[_T | None]]:
+        def grouper(
+            n: int, iterable: Iterable[_T], fillvalue: _T | None = None
+        ) -> Iterable[Sequence[_T | None]]:
             "grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"
             args = [iter(iterable)] * n
             return zip_longest(fillvalue=fillvalue, *args)
@@ -421,7 +441,9 @@ class MultiColumnCompletionMenuControl(UIControl):
 
         # Make sure the current completion is always visible: update scroll offset.
         selected_column = (complete_state.complete_index or 0) // height
-        self.scroll = min(selected_column, max(self.scroll, selected_column - visible_columns + 1))
+        self.scroll = min(
+            selected_column, max(self.scroll, selected_column - visible_columns + 1)
+        )
 
         render_left_arrow = self.scroll > 0
         render_right_arrow = self.scroll < len(rows_[0]) - visible_columns
@@ -444,11 +466,15 @@ class MultiColumnCompletionMenuControl(UIControl):
             # Draw row content.
             for column_index, c in enumerate(row[self.scroll :][:visible_columns]):
                 if c is not None:
-                    fragments += _get_menu_item_fragments(c, is_current_completion(c), column_width, space_after=False)
+                    fragments += _get_menu_item_fragments(
+                        c, is_current_completion(c), column_width, space_after=False
+                    )
 
                     # Remember render position for mouse click handler.
                     for x in range(column_width):
-                        self._render_pos_to_completion[(column_index * column_width + x, row_index)] = c
+                        self._render_pos_to_completion[
+                            (column_index * column_width + x, row_index)
+                        ] = c
                 else:
                     fragments.append(("class:completion", " " * column_width))
 
@@ -464,14 +490,18 @@ class MultiColumnCompletionMenuControl(UIControl):
                 fragments.append(("class:completion", " "))
 
             # Add line.
-            fragments_for_line.append(to_formatted_text(fragments, style="class:completion-menu"))
+            fragments_for_line.append(
+                to_formatted_text(fragments, style="class:completion-menu")
+            )
 
         self._rendered_rows = height
         self._rendered_columns = visible_columns
         self._total_columns = len(columns_)
         self._render_left_arrow = render_left_arrow
         self._render_right_arrow = render_right_arrow
-        self._render_width = column_width * visible_columns + render_left_arrow + render_right_arrow + 1
+        self._render_width = (
+            column_width * visible_columns + render_left_arrow + render_right_arrow + 1
+        )
 
         def get_line(i: int) -> StyleAndTextTuples:
             return fragments_for_line[i]
@@ -489,7 +519,10 @@ class MultiColumnCompletionMenuControl(UIControl):
                 raise KeyError
             return width
         except KeyError:
-            result = max(get_cwidth(c.display_text) for c in completion_state.completions) + 1
+            result = (
+                max(get_cwidth(c.display_text) for c in completion_state.completions)
+                + 1
+            )
             self._column_width_for_completion_state[completion_state] = (
                 len(completion_state.completions),
                 result,
@@ -508,7 +541,9 @@ class MultiColumnCompletionMenuControl(UIControl):
 
         def scroll_right() -> None:
             b.complete_next(count=self._rendered_rows, disable_wrap_around=True)
-            self.scroll = min(self._total_columns - self._rendered_columns, self.scroll + 1)
+            self.scroll = min(
+                self._total_columns - self._rendered_columns, self.scroll + 1
+            )
 
         if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
             scroll_right()
@@ -614,7 +649,9 @@ class MultiColumnCompletionsMenu(HSplit):
         @Condition
         def any_completion_has_meta() -> bool:
             complete_state = get_app().current_buffer.complete_state
-            return complete_state is not None and any(c.display_meta for c in complete_state.completions)
+            return complete_state is not None and any(
+                c.display_meta for c in complete_state.completions
+            )
 
         # Create child windows.
         # NOTE: We don't set style='class:completion-menu' to the
@@ -669,7 +706,9 @@ class _SelectedCompletionMetaControl(UIControl):
                 # space as needed.
                 return max_available_width
 
-            return 2 + max(get_cwidth(c.display_meta_text) for c in state.completions[:100])
+            return 2 + max(
+                get_cwidth(c.display_meta_text) for c in state.completions[:100]
+            )
         else:
             return 0
 
@@ -694,9 +733,15 @@ class _SelectedCompletionMetaControl(UIControl):
         style = "class:completion-menu.multi-column-meta"
         state = get_app().current_buffer.complete_state
 
-        if state and state.current_completion and state.current_completion.display_meta_text:
+        if (
+            state
+            and state.current_completion
+            and state.current_completion.display_meta_text
+        ):
             return to_formatted_text(
-                cast(StyleAndTextTuples, [("", " ")]) + state.current_completion.display_meta + [("", " ")],
+                cast(StyleAndTextTuples, [("", " ")])
+                + state.current_completion.display_meta
+                + [("", " ")],
                 style=style,
             )
 

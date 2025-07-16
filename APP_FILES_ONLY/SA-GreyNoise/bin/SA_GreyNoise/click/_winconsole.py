@@ -10,26 +10,27 @@ import io
 import sys
 import time
 import typing as t
-from ctypes import (
-    POINTER,
-    Structure,
-    byref,
-    c_char,
-    c_char_p,
-    c_int,
-    c_ssize_t,
-    c_ulong,
-    c_void_p,
-    py_object,
-)
-from ctypes.wintypes import DWORD, HANDLE, LPCWSTR, LPWSTR
+from ctypes import byref
+from ctypes import c_char
+from ctypes import c_char_p
+from ctypes import c_int
+from ctypes import c_ssize_t
+from ctypes import c_ulong
+from ctypes import c_void_p
+from ctypes import POINTER
+from ctypes import py_object
+from ctypes import Structure
+from ctypes.wintypes import DWORD
+from ctypes.wintypes import HANDLE
+from ctypes.wintypes import LPCWSTR
+from ctypes.wintypes import LPWSTR
 
 from ._compat import _NonClosingTextIOWrapper
 
 assert sys.platform == "win32"
 import msvcrt  # noqa: E402
-from ctypes import WINFUNCTYPE  # noqa: E402
 from ctypes import windll  # noqa: E402
+from ctypes import WINFUNCTYPE  # noqa: E402
 
 c_ssize_p = POINTER(c_ssize_t)
 
@@ -40,7 +41,9 @@ WriteConsoleW = kernel32.WriteConsoleW
 GetConsoleMode = kernel32.GetConsoleMode
 GetLastError = kernel32.GetLastError
 GetCommandLineW = WINFUNCTYPE(LPWSTR)(("GetCommandLineW", windll.kernel32))
-CommandLineToArgvW = WINFUNCTYPE(POINTER(LPWSTR), LPCWSTR, POINTER(c_int))(("CommandLineToArgvW", windll.shell32))
+CommandLineToArgvW = WINFUNCTYPE(POINTER(LPWSTR), LPCWSTR, POINTER(c_int))(
+    ("CommandLineToArgvW", windll.shell32)
+)
 LocalFree = WINFUNCTYPE(c_void_p, c_void_p)(("LocalFree", windll.kernel32))
 
 STDIN_HANDLE = GetStdHandle(-10)
@@ -117,7 +120,9 @@ class _WindowsConsoleReader(_WindowsConsoleRawIOBase):
         if not bytes_to_be_read:
             return 0
         elif bytes_to_be_read % 2:
-            raise ValueError("cannot read odd number of bytes from UTF-16-LE encoded console")
+            raise ValueError(
+                "cannot read odd number of bytes from UTF-16-LE encoded console"
+            )
 
         buffer = get_buffer(b, writable=True)
         code_units_to_be_read = bytes_to_be_read // 2
@@ -258,7 +263,12 @@ def _is_console(f: t.TextIO) -> bool:
 def _get_windows_console_stream(
     f: t.TextIO, encoding: t.Optional[str], errors: t.Optional[str]
 ) -> t.Optional[t.TextIO]:
-    if get_buffer is not None and encoding in {"utf-16-le", None} and errors in {"strict", None} and _is_console(f):
+    if (
+        get_buffer is not None
+        and encoding in {"utf-16-le", None}
+        and errors in {"strict", None}
+        and _is_console(f)
+    ):
         func = _stream_factories.get(f.fileno())
         if func is not None:
             b = getattr(f, "buffer", None)

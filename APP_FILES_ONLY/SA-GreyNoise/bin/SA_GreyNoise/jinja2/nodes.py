@@ -73,7 +73,9 @@ class EvalContext:
     to it in extensions.
     """
 
-    def __init__(self, environment: "Environment", template_name: t.Optional[str] = None) -> None:
+    def __init__(
+        self, environment: "Environment", template_name: t.Optional[str] = None
+    ) -> None:
         self.environment = environment
         if callable(environment.autoescape):
             self.autoescape = environment.autoescape(template_name)
@@ -92,7 +94,10 @@ class EvalContext:
 def get_eval_context(node: "Node", ctx: t.Optional[EvalContext]) -> EvalContext:
     if ctx is None:
         if node.environment is None:
-            raise RuntimeError("if no eval context is passed, the node must have an" " attached environment.")
+            raise RuntimeError(
+                "if no eval context is passed, the node must have an"
+                " attached environment."
+            )
         return EvalContext(node.environment)
     return ctx
 
@@ -495,7 +500,10 @@ class BinExpr(Expr):
         eval_ctx = get_eval_context(self, eval_ctx)
 
         # intercepted operators cannot be folded at compile time
-        if eval_ctx.environment.sandboxed and self.operator in eval_ctx.environment.intercepted_binops:  # type: ignore
+        if (
+            eval_ctx.environment.sandboxed
+            and self.operator in eval_ctx.environment.intercepted_binops  # type: ignore
+        ):
             raise Impossible()
         f = _binop_to_func[self.operator]
         try:
@@ -516,7 +524,10 @@ class UnaryExpr(Expr):
         eval_ctx = get_eval_context(self, eval_ctx)
 
         # intercepted operators cannot be folded at compile time
-        if eval_ctx.environment.sandboxed and self.operator in eval_ctx.environment.intercepted_unops:  # type: ignore
+        if (
+            eval_ctx.environment.sandboxed
+            and self.operator in eval_ctx.environment.intercepted_unops  # type: ignore
+        ):
             raise Impossible()
         f = _uaop_to_func[self.operator]
         try:
@@ -649,7 +660,9 @@ class Dict(Literal):
     fields = ("items",)
     items: t.List["Pair"]
 
-    def as_const(self, eval_ctx: t.Optional[EvalContext] = None) -> t.Dict[t.Any, t.Any]:
+    def as_const(
+        self, eval_ctx: t.Optional[EvalContext] = None
+    ) -> t.Dict[t.Any, t.Any]:
         eval_ctx = get_eval_context(self, eval_ctx)
         return dict(x.as_const(eval_ctx) for x in self.items)
 
@@ -661,7 +674,9 @@ class Pair(Helper):
     key: Expr
     value: Expr
 
-    def as_const(self, eval_ctx: t.Optional[EvalContext] = None) -> t.Tuple[t.Any, t.Any]:
+    def as_const(
+        self, eval_ctx: t.Optional[EvalContext] = None
+    ) -> t.Tuple[t.Any, t.Any]:
         eval_ctx = get_eval_context(self, eval_ctx)
         return self.key.as_const(eval_ctx), self.value.as_const(eval_ctx)
 
@@ -750,7 +765,8 @@ class _FilterTestCommon(Expr):
             raise Impossible()
 
         if eval_ctx.environment.is_async and (
-            getattr(func, "jinja_async_variant", False) is True or inspect.iscoroutinefunction(func)
+            getattr(func, "jinja_async_variant", False) is True
+            or inspect.iscoroutinefunction(func)
         ):
             raise Impossible()
 
@@ -829,7 +845,9 @@ class Getitem(Expr):
         eval_ctx = get_eval_context(self, eval_ctx)
 
         try:
-            return eval_ctx.environment.getitem(self.node.as_const(eval_ctx), self.arg.as_const(eval_ctx))
+            return eval_ctx.environment.getitem(
+                self.node.as_const(eval_ctx), self.arg.as_const(eval_ctx)
+            )
         except Exception as e:
             raise Impossible() from e
 
@@ -1056,7 +1074,10 @@ class InternalName(Expr):
     name: str
 
     def __init__(self) -> None:
-        raise TypeError("Can't create internal names.  Use the " "`free_identifier` method on a parser.")
+        raise TypeError(
+            "Can't create internal names.  Use the "
+            "`free_identifier` method on a parser."
+        )
 
 
 class MarkSafe(Expr):
@@ -1080,7 +1101,9 @@ class MarkSafeIfAutoescape(Expr):
     fields = ("expr",)
     expr: Expr
 
-    def as_const(self, eval_ctx: t.Optional[EvalContext] = None) -> t.Union[Markup, t.Any]:
+    def as_const(
+        self, eval_ctx: t.Optional[EvalContext] = None
+    ) -> t.Union[Markup, t.Any]:
         eval_ctx = get_eval_context(self, eval_ctx)
         if eval_ctx.volatile:
             raise Impossible()

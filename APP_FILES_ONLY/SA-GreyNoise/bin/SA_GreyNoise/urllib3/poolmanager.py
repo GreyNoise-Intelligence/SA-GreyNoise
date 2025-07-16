@@ -92,7 +92,9 @@ class PoolKey(typing.NamedTuple):
     key_blocksize: int | None
 
 
-def _default_key_normalizer(key_class: type[PoolKey], request_context: dict[str, typing.Any]) -> PoolKey:
+def _default_key_normalizer(
+    key_class: type[PoolKey], request_context: dict[str, typing.Any]
+) -> PoolKey:
     """
     Create a pool key out of a request context dictionary.
 
@@ -316,7 +318,9 @@ class PoolManager(RequestMethods):
 
         return self.connection_from_context(request_context)
 
-    def connection_from_context(self, request_context: dict[str, typing.Any]) -> HTTPConnectionPool:
+    def connection_from_context(
+        self, request_context: dict[str, typing.Any]
+    ) -> HTTPConnectionPool:
         """
         Get a :class:`urllib3.connectionpool.ConnectionPool` based on the request context.
 
@@ -339,7 +343,9 @@ class PoolManager(RequestMethods):
 
         return self.connection_from_pool_key(pool_key, request_context=request_context)
 
-    def connection_from_pool_key(self, pool_key: PoolKey, request_context: dict[str, typing.Any]) -> HTTPConnectionPool:
+    def connection_from_pool_key(
+        self, pool_key: PoolKey, request_context: dict[str, typing.Any]
+    ) -> HTTPConnectionPool:
         """
         Get a :class:`urllib3.connectionpool.ConnectionPool` based on the provided pool key.
 
@@ -363,7 +369,9 @@ class PoolManager(RequestMethods):
 
         return pool
 
-    def connection_from_url(self, url: str, pool_kwargs: dict[str, typing.Any] | None = None) -> HTTPConnectionPool:
+    def connection_from_url(
+        self, url: str, pool_kwargs: dict[str, typing.Any] | None = None
+    ) -> HTTPConnectionPool:
         """
         Similar to :func:`urllib3.connectionpool.connection_from_url`.
 
@@ -375,9 +383,13 @@ class PoolManager(RequestMethods):
         not used.
         """
         u = parse_url(url)
-        return self.connection_from_host(u.host, port=u.port, scheme=u.scheme, pool_kwargs=pool_kwargs)
+        return self.connection_from_host(
+            u.host, port=u.port, scheme=u.scheme, pool_kwargs=pool_kwargs
+        )
 
-    def _merge_pool_kwargs(self, override: dict[str, typing.Any] | None) -> dict[str, typing.Any]:
+    def _merge_pool_kwargs(
+        self, override: dict[str, typing.Any] | None
+    ) -> dict[str, typing.Any]:
         """
         Merge a dictionary of override values for self.connection_pool_kw.
 
@@ -406,7 +418,9 @@ class PoolManager(RequestMethods):
         if self.proxy is None:
             return False
 
-        return not connection_requires_http_tunnel(self.proxy, self.proxy_config, parsed_url.scheme)
+        return not connection_requires_http_tunnel(
+            self.proxy, self.proxy_config, parsed_url.scheme
+        )
 
     def urlopen(  # type: ignore[override]
         self, method: str, url: str, redirect: bool = True, **kw: typing.Any
@@ -465,7 +479,9 @@ class PoolManager(RequestMethods):
         # Strip headers marked as unsafe to forward to the redirected location.
         # Check remove_headers_on_redirect to avoid a potential network call within
         # conn.is_same_host() which may use socket.gethostbyname() in the future.
-        if retries.remove_headers_on_redirect and not conn.is_same_host(redirect_location):
+        if retries.remove_headers_on_redirect and not conn.is_same_host(
+            redirect_location
+        ):
             new_headers = kw["headers"].copy()
             for header in kw["headers"]:
                 if header.lower() in retries.remove_headers_on_redirect:
@@ -593,13 +609,17 @@ class ProxyManager(PoolManager):
         pool_kwargs: dict[str, typing.Any] | None = None,
     ) -> HTTPConnectionPool:
         if scheme == "https":
-            return super().connection_from_host(host, port, scheme, pool_kwargs=pool_kwargs)
+            return super().connection_from_host(
+                host, port, scheme, pool_kwargs=pool_kwargs
+            )
 
         return super().connection_from_host(
             self.proxy.host, self.proxy.port, self.proxy.scheme, pool_kwargs=pool_kwargs  # type: ignore[union-attr]
         )
 
-    def _set_proxy_headers(self, url: str, headers: typing.Mapping[str, str] | None = None) -> typing.Mapping[str, str]:
+    def _set_proxy_headers(
+        self, url: str, headers: typing.Mapping[str, str] | None = None
+    ) -> typing.Mapping[str, str]:
         """
         Sets headers needed by proxies: specifically, the Accept and Host
         headers. Only sets headers not provided by the user.

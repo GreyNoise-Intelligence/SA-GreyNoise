@@ -5,7 +5,15 @@ import signal
 import sys
 import threading
 from collections import deque
-from typing import Callable, ContextManager, Dict, Generator, Generic, TypeVar, Union
+from typing import (
+    Callable,
+    ContextManager,
+    Dict,
+    Generator,
+    Generic,
+    TypeVar,
+    Union,
+)
 
 from wcwidth import wcwidth
 
@@ -55,7 +63,9 @@ class Event(Generic[_Sender]):
         obj.event()
     """
 
-    def __init__(self, sender: _Sender, handler: Callable[[_Sender], None] | None = None) -> None:
+    def __init__(
+        self, sender: _Sender, handler: Callable[[_Sender], None] | None = None
+    ) -> None:
         self.sender = sender
         self._handlers: list[Callable[[_Sender], None]] = []
 
@@ -223,7 +233,9 @@ def get_term_environment_variable() -> str:
 _T = TypeVar("_T")
 
 
-def take_using_weights(items: list[_T], weights: list[int]) -> Generator[_T, None, None]:
+def take_using_weights(
+    items: list[_T], weights: list[int]
+) -> Generator[_T, None, None]:
     """
     Generator that keeps yielding items from the items list, in proportion to
     their weight. For instance::

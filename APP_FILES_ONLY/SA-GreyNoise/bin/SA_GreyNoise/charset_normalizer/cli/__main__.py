@@ -100,7 +100,8 @@ class FileType:
         args = self._mode, self._bufsize
         kwargs = [("encoding", self._encoding), ("errors", self._errors)]
         args_str = ", ".join(
-            [repr(arg) for arg in args if arg != -1] + [f"{kw}={arg!r}" for kw, arg in kwargs if arg is not None]
+            [repr(arg) for arg in args if arg != -1]
+            + [f"{kw}={arg!r}" for kw, arg in kwargs if arg is not None]
         )
         return f"{type(self).__name__}({args_str})"
 
@@ -117,7 +118,9 @@ def cli_detect(argv: list[str] | None = None) -> int:
         "Normalize text to unicode."
     )
 
-    parser.add_argument("files", type=FileType("rb"), nargs="+", help="File(s) to be analysed")
+    parser.add_argument(
+        "files", type=FileType("rb"), nargs="+", help="File(s) to be analysed"
+    )
     parser.add_argument(
         "-v",
         "--verbose",
@@ -235,7 +238,11 @@ def cli_detect(argv: list[str] | None = None) -> int:
             print(
                 'Unable to identify originating encoding for "{}". {}'.format(
                     my_file.name,
-                    ("Maybe try increasing maximum amount of chaos." if args.threshold < 1.0 else ""),
+                    (
+                        "Maybe try increasing maximum amount of chaos."
+                        if args.threshold < 1.0
+                        else ""
+                    ),
                 ),
                 file=sys.stderr,
             )
@@ -260,7 +267,11 @@ def cli_detect(argv: list[str] | None = None) -> int:
                     abspath(my_file.name),
                     best_guess.encoding,
                     best_guess.encoding_aliases,
-                    [cp for cp in best_guess.could_be_from_charset if cp != best_guess.encoding],
+                    [
+                        cp
+                        for cp in best_guess.could_be_from_charset
+                        if cp != best_guess.encoding
+                    ],
                     best_guess.language,
                     best_guess.alphabets,
                     best_guess.bom,
@@ -279,7 +290,11 @@ def cli_detect(argv: list[str] | None = None) -> int:
                                 abspath(my_file.name),
                                 el.encoding,
                                 el.encoding_aliases,
-                                [cp for cp in el.could_be_from_charset if cp != el.encoding],
+                                [
+                                    cp
+                                    for cp in el.could_be_from_charset
+                                    if cp != el.encoding
+                                ],
                                 el.language,
                                 el.alphabets,
                                 el.bom,
@@ -314,7 +329,9 @@ def cli_detect(argv: list[str] | None = None) -> int:
                 elif (
                     args.force is False
                     and query_yes_no(
-                        'Are you sure to normalize "{}" by replacing it ?'.format(my_file.name),
+                        'Are you sure to normalize "{}" by replacing it ?'.format(
+                            my_file.name
+                        ),
                         "no",
                     )
                     is False
@@ -347,7 +364,15 @@ def cli_detect(argv: list[str] | None = None) -> int:
         )
     else:
         for my_file in args.files:
-            print(", ".join([el.encoding or "undefined" for el in x_ if el.path == abspath(my_file.name)]))
+            print(
+                ", ".join(
+                    [
+                        el.encoding or "undefined"
+                        for el in x_
+                        if el.path == abspath(my_file.name)
+                    ]
+                )
+            )
 
     return 0
 

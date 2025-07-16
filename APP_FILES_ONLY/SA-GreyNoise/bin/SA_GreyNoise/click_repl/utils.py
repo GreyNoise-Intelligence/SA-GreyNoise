@@ -1,11 +1,11 @@
+import click
 import os
 import shlex
 import sys
 from collections import defaultdict
 
-import click
-
 from .exceptions import CommandLineParserError, ExitReplException
+
 
 __all__ = [
     "_execute_internal_and_sys_cmds",
@@ -115,7 +115,11 @@ def _register_internal_command(names, target, description=None):
         names = [names]
 
     elif isinstance(names, Mapping) or not isinstance(names, Iterable):
-        raise ValueError('"names" must be a string, or an iterable object, but got "{}"'.format(type(names).__name__))
+        raise ValueError(
+            '"names" must be a string, or an iterable object, but got "{}"'.format(
+                type(names).__name__
+            )
+        )
 
     for name in names:
         _internal_commands[name] = (target, description)
@@ -160,7 +164,9 @@ def _help_internal():
 
 
 _register_internal_command(["q", "quit", "exit"], _exit_internal, "exits the repl")
-_register_internal_command(["?", "h", "help"], _help_internal, "displays general help information")
+_register_internal_command(
+    ["?", "h", "help"], _help_internal, "displays general help information"
+)
 
 
 def _execute_internal_and_sys_cmds(

@@ -83,13 +83,16 @@ if hasattr(ssl, "PROTOCOL_TLSv1_2") and hasattr(OpenSSL.SSL, "TLSv1_2_METHOD"):
 _stdlib_to_openssl_verify = {
     ssl.CERT_NONE: OpenSSL.SSL.VERIFY_NONE,
     ssl.CERT_OPTIONAL: OpenSSL.SSL.VERIFY_PEER,
-    ssl.CERT_REQUIRED: OpenSSL.SSL.VERIFY_PEER + OpenSSL.SSL.VERIFY_FAIL_IF_NO_PEER_CERT,
+    ssl.CERT_REQUIRED: OpenSSL.SSL.VERIFY_PEER
+    + OpenSSL.SSL.VERIFY_FAIL_IF_NO_PEER_CERT,
 }
 _openssl_to_stdlib_verify = {v: k for k, v in _stdlib_to_openssl_verify.items()}
 
 # The SSLvX values are the most likely to be missing in the future
 # but we check them all just to be sure.
-_OP_NO_SSLv2_OR_SSLv3: int = getattr(OpenSSL.SSL, "OP_NO_SSLv2", 0) | getattr(OpenSSL.SSL, "OP_NO_SSLv3", 0)
+_OP_NO_SSLv2_OR_SSLv3: int = getattr(OpenSSL.SSL, "OP_NO_SSLv2", 0) | getattr(
+    OpenSSL.SSL, "OP_NO_SSLv3", 0
+)
 _OP_NO_TLSv1: int = getattr(OpenSSL.SSL, "OP_NO_TLSv1", 0)
 _OP_NO_TLSv1_1: int = getattr(OpenSSL.SSL, "OP_NO_TLSv1_1", 0)
 _OP_NO_TLSv1_2: int = getattr(OpenSSL.SSL, "OP_NO_TLSv1_2", 0)
@@ -100,14 +103,24 @@ _openssl_to_ssl_minimum_version: dict[int, int] = {
     ssl.TLSVersion.TLSv1: _OP_NO_SSLv2_OR_SSLv3,
     ssl.TLSVersion.TLSv1_1: _OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1,
     ssl.TLSVersion.TLSv1_2: _OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1 | _OP_NO_TLSv1_1,
-    ssl.TLSVersion.TLSv1_3: (_OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1 | _OP_NO_TLSv1_1 | _OP_NO_TLSv1_2),
-    ssl.TLSVersion.MAXIMUM_SUPPORTED: (_OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1 | _OP_NO_TLSv1_1 | _OP_NO_TLSv1_2),
+    ssl.TLSVersion.TLSv1_3: (
+        _OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1 | _OP_NO_TLSv1_1 | _OP_NO_TLSv1_2
+    ),
+    ssl.TLSVersion.MAXIMUM_SUPPORTED: (
+        _OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1 | _OP_NO_TLSv1_1 | _OP_NO_TLSv1_2
+    ),
 }
 _openssl_to_ssl_maximum_version: dict[int, int] = {
     ssl.TLSVersion.MINIMUM_SUPPORTED: (
-        _OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1 | _OP_NO_TLSv1_1 | _OP_NO_TLSv1_2 | _OP_NO_TLSv1_3
+        _OP_NO_SSLv2_OR_SSLv3
+        | _OP_NO_TLSv1
+        | _OP_NO_TLSv1_1
+        | _OP_NO_TLSv1_2
+        | _OP_NO_TLSv1_3
     ),
-    ssl.TLSVersion.TLSv1: (_OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1_1 | _OP_NO_TLSv1_2 | _OP_NO_TLSv1_3),
+    ssl.TLSVersion.TLSv1: (
+        _OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1_1 | _OP_NO_TLSv1_2 | _OP_NO_TLSv1_3
+    ),
     ssl.TLSVersion.TLSv1_1: _OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1_2 | _OP_NO_TLSv1_3,
     ssl.TLSVersion.TLSv1_2: _OP_NO_SSLv2_OR_SSLv3 | _OP_NO_TLSv1_3,
     ssl.TLSVersion.TLSv1_3: _OP_NO_SSLv2_OR_SSLv3,
@@ -152,7 +165,10 @@ def _validate_dependencies_met() -> None:
     from cryptography.x509.extensions import Extensions
 
     if getattr(Extensions, "get_extension_for_class", None) is None:
-        raise ImportError("'cryptography' module missing required functionality.  " "Try upgrading to v1.3.4 or newer.")
+        raise ImportError(
+            "'cryptography' module missing required functionality.  "
+            "Try upgrading to v1.3.4 or newer."
+        )
 
     # pyOpenSSL 0.14 and above use cryptography for OpenSSL bindings. The _x509
     # attribute is only present on those versions.
@@ -160,7 +176,10 @@ def _validate_dependencies_met() -> None:
 
     x509 = X509()
     if getattr(x509, "_x509", None) is None:
-        raise ImportError("'pyOpenSSL' module missing required functionality. " "Try upgrading to v0.14 or newer.")
+        raise ImportError(
+            "'pyOpenSSL' module missing required functionality. "
+            "Try upgrading to v0.14 or newer."
+        )
 
 
 def _dnsname_to_stdlib(name: str) -> str | None:
@@ -241,9 +260,13 @@ def get_subj_alt_name(peer_cert: X509) -> list[tuple[str, str]]:
     # does with certificates, and so we need to attempt to do the same.
     # We also want to skip over names which cannot be idna encoded.
     names = [
-        ("DNS", name) for name in map(_dnsname_to_stdlib, ext.get_values_for_type(x509.DNSName)) if name is not None
+        ("DNS", name)
+        for name in map(_dnsname_to_stdlib, ext.get_values_for_type(x509.DNSName))
+        if name is not None
     ]
-    names.extend(("IP Address", str(name)) for name in ext.get_values_for_type(x509.IPAddress))
+    names.extend(
+        ("IP Address", str(name)) for name in ext.get_values_for_type(x509.IPAddress)
+    )
 
     return names
 
@@ -338,7 +361,9 @@ class WrappedSocket:
     def sendall(self, data: bytes) -> None:
         total_sent = 0
         while total_sent < len(data):
-            sent = self._send_until_done(data[total_sent : total_sent + SSL_WRITE_BLOCKSIZE])
+            sent = self._send_until_done(
+                data[total_sent : total_sent + SSL_WRITE_BLOCKSIZE]
+            )
             total_sent += sent
 
     def shutdown(self, how: int) -> None:
@@ -358,7 +383,9 @@ class WrappedSocket:
         except OpenSSL.SSL.Error:
             return
 
-    def getpeercert(self, binary_form: bool = False) -> dict[str, list[typing.Any]] | None:
+    def getpeercert(
+        self, binary_form: bool = False
+    ) -> dict[str, list[typing.Any]] | None:
         x509 = self.connection.get_peer_certificate()
 
         if not x509:

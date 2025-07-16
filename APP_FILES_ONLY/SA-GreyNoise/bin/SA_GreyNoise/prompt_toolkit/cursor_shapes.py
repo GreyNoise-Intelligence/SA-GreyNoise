@@ -92,11 +92,15 @@ class ModalCursorShapeConfig(CursorShapeConfig):
 
 
 class DynamicCursorShapeConfig(CursorShapeConfig):
-    def __init__(self, get_cursor_shape_config: Callable[[], AnyCursorShapeConfig]) -> None:
+    def __init__(
+        self, get_cursor_shape_config: Callable[[], AnyCursorShapeConfig]
+    ) -> None:
         self.get_cursor_shape_config = get_cursor_shape_config
 
     def get_cursor_shape(self, application: Application[Any]) -> CursorShape:
-        return to_cursor_shape_config(self.get_cursor_shape_config()).get_cursor_shape(application)
+        return to_cursor_shape_config(self.get_cursor_shape_config()).get_cursor_shape(
+            application
+        )
 
 
 def to_cursor_shape_config(value: AnyCursorShapeConfig) -> CursorShapeConfig:

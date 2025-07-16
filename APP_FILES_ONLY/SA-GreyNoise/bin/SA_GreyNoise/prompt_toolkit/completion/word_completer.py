@@ -53,7 +53,9 @@ class WordCompleter(Completer):
         self.match_middle = match_middle
         self.pattern = pattern
 
-    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
+    def get_completions(
+        self, document: Document, complete_event: CompleteEvent
+    ) -> Iterable[Completion]:
         # Get list of words.
         words = self.words
         if callable(words):
@@ -63,7 +65,9 @@ class WordCompleter(Completer):
         if self.sentence:
             word_before_cursor = document.text_before_cursor
         else:
-            word_before_cursor = document.get_word_before_cursor(WORD=self.WORD, pattern=self.pattern)
+            word_before_cursor = document.get_word_before_cursor(
+                WORD=self.WORD, pattern=self.pattern
+            )
 
         if self.ignore_case:
             word_before_cursor = word_before_cursor.lower()

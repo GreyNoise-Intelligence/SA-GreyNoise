@@ -1,21 +1,10 @@
-import builtins
 import re
-from typing import (
-    Callable,
-    List,
-    Mapping,
-    Match,
-    Optional,
-    Pattern,
-    Sequence,
-    Tuple,
-    Type,
-    Union,
-)
+import builtins
+from typing import Callable, List, Match, Optional, Mapping, Pattern, Sequence, Type, Union, Tuple
 
 from colorama import Style
 
-from .tags import all_tags, background, foreground, style
+from .tags import style, background, foreground, all_tags
 
 
 class AnsiMarkupError(Exception):

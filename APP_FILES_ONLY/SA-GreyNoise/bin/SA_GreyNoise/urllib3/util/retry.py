@@ -181,13 +181,17 @@ class Retry:
     """
 
     #: Default methods to be used for ``allowed_methods``
-    DEFAULT_ALLOWED_METHODS = frozenset(["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"])
+    DEFAULT_ALLOWED_METHODS = frozenset(
+        ["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"]
+    )
 
     #: Default status codes to be used for ``status_forcelist``
     RETRY_AFTER_STATUS_CODES = frozenset([413, 429, 503])
 
     #: Default headers to be used for ``remove_headers_on_redirect``
-    DEFAULT_REMOVE_HEADERS_ON_REDIRECT = frozenset(["Cookie", "Authorization", "Proxy-Authorization"])
+    DEFAULT_REMOVE_HEADERS_ON_REDIRECT = frozenset(
+        ["Cookie", "Authorization", "Proxy-Authorization"]
+    )
 
     #: Default maximum backoff time.
     DEFAULT_BACKOFF_MAX = 120
@@ -211,7 +215,9 @@ class Retry:
         raise_on_status: bool = True,
         history: tuple[RequestHistory, ...] | None = None,
         respect_retry_after_header: bool = True,
-        remove_headers_on_redirect: typing.Collection[str] = DEFAULT_REMOVE_HEADERS_ON_REDIRECT,
+        remove_headers_on_redirect: typing.Collection[
+            str
+        ] = DEFAULT_REMOVE_HEADERS_ON_REDIRECT,
         backoff_jitter: float = 0.0,
     ) -> None:
         self.total = total
@@ -233,7 +239,9 @@ class Retry:
         self.raise_on_status = raise_on_status
         self.history = history or ()
         self.respect_retry_after_header = respect_retry_after_header
-        self.remove_headers_on_redirect = frozenset(h.lower() for h in remove_headers_on_redirect)
+        self.remove_headers_on_redirect = frozenset(
+            h.lower() for h in remove_headers_on_redirect
+        )
         self.backoff_jitter = backoff_jitter
 
     def new(self, **kw: typing.Any) -> Self:
@@ -284,7 +292,11 @@ class Retry:
         :rtype: float
         """
         # We want to consider only the last consecutive errors sequence (Ignore redirects).
-        consecutive_errors_len = len(list(takewhile(lambda x: x.redirect_location is None, reversed(self.history))))
+        consecutive_errors_len = len(
+            list(
+                takewhile(lambda x: x.redirect_location is None, reversed(self.history))
+            )
+        )
         if consecutive_errors_len <= 1:
             return 0
 
@@ -372,7 +384,9 @@ class Retry:
             return False
         return True
 
-    def is_retry(self, method: str, status_code: int, has_retry_after: bool = False) -> bool:
+    def is_retry(
+        self, method: str, status_code: int, has_retry_after: bool = False
+    ) -> bool:
         """Is this method/status code retryable? (Based on allowlists and control
         variables such as the number of total retries to allow, whether to
         respect the Retry-After header, whether this header is present, and
@@ -486,7 +500,9 @@ class Retry:
                 cause = ResponseError.SPECIFIC_ERROR.format(status_code=response.status)
                 status = response.status
 
-        history = self.history + (RequestHistory(method, url, error, status, redirect_location),)
+        history = self.history + (
+            RequestHistory(method, url, error, status, redirect_location),
+        )
 
         new_retry = self.new(
             total=total,

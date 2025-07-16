@@ -433,7 +433,9 @@ class BaseHTTPResponse(io.IOBase):
             self.url = retries.history[-1].redirect_location
         self._retries = retries
 
-    def stream(self, amt: int | None = 2**16, decode_content: bool | None = None) -> typing.Iterator[bytes]:
+    def stream(
+        self, amt: int | None = 2**16, decode_content: bool | None = None
+    ) -> typing.Iterator[bytes]:
         raise NotImplementedError()
 
     def read(
@@ -481,18 +483,25 @@ class BaseHTTPResponse(io.IOBase):
             if content_encoding in self.CONTENT_DECODERS:
                 self._decoder = _get_decoder(content_encoding)
             elif "," in content_encoding:
-                encodings = [e.strip() for e in content_encoding.split(",") if e.strip() in self.CONTENT_DECODERS]
+                encodings = [
+                    e.strip()
+                    for e in content_encoding.split(",")
+                    if e.strip() in self.CONTENT_DECODERS
+                ]
                 if encodings:
                     self._decoder = _get_decoder(content_encoding)
 
-    def _decode(self, data: bytes, decode_content: bool | None, flush_decoder: bool) -> bytes:
+    def _decode(
+        self, data: bytes, decode_content: bool | None, flush_decoder: bool
+    ) -> bytes:
         """
         Decode the data passed in and potentially flush the decoder.
         """
         if not decode_content:
             if self._has_decoded_content:
                 raise RuntimeError(
-                    "Calling read(decode_content=False) is not supported after " "read(decode_content=True) was called."
+                    "Calling read(decode_content=False) is not supported after "
+                    "read(decode_content=True) was called."
                 )
             return data
 
@@ -503,7 +512,8 @@ class BaseHTTPResponse(io.IOBase):
         except self.DECODER_ERROR_CLASSES as e:
             content_encoding = self.headers.get("content-encoding", "").lower()
             raise DecodeError(
-                "Received response with content-encoding: %s, but " "failed to decode it." % content_encoding,
+                "Received response with content-encoding: %s, but "
+                "failed to decode it." % content_encoding,
                 e,
             ) from e
         if flush_decoder:
@@ -726,7 +736,10 @@ class HTTPResponse(BaseHTTPResponse):
                 # all values are the same. Otherwise, the header is invalid.
                 lengths = {int(val) for val in content_length.split(",")}
                 if len(lengths) > 1:
-                    raise InvalidHeader("Content-Length contained multiple " "unmatching values (%s)" % content_length)
+                    raise InvalidHeader(
+                        "Content-Length contained multiple "
+                        "unmatching values (%s)" % content_length
+                    )
                 length = lengths.pop()
             except ValueError:
                 length = None
@@ -779,7 +792,11 @@ class HTTPResponse(BaseHTTPResponse):
                 raise ReadTimeoutError(self._pool, None, "Read timed out.") from e  # type: ignore[arg-type]
 
             except IncompleteRead as e:
-                if e.expected is not None and e.partial is not None and e.expected == -e.partial:
+                if (
+                    e.expected is not None
+                    and e.partial is not None
+                    and e.expected == -e.partial
+                ):
                     arg = "Response may not contain content."
                 else:
                     arg = f"Connection broken: {e!r}"
@@ -834,7 +851,12 @@ class HTTPResponse(BaseHTTPResponse):
         assert self._fp
         c_int_max = 2**31 - 1
         if (
-            (amt and amt > c_int_max) or (amt is None and self.length_remaining and self.length_remaining > c_int_max)
+            (amt and amt > c_int_max)
+            or (
+                amt is None
+                and self.length_remaining
+                and self.length_remaining > c_int_max
+            )
         ) and (util.IS_PYOPENSSL or sys.version_info < (3, 10)):
             if read1:
                 return self._fp.read1(c_int_max)
@@ -890,14 +912,20 @@ class HTTPResponse(BaseHTTPResponse):
                 # not properly close the connection in all cases. There is
                 # no harm in redundantly calling close.
                 self._fp.close()
-                if self.enforce_content_length and self.length_remaining is not None and self.length_remaining != 0:
+                if (
+                    self.enforce_content_length
+                    and self.length_remaining is not None
+                    and self.length_remaining != 0
+                ):
                     # This is an edge case that httplib failed to cover due
                     # to concerns of backward compatibility. We're
                     # addressing it here to make sure IncompleteRead is
                     # raised during streaming, so all calls with incorrect
                     # Content-Length are caught.
                     raise IncompleteRead(self._fp_bytes_read, self.length_remaining)
-            elif read1 and ((amt != 0 and not data) or self.length_remaining == len(data)):
+            elif read1 and (
+                (amt != 0 and not data) or self.length_remaining == len(data)
+            ):
                 # All data has been read, but `self._fp.read1` in
                 # CPython 3.12 and older doesn't always close
                 # `http.client.HTTPResponse`, so we close it here.
@@ -1038,7 +1066,9 @@ class HTTPResponse(BaseHTTPResponse):
             return self._decoded_buffer.get_all()
         return self._decoded_buffer.get(amt)
 
-    def stream(self, amt: int | None = 2**16, decode_content: bool | None = None) -> typing.Generator[bytes]:
+    def stream(
+        self, amt: int | None = 2**16, decode_content: bool | None = None
+    ) -> typing.Generator[bytes]:
         """
         A generator wrapper for the read() method. A call will block until
         ``amt`` bytes have been read from the connection or until the
@@ -1071,7 +1101,9 @@ class HTTPResponse(BaseHTTPResponse):
         if not self._sock_shutdown:
             raise ValueError("Cannot shutdown socket as self._sock_shutdown is not set")
         if self._connection is None:
-            raise RuntimeError("Cannot shutdown as connection has already been released to the pool")
+            raise RuntimeError(
+                "Cannot shutdown as connection has already been released to the pool"
+            )
         self._sock_shutdown(socket.SHUT_RD)
 
     def close(self) -> None:
@@ -1105,10 +1137,17 @@ class HTTPResponse(BaseHTTPResponse):
         elif hasattr(self._fp, "fileno"):
             return self._fp.fileno()
         else:
-            raise OSError("The file-like object this HTTPResponse is wrapped " "around has no file descriptor")
+            raise OSError(
+                "The file-like object this HTTPResponse is wrapped "
+                "around has no file descriptor"
+            )
 
     def flush(self) -> None:
-        if self._fp is not None and hasattr(self._fp, "flush") and not getattr(self._fp, "closed", False):
+        if (
+            self._fp is not None
+            and hasattr(self._fp, "flush")
+            and not getattr(self._fp, "closed", False)
+        ):
             return self._fp.flush()
 
     def supports_chunked_reads(self) -> bool:
@@ -1160,7 +1199,9 @@ class HTTPResponse(BaseHTTPResponse):
             self.chunk_left = None
         return returned_chunk  # type: ignore[no-any-return]
 
-    def read_chunked(self, amt: int | None = None, decode_content: bool | None = None) -> typing.Generator[bytes]:
+    def read_chunked(
+        self, amt: int | None = None, decode_content: bool | None = None
+    ) -> typing.Generator[bytes]:
         """
         Similar to :meth:`HTTPResponse.read`, but with an additional
         parameter: ``decode_content``.
@@ -1177,7 +1218,10 @@ class HTTPResponse(BaseHTTPResponse):
         self._init_decoder()
         # FIXME: Rewrite this method and make it a class with a better structured logic.
         if not self.chunked:
-            raise ResponseNotChunked("Response is not chunked. " "Header 'transfer-encoding: chunked' is missing.")
+            raise ResponseNotChunked(
+                "Response is not chunked. "
+                "Header 'transfer-encoding: chunked' is missing."
+            )
         if not self.supports_chunked_reads():
             raise BodyNotHttplibCompatible(
                 "Body should be http.client.HTTPResponse like. "
@@ -1205,7 +1249,9 @@ class HTTPResponse(BaseHTTPResponse):
                 if self.chunk_left == 0:
                     break
                 chunk = self._handle_chunk(amt)
-                decoded = self._decode(chunk, decode_content=decode_content, flush_decoder=False)
+                decoded = self._decode(
+                    chunk, decode_content=decode_content, flush_decoder=False
+                )
                 if decoded:
                     yield decoded
 

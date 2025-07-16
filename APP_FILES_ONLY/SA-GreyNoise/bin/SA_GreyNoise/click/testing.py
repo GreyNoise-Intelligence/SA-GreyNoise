@@ -8,7 +8,10 @@ import tempfile
 import typing as t
 from types import TracebackType
 
-from . import _compat, formatting, termui, utils
+from . import _compat
+from . import formatting
+from . import termui
+from . import utils
 from ._compat import _find_binary_reader
 
 if t.TYPE_CHECKING:
@@ -60,7 +63,9 @@ def _pause_echo(stream: t.Optional[EchoingStdin]) -> t.Iterator[None]:
 
 
 class _NamedTextIOWrapper(io.TextIOWrapper):
-    def __init__(self, buffer: t.BinaryIO, name: str, mode: str, **kwargs: t.Any) -> None:
+    def __init__(
+        self, buffer: t.BinaryIO, name: str, mode: str, **kwargs: t.Any
+    ) -> None:
         super().__init__(buffer, **kwargs)
         self._name = name
         self._mode = mode
@@ -74,7 +79,9 @@ class _NamedTextIOWrapper(io.TextIOWrapper):
         return self._mode
 
 
-def make_input_stream(input: t.Optional[t.Union[str, bytes, t.IO[t.Any]]], charset: str) -> t.BinaryIO:
+def make_input_stream(
+    input: t.Optional[t.Union[str, bytes, t.IO[t.Any]]], charset: str
+) -> t.BinaryIO:
     # Is already an input stream.
     if hasattr(input, "read"):
         rv = _find_binary_reader(t.cast(t.IO[t.Any], input))
@@ -103,7 +110,9 @@ class Result:
         return_value: t.Any,
         exit_code: int,
         exception: t.Optional[BaseException],
-        exc_info: t.Optional[t.Tuple[t.Type[BaseException], BaseException, TracebackType]] = None,
+        exc_info: t.Optional[
+            t.Tuple[t.Type[BaseException], BaseException, TracebackType]
+        ] = None,
     ):
         #: The runner that created the result
         self.runner = runner
@@ -130,14 +139,18 @@ class Result:
     @property
     def stdout(self) -> str:
         """The standard output as unicode string."""
-        return self.stdout_bytes.decode(self.runner.charset, "replace").replace("\r\n", "\n")
+        return self.stdout_bytes.decode(self.runner.charset, "replace").replace(
+            "\r\n", "\n"
+        )
 
     @property
     def stderr(self) -> str:
         """The standard error as unicode string."""
         if self.stderr_bytes is None:
             raise ValueError("stderr not separately captured")
-        return self.stderr_bytes.decode(self.runner.charset, "replace").replace("\r\n", "\n")
+        return self.stderr_bytes.decode(self.runner.charset, "replace").replace(
+            "\r\n", "\n"
+        )
 
     def __repr__(self) -> str:
         exc_str = repr(self.exception) if self.exception else "okay"
@@ -232,16 +245,22 @@ class CliRunner:
         bytes_output = io.BytesIO()
 
         if self.echo_stdin:
-            bytes_input = echo_input = t.cast(t.BinaryIO, EchoingStdin(bytes_input, bytes_output))
+            bytes_input = echo_input = t.cast(
+                t.BinaryIO, EchoingStdin(bytes_input, bytes_output)
+            )
 
-        sys.stdin = text_input = _NamedTextIOWrapper(bytes_input, encoding=self.charset, name="<stdin>", mode="r")
+        sys.stdin = text_input = _NamedTextIOWrapper(
+            bytes_input, encoding=self.charset, name="<stdin>", mode="r"
+        )
 
         if self.echo_stdin:
             # Force unbuffered reads, otherwise TextIOWrapper reads a
             # large chunk which is echoed early.
             text_input._CHUNK_SIZE = 1  # type: ignore
 
-        sys.stdout = _NamedTextIOWrapper(bytes_output, encoding=self.charset, name="<stdout>", mode="w")
+        sys.stdout = _NamedTextIOWrapper(
+            bytes_output, encoding=self.charset, name="<stdout>", mode="w"
+        )
 
         bytes_error = None
         if self.mix_stderr:
@@ -282,7 +301,9 @@ class CliRunner:
 
         default_color = color
 
-        def should_strip_ansi(stream: t.Optional[t.IO[t.Any]] = None, color: t.Optional[bool] = None) -> bool:
+        def should_strip_ansi(
+            stream: t.Optional[t.IO[t.Any]] = None, color: t.Optional[bool] = None
+        ) -> bool:
             if color is None:
                 return not default_color
             return not color
@@ -431,7 +452,9 @@ class CliRunner:
         )
 
     @contextlib.contextmanager
-    def isolated_filesystem(self, temp_dir: t.Optional[t.Union[str, "os.PathLike[str]"]] = None) -> t.Iterator[str]:
+    def isolated_filesystem(
+        self, temp_dir: t.Optional[t.Union[str, "os.PathLike[str]"]] = None
+    ) -> t.Iterator[str]:
         """A context manager that creates a temporary directory and
         changes the current working directory to it. This isolates tests
         that affect the contents of the CWD to prevent them from

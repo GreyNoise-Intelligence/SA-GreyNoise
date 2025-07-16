@@ -192,9 +192,10 @@ class Application(Generic[_AppResult]):
         key_bindings: KeyBindingsBase | None = None,
         clipboard: Clipboard | None = None,
         full_screen: bool = False,
-        color_depth: ColorDepth | Callable[[], ColorDepth | None] | None = None,
+        color_depth: (ColorDepth | Callable[[], ColorDepth | None] | None) = None,
         mouse_support: FilterOrBool = False,
-        enable_page_navigation_bindings: None | (FilterOrBool) = None,  # Can be None, True or False.
+        enable_page_navigation_bindings: None
+        | (FilterOrBool) = None,  # Can be None, True or False.
         paste_mode: FilterOrBool = False,
         editing_mode: EditingMode = EditingMode.EMACS,
         erase_when_done: bool = False,
@@ -318,7 +319,9 @@ class Application(Generic[_AppResult]):
 
         # Invalidate flag. When 'True', a repaint has been scheduled.
         self._invalidated = False
-        self._invalidate_events: list[Event[object]] = []  # Collection of 'invalidate' Event objects.
+        self._invalidate_events: list[
+            Event[object]
+        ] = []  # Collection of 'invalidate' Event objects.
         self._last_redraw_time = 0.0  # Unix timestamp of last redraw. Used when
         # `min_redraw_interval` is given.
 
@@ -389,7 +392,9 @@ class Application(Generic[_AppResult]):
         has the focus. In this case, it's really not practical to check for
         `None` values or catch exceptions every time.)
         """
-        return self.layout.current_buffer or Buffer(name="dummy-buffer")  # Dummy buffer.
+        return self.layout.current_buffer or Buffer(
+            name="dummy-buffer"
+        )  # Dummy buffer.
 
     @property
     def current_search_state(self) -> SearchState:
@@ -466,7 +471,9 @@ class Application(Generic[_AppResult]):
             self._redraw()
 
         def schedule_redraw() -> None:
-            call_soon_threadsafe(redraw, max_postpone_time=self.max_render_postpone_time, loop=self.loop)
+            call_soon_threadsafe(
+                redraw, max_postpone_time=self.max_render_postpone_time, loop=self.loop
+            )
 
         if self.min_redraw_interval:
             # When a minimum redraw interval is set, wait minimum this amount
@@ -478,7 +485,9 @@ class Application(Generic[_AppResult]):
                     await sleep(cast(float, self.min_redraw_interval) - diff)
                     schedule_redraw()
 
-                self.loop.call_soon_threadsafe(lambda: self.create_background_task(redraw_in_future()))
+                self.loop.call_soon_threadsafe(
+                    lambda: self.create_background_task(redraw_in_future())
+                )
             else:
                 schedule_redraw()
         else:
@@ -722,9 +731,9 @@ class Application(Generic[_AppResult]):
                         f.set_exception(EOFError)
 
             # Enter raw mode, attach input and attach WINCH event handler.
-            with self.input.raw_mode(), self.input.attach(read_from_input_in_context), attach_winch_signal_handler(
-                self._on_resize
-            ):
+            with self.input.raw_mode(), self.input.attach(
+                read_from_input_in_context
+            ), attach_winch_signal_handler(self._on_resize):
                 # Draw UI.
                 self._request_absolute_cursor_position()
                 self._redraw()
@@ -803,7 +812,9 @@ class Application(Generic[_AppResult]):
                     # See: https://github.com/prompt-toolkit/python-prompt-toolkit/issues/1576
                     loop.add_signal_handler(
                         signal.SIGINT,
-                        lambda *_: loop.call_soon_threadsafe(self.key_processor.send_sigint),
+                        lambda *_: loop.call_soon_threadsafe(
+                            self.key_processor.send_sigint
+                        ),
                     )
                     try:
                         yield
@@ -953,7 +964,8 @@ class Application(Generic[_AppResult]):
             try:
                 return (
                     sys.modules["IPython"].version_info < (8, 18, 0, "")
-                    and "IPython/terminal/interactiveshell.py" in sys._getframe(3).f_code.co_filename
+                    and "IPython/terminal/interactiveshell.py"
+                    in sys._getframe(3).f_code.co_filename
                 )
             except BaseException:
                 return False
@@ -989,7 +1001,9 @@ class Application(Generic[_AppResult]):
             # No loop installed. Run like usual.
             return asyncio.run(coro)
 
-    def _handle_exception(self, loop: AbstractEventLoop, context: dict[str, Any]) -> None:
+    def _handle_exception(
+        self, loop: AbstractEventLoop, context: dict[str, Any]
+    ) -> None:
         """
         Handler for event loop exceptions.
         This will print the exception, using run_in_terminal.
@@ -1099,7 +1113,9 @@ class Application(Generic[_AppResult]):
                 done.set()
 
         class CustomPdb(pdb.Pdb):
-            def trace_dispatch(self, frame: FrameType, event: str, arg: Any) -> TraceDispatch:
+            def trace_dispatch(
+                self, frame: FrameType, event: str, arg: Any
+            ) -> TraceDispatch:
                 if app._loop_thread is None:
                     return super().trace_dispatch(frame, event, arg)
 
@@ -1113,7 +1129,9 @@ class Application(Generic[_AppResult]):
         frame = sys._getframe().f_back
         CustomPdb(stdout=sys.__stdout__).set_trace(frame)
 
-    def create_background_task(self, coroutine: Coroutine[Any, Any, None]) -> asyncio.Task[None]:
+    def create_background_task(
+        self, coroutine: Coroutine[Any, Any, None]
+    ) -> asyncio.Task[None]:
         """
         Start a background task (coroutine) for the running application. When
         the `Application` terminates, unfinished background tasks will be
@@ -1186,7 +1204,9 @@ class Application(Generic[_AppResult]):
         #       don't propagate exceptions, but have them printed in
         #       `_on_background_task_done`.
         if len(self._background_tasks) > 0:
-            await asyncio.wait(self._background_tasks, timeout=None, return_when=asyncio.ALL_COMPLETED)
+            await asyncio.wait(
+                self._background_tasks, timeout=None, return_when=asyncio.ALL_COMPLETED
+            )
 
     async def _poll_output_size(self) -> None:
         """
@@ -1218,7 +1238,9 @@ class Application(Generic[_AppResult]):
             return  # We know about this already.
 
         def in_terminal() -> None:
-            self.output.write("WARNING: your terminal doesn't support cursor position requests (CPR).\r\n")
+            self.output.write(
+                "WARNING: your terminal doesn't support cursor position requests (CPR).\r\n"
+            )
             self.output.flush()
 
         run_in_terminal(in_terminal)
@@ -1232,7 +1254,9 @@ class Application(Generic[_AppResult]):
         "Exit with `_AppResult`."
 
     @overload
-    def exit(self, *, exception: BaseException | type[BaseException], style: str = "") -> None:
+    def exit(
+        self, *, exception: BaseException | type[BaseException], style: str = ""
+    ) -> None:
         "Exit with exception."
 
     def exit(
@@ -1352,7 +1376,9 @@ class Application(Generic[_AppResult]):
 
             run_in_terminal(run)
 
-    def print_text(self, text: AnyFormattedText, style: BaseStyle | None = None) -> None:
+    def print_text(
+        self, text: AnyFormattedText, style: BaseStyle | None = None
+    ) -> None:
         """
         Print a list of (style_str, text) tuples to the output.
         (When the UI is running, this method has to be called through
@@ -1388,7 +1414,10 @@ class Application(Generic[_AppResult]):
         attrs_for_style = self.renderer._attrs_for_style
 
         if attrs_for_style:
-            return sorted(re.sub(r"\s+", " ", style_str).strip() for style_str in attrs_for_style.keys())
+            return sorted(
+                re.sub(r"\s+", " ", style_str).strip()
+                for style_str in attrs_for_style.keys()
+            )
 
         return []
 
@@ -1402,7 +1431,9 @@ class _CombinedRegistry(KeyBindingsBase):
 
     def __init__(self, app: Application[_AppResult]) -> None:
         self.app = app
-        self._cache: SimpleCache[tuple[Window, frozenset[UIControl]], KeyBindingsBase] = SimpleCache()
+        self._cache: SimpleCache[
+            tuple[Window, frozenset[UIControl]], KeyBindingsBase
+        ] = SimpleCache()
 
     @property
     def _version(self) -> Hashable:
@@ -1416,7 +1447,9 @@ class _CombinedRegistry(KeyBindingsBase):
         KeyBindings object."""
         raise NotImplementedError
 
-    def _create_key_bindings(self, current_window: Window, other_controls: list[UIControl]) -> KeyBindingsBase:
+    def _create_key_bindings(
+        self, current_window: Window, other_controls: list[UIControl]
+    ) -> KeyBindingsBase:
         """
         Create a `KeyBindings` object that merges the `KeyBindings` from the
         `UIControl` with all the parent controls and the global key bindings.
@@ -1474,7 +1507,9 @@ class _CombinedRegistry(KeyBindingsBase):
         other_controls = list(self.app.layout.find_all_controls())
         key = current_window, frozenset(other_controls)
 
-        return self._cache.get(key, lambda: self._create_key_bindings(current_window, other_controls))
+        return self._cache.get(
+            key, lambda: self._create_key_bindings(current_window, other_controls)
+        )
 
     def get_bindings_for_keys(self, keys: KeysTuple) -> list[Binding]:
         return self._key_bindings.get_bindings_for_keys(keys)
@@ -1503,7 +1538,9 @@ async def _do_wait_for_enter(wait_text: AnyFormattedText) -> None:
         "Disallow typing."
         pass
 
-    session: PromptSession[None] = PromptSession(message=wait_text, key_bindings=key_bindings)
+    session: PromptSession[None] = PromptSession(
+        message=wait_text, key_bindings=key_bindings
+    )
     try:
         await session.app.run_async()
     except KeyboardInterrupt:

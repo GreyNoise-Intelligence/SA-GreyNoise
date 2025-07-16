@@ -8,7 +8,9 @@ import random
 import time
 from threading import Condition
 
-from . import FIFOCache, LFUCache, LRUCache, RRCache, TTLCache, cached, keys
+from . import FIFOCache, LFUCache, LRUCache, RRCache, TTLCache
+from . import cached
+from . import keys
 
 
 class _UnboundTTLCache(TTLCache):

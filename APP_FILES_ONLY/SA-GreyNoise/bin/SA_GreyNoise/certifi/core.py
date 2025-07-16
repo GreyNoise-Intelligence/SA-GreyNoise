@@ -4,10 +4,8 @@ certifi.py
 
 This module returns the installation location of cacert.pem or its contents.
 """
-
-import atexit
 import sys
-
+import atexit
 
 def exit_cacert_ctx() -> None:
     _CACERT_CTX.__exit__(None, None, None)  # type: ignore[union-attr]
@@ -50,8 +48,7 @@ if sys.version_info >= (3, 11):
 
 else:
 
-    from importlib.resources import path as get_path
-    from importlib.resources import read_text
+    from importlib.resources import path as get_path, read_text
 
     _CACERT_CTX = None
     _CACERT_PATH = None

@@ -42,7 +42,8 @@ class SSLTransport:
 
         if not hasattr(ssl_context, "wrap_bio"):
             raise ProxySchemeUnsupported(
-                "TLS in TLS requires SSLContext.wrap_bio() which isn't " "available on non-native SSLContext"
+                "TLS in TLS requires SSLContext.wrap_bio() which isn't "
+                "available on non-native SSLContext"
             )
 
     def __init__(
@@ -61,7 +62,9 @@ class SSLTransport:
         self.suppress_ragged_eofs = suppress_ragged_eofs
         self.socket = socket
 
-        self.sslobj = ssl_context.wrap_bio(self.incoming, self.outgoing, server_hostname=server_hostname)
+        self.sslobj = ssl_context.wrap_bio(
+            self.incoming, self.outgoing, server_hostname=server_hostname
+        )
 
         # Perform initial handshake.
         self._ssl_io_loop(self.sslobj.do_handshake)
@@ -169,7 +172,9 @@ class SSLTransport:
         self.socket.close()
 
     @typing.overload
-    def getpeercert(self, binary_form: typing.Literal[False] = ...) -> _TYPE_PEER_CERT_RET_DICT | None: ...
+    def getpeercert(
+        self, binary_form: typing.Literal[False] = ...
+    ) -> _TYPE_PEER_CERT_RET_DICT | None: ...
 
     @typing.overload
     def getpeercert(self, binary_form: typing.Literal[True]) -> bytes | None: ...

@@ -7,23 +7,22 @@ from collections import abc
 from itertools import chain
 
 from markupsafe import escape  # noqa: F401
-from markupsafe import Markup, soft_str
+from markupsafe import Markup
+from markupsafe import soft_str
 
-from .async_utils import auto_await  # noqa: F401
 from .async_utils import auto_aiter
+from .async_utils import auto_await  # noqa: F401
 from .exceptions import TemplateNotFound  # noqa: F401
 from .exceptions import TemplateRuntimeError  # noqa: F401
 from .exceptions import UndefinedError
 from .nodes import EvalContext
+from .utils import _PassArg
+from .utils import concat
+from .utils import internalcode
+from .utils import missing
 from .utils import Namespace  # noqa: F401
-from .utils import (
-    _PassArg,
-    concat,
-    internalcode,
-    missing,
-    object_type_repr,
-    pass_eval_context,
-)
+from .utils import object_type_repr
+from .utils import pass_eval_context
 
 V = t.TypeVar("V")
 F = t.TypeVar("F", bound=t.Callable[..., t.Any])
@@ -115,7 +114,9 @@ def new_context(
         for key, value in locals.items():
             if value is not missing:
                 parent[key] = value
-    return environment.context_class(environment, parent, template_name, blocks, globals=globals)
+    return environment.context_class(
+        environment, parent, template_name, blocks, globals=globals
+    )
 
 
 class TemplateReference:
@@ -191,7 +192,9 @@ class Context:
             index = blocks.index(current) + 1
             blocks[index]
         except LookupError:
-            return self.environment.undefined(f"there is no parent block called {name!r}.", name="super")
+            return self.environment.undefined(
+                f"there is no parent block called {name!r}.", name="super"
+            )
         return BlockReference(name, self, blocks, index)
 
     def get(self, key: str, default: t.Any = None) -> t.Any:
@@ -272,7 +275,10 @@ class Context:
             __traceback_hide__ = True  # noqa
 
         # Allow callable classes to take a context
-        if hasattr(__obj, "__call__") and _PassArg.from_obj(__obj.__call__) is not None:  # noqa: B004
+        if (
+            hasattr(__obj, "__call__")  # noqa: B004
+            and _PassArg.from_obj(__obj.__call__) is not None
+        ):
             __obj = __obj.__call__
 
         pass_arg = _PassArg.from_obj(__obj)
@@ -297,7 +303,8 @@ class Context:
             return __obj(*args, **kwargs)
         except StopIteration:
             return __self.environment.undefined(
-                "value was undefined because a callable raised a" " StopIteration exception"
+                "value was undefined because a callable raised a"
+                " StopIteration exception"
             )
 
     def derived(self, locals: t.Optional[t.Dict[str, t.Any]] = None) -> "Context":
@@ -305,7 +312,9 @@ class Context:
         used in situations where the system needs a new context in the same
         template that is independent.
         """
-        context = new_context(self.environment, self.name, {}, self.get_all(), True, None, locals)
+        context = new_context(
+            self.environment, self.name, {}, self.get_all(), True, None, locals
+        )
         context.eval_ctx = self.eval_ctx
         context.blocks.update((k, list(v)) for k, v in self.blocks.items())
         return context
@@ -351,7 +360,9 @@ class BlockReference:
     def super(self) -> t.Union["BlockReference", "Undefined"]:
         """Super the block."""
         if self._depth + 1 >= len(self._stack):
-            return self._context.environment.undefined(f"there is no parent block called {self.name!r}.", name="super")
+            return self._context.environment.undefined(
+                f"there is no parent block called {self.name!r}.", name="super"
+            )
         return BlockReference(self.name, self._context, self._stack, self._depth + 1)
 
     @internalcode
@@ -370,7 +381,9 @@ class BlockReference:
         if self._context.environment.is_async:
             return self._async_call()  # type: ignore
 
-        rv = self._context.environment.concat(self._stack[self._depth](self._context))  # type: ignore
+        rv = self._context.environment.concat(  # type: ignore
+            self._stack[self._depth](self._context)
+        )
 
         if self._context.eval_ctx.autoescape:
             return Markup(rv)
@@ -565,7 +578,9 @@ class LoopContext:
         The loop must have the ``recursive`` marker for this to work.
         """
         if self._recurse is None:
-            raise TypeError("The loop must have the 'recursive' marker to be called recursively.")
+            raise TypeError(
+                "The loop must have the 'recursive' marker to be called recursively."
+            )
 
         return self._recurse(iterable, self._recurse, depth=self.depth)
 
@@ -741,11 +756,16 @@ class Macro:
                     f"macro {self.name!r} was invoked with two values for the special"
                     " caller argument. This is most likely a bug."
                 )
-            raise TypeError(f"macro {self.name!r} takes no keyword argument {next(iter(kwargs))!r}")
+            raise TypeError(
+                f"macro {self.name!r} takes no keyword argument {next(iter(kwargs))!r}"
+            )
         if self.catch_varargs:
             arguments.append(args[self._argument_count :])
         elif len(args) > self._argument_count:
-            raise TypeError(f"macro {self.name!r} takes not more than" f" {len(self.arguments)} argument(s)")
+            raise TypeError(
+                f"macro {self.name!r} takes not more than"
+                f" {len(self.arguments)} argument(s)"
+            )
 
         return self._invoke(arguments, autoescape)
 
@@ -819,12 +839,20 @@ class Undefined:
             return f"{self._undefined_name!r} is undefined"
 
         if not isinstance(self._undefined_name, str):
-            return f"{object_type_repr(self._undefined_obj)} has no" f" element {self._undefined_name!r}"
+            return (
+                f"{object_type_repr(self._undefined_obj)} has no"
+                f" element {self._undefined_name!r}"
+            )
 
-        return f"{object_type_repr(self._undefined_obj)!r} has no" f" attribute {self._undefined_name!r}"
+        return (
+            f"{object_type_repr(self._undefined_obj)!r} has no"
+            f" attribute {self._undefined_name!r}"
+        )
 
     @internalcode
-    def _fail_with_undefined_error(self, *args: t.Any, **kwargs: t.Any) -> "te.NoReturn":
+    def _fail_with_undefined_error(
+        self, *args: t.Any, **kwargs: t.Any
+    ) -> "te.NoReturn":
         """Raise an :exc:`UndefinedError` when operations are performed
         on the undefined value.
         """
@@ -915,7 +943,9 @@ def make_logging_undefined(
     class LoggingUndefined(base):  # type: ignore
         __slots__ = ()
 
-        def _fail_with_undefined_error(self, *args: t.Any, **kwargs: t.Any) -> "te.NoReturn":  # type: ignore
+        def _fail_with_undefined_error(  # type: ignore
+            self, *args: t.Any, **kwargs: t.Any
+        ) -> "te.NoReturn":
             try:
                 super()._fail_with_undefined_error(*args, **kwargs)
             except self._undefined_exception as e:
@@ -998,7 +1028,10 @@ class DebugUndefined(Undefined):
             message = self._undefined_name  # type: ignore
 
         else:
-            message = f"no such element: {object_type_repr(self._undefined_obj)}" f"[{self._undefined_name!r}]"
+            message = (
+                f"no such element: {object_type_repr(self._undefined_obj)}"
+                f"[{self._undefined_name!r}]"
+            )
 
         return f"{{{{ {message} }}}}"
 

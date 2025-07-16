@@ -30,7 +30,9 @@ def load_config():
     :rtype: dict
 
     """
-    config_parser = configparser.ConfigParser({key: str(value) for key, value in DEFAULT_CONFIG.items()})
+    config_parser = configparser.ConfigParser(
+        {key: str(value) for key, value in DEFAULT_CONFIG.items()}
+    )
     config_parser.add_section("greynoise")
 
     if os.path.isfile(CONFIG_FILE):
@@ -99,12 +101,16 @@ def load_config():
         try:
             int(config_parser.get("greynoise", "cache_max_size"))
         except ValueError:
-            config_parser.set("greynoise", "cache_max_size", str(DEFAULT_CONFIG["cache_max_size"]))
+            config_parser.set(
+                "greynoise", "cache_max_size", str(DEFAULT_CONFIG["cache_max_size"])
+            )
     if config_parser.get("greynoise", "cache_ttl"):
         try:
             int(config_parser.get("greynoise", "cache_ttl"))
         except ValueError:
-            config_parser.set("greynoise", "cache_ttl", str(DEFAULT_CONFIG["cache_ttl"]))
+            config_parser.set(
+                "greynoise", "cache_ttl", str(DEFAULT_CONFIG["cache_ttl"])
+            )
 
     return {
         "api_key": config_parser.get("greynoise", "api_key"),
@@ -228,7 +234,9 @@ def validate_timeline_field_value(field):
     if field in valid_field_names:
         return True
     else:
-        raise ValueError(f"Field must be one of the following values: {valid_field_names}")
+        raise ValueError(
+            f"Field must be one of the following values: {valid_field_names}"
+        )
 
 
 def validate_timeline_days(days):
@@ -239,7 +247,10 @@ def validate_timeline_days(days):
 
     """
     if isinstance(days, str):
-        raise ValueError("Days must be a valid integer between 1 and 90.  Current input is a " "string.")
+        raise ValueError(
+            "Days must be a valid integer between 1 and 90.  Current input is a "
+            "string."
+        )
     if isinstance(days, int) and 1 <= int(days) <= 90:
         return True
     else:
@@ -267,7 +278,10 @@ def validate_similar_min_score(min_score):
 
     """
     if isinstance(min_score, str):
-        raise ValueError("Min Score must be a valid integer between 0 and 100.  Current input is a " "string.")
+        raise ValueError(
+            "Min Score must be a valid integer between 0 and 100.  Current input is a "
+            "string."
+        )
     if isinstance(min_score, int) and 0 <= int(min_score) <= 100:
         return True
     else:

@@ -39,7 +39,9 @@ class SyntaxSync(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def get_sync_start_position(self, document: Document, lineno: int) -> tuple[int, int]:
+    def get_sync_start_position(
+        self, document: Document, lineno: int
+    ) -> tuple[int, int]:
         """
         Return the position from where we can start lexing as a (row, column)
         tuple.
@@ -55,7 +57,9 @@ class SyncFromStart(SyntaxSync):
     Always start the syntax highlighting from the beginning.
     """
 
-    def get_sync_start_position(self, document: Document, lineno: int) -> tuple[int, int]:
+    def get_sync_start_position(
+        self, document: Document, lineno: int
+    ) -> tuple[int, int]:
         return 0, 0
 
 
@@ -75,7 +79,9 @@ class RegexSync(SyntaxSync):
     def __init__(self, pattern: str) -> None:
         self._compiled_pattern = re.compile(pattern)
 
-    def get_sync_start_position(self, document: Document, lineno: int) -> tuple[int, int]:
+    def get_sync_start_position(
+        self, document: Document, lineno: int
+    ) -> tuple[int, int]:
         """
         Scan backwards, and find a possible position to start.
         """
@@ -181,13 +187,19 @@ class PygmentsLexer(Lexer):
         self.sync_from_start = to_filter(sync_from_start)
 
         # Instantiate the Pygments lexer.
-        self.pygments_lexer = pygments_lexer_cls(stripnl=False, stripall=False, ensurenl=False)
+        self.pygments_lexer = pygments_lexer_cls(
+            stripnl=False, stripall=False, ensurenl=False
+        )
 
         # Create syntax sync instance.
-        self.syntax_sync = syntax_sync or RegexSync.from_pygments_lexer_cls(pygments_lexer_cls)
+        self.syntax_sync = syntax_sync or RegexSync.from_pygments_lexer_cls(
+            pygments_lexer_cls
+        )
 
     @classmethod
-    def from_filename(cls, filename: str, sync_from_start: FilterOrBool = True) -> Lexer:
+    def from_filename(
+        cls, filename: str, sync_from_start: FilterOrBool = True
+    ) -> Lexer:
         """
         Create a `Lexer` from a filename.
         """

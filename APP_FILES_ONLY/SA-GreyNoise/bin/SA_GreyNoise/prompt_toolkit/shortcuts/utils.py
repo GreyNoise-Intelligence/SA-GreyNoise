@@ -139,7 +139,9 @@ def print_formatted_text(
         renderer_print_formatted_text(
             output,
             fragments,
-            _create_merged_style(style, include_default_pygments_style=include_default_pygments_style),
+            _create_merged_style(
+                style, include_default_pygments_style=include_default_pygments_style
+            ),
             color_depth=color_depth,
             style_transformation=style_transformation,
         )
@@ -187,7 +189,9 @@ def print_container(
         output=output,
         # `DummyInput` will cause the application to terminate immediately.
         input=DummyInput(),
-        style=_create_merged_style(style, include_default_pygments_style=include_default_pygments_style),
+        style=_create_merged_style(
+            style, include_default_pygments_style=include_default_pygments_style
+        ),
     )
     try:
         app.run(in_thread=True)
@@ -195,7 +199,9 @@ def print_container(
         pass
 
 
-def _create_merged_style(style: BaseStyle | None, include_default_pygments_style: bool) -> BaseStyle:
+def _create_merged_style(
+    style: BaseStyle | None, include_default_pygments_style: bool
+) -> BaseStyle:
     """
     Merge user defined style with built-in style.
     """

@@ -3,8 +3,10 @@ import json
 import os
 import re
 import typing as t
-from collections import abc, deque
-from random import choice, randrange
+from collections import abc
+from collections import deque
+from random import choice
+from random import randrange
 from threading import Lock
 from types import CodeType
 from urllib.parse import quote_from_bytes
@@ -316,9 +318,14 @@ def urlize(
 
         if _http_re.match(middle):
             if middle.startswith("https://") or middle.startswith("http://"):
-                middle = f'<a href="{middle}"{rel_attr}{target_attr}>{trim_url(middle)}</a>'
+                middle = (
+                    f'<a href="{middle}"{rel_attr}{target_attr}>{trim_url(middle)}</a>'
+                )
             else:
-                middle = f'<a href="https://{middle}"{rel_attr}{target_attr}>' f"{trim_url(middle)}</a>"
+                middle = (
+                    f'<a href="https://{middle}"{rel_attr}{target_attr}>'
+                    f"{trim_url(middle)}</a>"
+                )
 
         elif middle.startswith("mailto:") and _email_re.match(middle[7:]):
             middle = f'<a href="{middle}">{middle[7:]}</a>'
@@ -343,7 +350,9 @@ def urlize(
     return "".join(words)
 
 
-def generate_lorem_ipsum(n: int = 5, html: bool = True, min: int = 20, max: int = 100) -> str:
+def generate_lorem_ipsum(
+    n: int = 5, html: bool = True, min: int = 20, max: int = 100
+) -> str:
     """Generate some lorem ipsum for the template."""
     from .constants import LOREM_IPSUM_WORDS
 
@@ -391,7 +400,9 @@ def generate_lorem_ipsum(n: int = 5, html: bool = True, min: int = 20, max: int 
 
     if not html:
         return "\n\n".join(result)
-    return markupsafe.Markup("\n".join(f"<p>{markupsafe.escape(x)}</p>" for x in result))
+    return markupsafe.Markup(
+        "\n".join(f"<p>{markupsafe.escape(x)}</p>" for x in result)
+    )
 
 
 def url_quote(obj: t.Any, charset: str = "utf-8", for_qs: bool = False) -> str:

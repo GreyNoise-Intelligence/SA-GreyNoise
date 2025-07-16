@@ -112,7 +112,9 @@ class Win32Input(_Win32InputBase):
         return False
 
     def raw_mode(self) -> ContextManager[None]:
-        return raw_mode(use_win10_virtual_terminal_input=self._use_virtual_terminal_input)
+        return raw_mode(
+            use_win10_virtual_terminal_input=self._use_virtual_terminal_input
+        )
 
     def cooked_mode(self) -> ContextManager[None]:
         return cooked_mode()
@@ -254,7 +256,9 @@ class ConsoleInputReader:
             return
 
         # Get next batch of input event.
-        windll.kernel32.ReadConsoleInputW(self.handle, pointer(input_records), max_count, pointer(read))
+        windll.kernel32.ReadConsoleInputW(
+            self.handle, pointer(input_records), max_count, pointer(read)
+        )
 
         # First, get all the keys from the input buffer, in order to determine
         # whether we should consider this a paste event or not.
@@ -274,7 +278,10 @@ class ConsoleInputReader:
                 # Pasting: if the current key consists of text or \n, turn it
                 # into a BracketedPaste.
                 data = []
-                while k and (not isinstance(k.key, Keys) or k.key in {Keys.ControlJ, Keys.ControlM}):
+                while k and (
+                    not isinstance(k.key, Keys)
+                    or k.key in {Keys.ControlJ, Keys.ControlM}
+                ):
                     data.append(k.data)
                     try:
                         k = next(gen)
@@ -302,7 +309,9 @@ class ConsoleInputReader:
 
         return KeyPress(key_press.key, data)
 
-    def _get_keys(self, read: DWORD, input_records: Array[INPUT_RECORD]) -> Iterator[KeyPress]:
+    def _get_keys(
+        self, read: DWORD, input_records: Array[INPUT_RECORD]
+    ) -> Iterator[KeyPress]:
         """
         Generator that yields `KeyPress` objects from the input records.
         """
@@ -340,7 +349,9 @@ class ConsoleInputReader:
                 if is_low_surrogate:
                     # convert high surrogate + low surrogate to single character
                     fullchar = (
-                        (buffered_high_surrogate.key + key.key).encode("utf-16-le", "surrogatepass").decode("utf-16-le")
+                        (buffered_high_surrogate.key + key.key)
+                        .encode("utf-16-le", "surrogatepass")
+                        .decode("utf-16-le")
                     )
                     key = KeyPress(fullchar, fullchar)
                 else:
@@ -401,14 +412,19 @@ class ConsoleInputReader:
         else:
             if ascii_char in self.mappings:
                 if self.mappings[ascii_char] == Keys.ControlJ:
-                    u_char = "\n"  # Windows sends \n, turn into \r for unix compatibility.
+                    u_char = (
+                        "\n"  # Windows sends \n, turn into \r for unix compatibility.
+                    )
                 result = KeyPress(self.mappings[ascii_char], u_char)
             else:
                 result = KeyPress(u_char, u_char)
 
         # First we handle Shift-Control-Arrow/Home/End (need to do this first)
         if (
-            (control_key_state & self.LEFT_CTRL_PRESSED or control_key_state & self.RIGHT_CTRL_PRESSED)
+            (
+                control_key_state & self.LEFT_CTRL_PRESSED
+                or control_key_state & self.RIGHT_CTRL_PRESSED
+            )
             and control_key_state & self.SHIFT_PRESSED
             and result
         ):
@@ -426,7 +442,10 @@ class ConsoleInputReader:
             result.key = mapping.get(result.key, result.key)
 
         # Correctly handle Control-Arrow/Home/End and Control-Insert/Delete keys.
-        if (control_key_state & self.LEFT_CTRL_PRESSED or control_key_state & self.RIGHT_CTRL_PRESSED) and result:
+        if (
+            control_key_state & self.LEFT_CTRL_PRESSED
+            or control_key_state & self.RIGHT_CTRL_PRESSED
+        ) and result:
             mapping = {
                 Keys.Left: Keys.ControlLeft,
                 Keys.Right: Keys.ControlRight,
@@ -461,7 +480,10 @@ class ConsoleInputReader:
 
         # Turn 'Space' into 'ControlSpace' when control was pressed.
         if (
-            (control_key_state & self.LEFT_CTRL_PRESSED or control_key_state & self.RIGHT_CTRL_PRESSED)
+            (
+                control_key_state & self.LEFT_CTRL_PRESSED
+                or control_key_state & self.RIGHT_CTRL_PRESSED
+            )
             and result
             and result.data == " "
         ):
@@ -470,7 +492,10 @@ class ConsoleInputReader:
         # Turn Control-Enter into META-Enter. (On a vt100 terminal, we cannot
         # detect this combination. But it's really practical on Windows.)
         if (
-            (control_key_state & self.LEFT_CTRL_PRESSED or control_key_state & self.RIGHT_CTRL_PRESSED)
+            (
+                control_key_state & self.LEFT_CTRL_PRESSED
+                or control_key_state & self.RIGHT_CTRL_PRESSED
+            )
             and result
             and result.key == Keys.ControlJ
         ):
@@ -560,7 +585,9 @@ class Vt100ConsoleInputReader:
         self._fdcon = None
 
         self._buffer: list[KeyPress] = []  # Buffer to collect the Key objects.
-        self._vt100_parser = Vt100Parser(lambda key_press: self._buffer.append(key_press))
+        self._vt100_parser = Vt100Parser(
+            lambda key_press: self._buffer.append(key_press)
+        )
 
         # When stdin is a tty, use that handle, otherwise, create a handle from
         # CONIN$.
@@ -599,7 +626,9 @@ class Vt100ConsoleInputReader:
             return []
 
         # Get next batch of input event.
-        windll.kernel32.ReadConsoleInputW(self.handle, pointer(input_records), max_count, pointer(read))
+        windll.kernel32.ReadConsoleInputW(
+            self.handle, pointer(input_records), max_count, pointer(read)
+        )
 
         # First, get all the keys from the input buffer, in order to determine
         # whether we should consider this a paste event or not.
@@ -611,7 +640,9 @@ class Vt100ConsoleInputReader:
         self._buffer = []
         return result
 
-    def _get_keys(self, read: DWORD, input_records: Array[INPUT_RECORD]) -> Iterator[str]:
+    def _get_keys(
+        self, read: DWORD, input_records: Array[INPUT_RECORD]
+    ) -> Iterator[str]:
         """
         Generator that yields `KeyPress` objects from the input records.
         """
@@ -722,7 +753,9 @@ class _Win32Handles:
 
 
 @contextmanager
-def attach_win32_input(input: _Win32InputBase, callback: Callable[[], None]) -> Iterator[None]:
+def attach_win32_input(
+    input: _Win32InputBase, callback: Callable[[], None]
+) -> Iterator[None]:
     """
     Context manager that makes this input active in the current event loop.
 
@@ -776,7 +809,9 @@ class raw_mode:
     `raw_input` method of `.vt100_input`.
     """
 
-    def __init__(self, fileno: int | None = None, use_win10_virtual_terminal_input: bool = False) -> None:
+    def __init__(
+        self, fileno: int | None = None, use_win10_virtual_terminal_input: bool = False
+    ) -> None:
         self.handle = HANDLE(windll.kernel32.GetStdHandle(STD_INPUT_HANDLE))
         self.use_win10_virtual_terminal_input = use_win10_virtual_terminal_input
 
@@ -794,7 +829,9 @@ class raw_mode:
         ENABLE_LINE_INPUT = 0x0002
         ENABLE_PROCESSED_INPUT = 0x0001
 
-        new_mode = self.original_mode.value & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT)
+        new_mode = self.original_mode.value & ~(
+            ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT
+        )
 
         if self.use_win10_virtual_terminal_input:
             new_mode |= ENABLE_VIRTUAL_TERMINAL_INPUT
@@ -822,7 +859,8 @@ class cooked_mode(raw_mode):
 
         windll.kernel32.SetConsoleMode(
             self.handle,
-            self.original_mode.value | (ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT),
+            self.original_mode.value
+            | (ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT),
         )
 
 
@@ -839,7 +877,9 @@ def _is_win_vt100_input_enabled() -> bool:
 
     try:
         # Try to enable VT100 sequences.
-        result: int = windll.kernel32.SetConsoleMode(hconsole, DWORD(ENABLE_VIRTUAL_TERMINAL_INPUT))
+        result: int = windll.kernel32.SetConsoleMode(
+            hconsole, DWORD(ENABLE_VIRTUAL_TERMINAL_INPUT)
+        )
 
         return result == 1
     finally:

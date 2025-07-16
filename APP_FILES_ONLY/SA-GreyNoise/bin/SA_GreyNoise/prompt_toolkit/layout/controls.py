@@ -208,7 +208,9 @@ class UIContent:
 
                 if get_line_prefix:
                     # Add prefix width.
-                    text_width += fragment_list_width(to_formatted_text(get_line_prefix(lineno, 0)))
+                    text_width += fragment_list_width(
+                        to_formatted_text(get_line_prefix(lineno, 0))
+                    )
 
                     # Slower path: compute path when there's a line prefix.
                     height = 1
@@ -219,7 +221,9 @@ class UIContent:
                         height += 1
                         text_width -= width
 
-                        fragments2 = to_formatted_text(get_line_prefix(lineno, height - 1))
+                        fragments2 = to_formatted_text(
+                            get_line_prefix(lineno, height - 1)
+                        )
                         prefix_width = get_cwidth(fragment_list_to_text(fragments2))
 
                         if prefix_width >= width:  # Prefix doesn't fit.
@@ -308,7 +312,9 @@ class FormattedTextControl(UIControl):
 
         #: Cache for the content.
         self._content_cache: SimpleCache[Hashable, UIContent] = SimpleCache(maxsize=18)
-        self._fragment_cache: SimpleCache[int, StyleAndTextTuples] = SimpleCache(maxsize=1)
+        self._fragment_cache: SimpleCache[int, StyleAndTextTuples] = SimpleCache(
+            maxsize=1
+        )
         # Only cache one fragment list. We don't need the previous item.
 
         # Render info for the mouse support.
@@ -329,7 +335,9 @@ class FormattedTextControl(UIControl):
         (This function is called several times during one rendering, because
         we also need those for calculating the dimensions.)
         """
-        return self._fragment_cache.get(get_app().render_counter, lambda: to_formatted_text(self.text, self.style))
+        return self._fragment_cache.get(
+            get_app().render_counter, lambda: to_formatted_text(self.text, self.style)
+        )
 
     def preferred_width(self, max_available_width: int) -> int:
         """
@@ -364,11 +372,14 @@ class FormattedTextControl(UIControl):
     def create_content(self, width: int, height: int | None) -> UIContent:
         # Get fragments
         fragments_with_mouse_handlers = self._get_formatted_text_cached()
-        fragment_lines_with_mouse_handlers = list(split_lines(fragments_with_mouse_handlers))
+        fragment_lines_with_mouse_handlers = list(
+            split_lines(fragments_with_mouse_handlers)
+        )
 
         # Strip mouse handlers from fragments.
         fragment_lines: list[StyleAndTextTuples] = [
-            [(item[0], item[1]) for item in line] for line in fragment_lines_with_mouse_handlers
+            [(item[0], item[1]) for item in line]
+            for line in fragment_lines_with_mouse_handlers
         ]
 
         # Keep track of the fragments with mouse handler, for later use in
@@ -507,7 +518,9 @@ class BufferControl(UIControl):
         lexer: Lexer | None = None,
         preview_search: FilterOrBool = False,
         focusable: FilterOrBool = True,
-        search_buffer_control: None | SearchBufferControl | Callable[[], SearchBufferControl] = None,
+        search_buffer_control: (
+            None | SearchBufferControl | Callable[[], SearchBufferControl]
+        ) = None,
         menu_position: Callable[[], int | None] | None = None,
         focus_on_click: FilterOrBool = False,
         key_bindings: KeyBindingsBase | None = None,
@@ -536,7 +549,9 @@ class BufferControl(UIControl):
         #: Often, due to cursor movement, undo/redo and window resizing
         #: operations, it happens that a short time, the same document has to be
         #: lexed. This is a fairly easy way to cache such an expensive operation.
-        self._fragment_cache: SimpleCache[Hashable, Callable[[int], StyleAndTextTuples]] = SimpleCache(maxsize=8)
+        self._fragment_cache: SimpleCache[
+            Hashable, Callable[[int], StyleAndTextTuples]
+        ] = SimpleCache(maxsize=8)
 
         self._last_click_timestamp: float | None = None
         self._last_get_processed_line: Callable[[int], _ProcessedLine] | None = None
@@ -623,7 +638,9 @@ class BufferControl(UIControl):
 
         return height
 
-    def _get_formatted_text_for_line_func(self, document: Document) -> Callable[[int], StyleAndTextTuples]:
+    def _get_formatted_text_for_line_func(
+        self, document: Document
+    ) -> Callable[[int], StyleAndTextTuples]:
         """
         Create a function that returns the fragments for a given line.
         """
@@ -699,7 +716,9 @@ class BufferControl(UIControl):
 
         return create_func()
 
-    def create_content(self, width: int, height: int, preview_search: bool = False) -> UIContent:
+    def create_content(
+        self, width: int, height: int, preview_search: bool = False
+    ) -> UIContent:
         """
         Create a UIContent.
         """
@@ -744,7 +763,9 @@ class BufferControl(UIControl):
         else:
             document = buffer.document
 
-        get_processed_line = self._create_get_processed_line_func(document, width, height)
+        get_processed_line = self._create_get_processed_line_func(
+            document, width, height
+        )
         self._last_get_processed_line = get_processed_line
 
         def translate_rowcol(row: int, col: int) -> Point:
@@ -766,7 +787,9 @@ class BufferControl(UIControl):
         content = UIContent(
             get_line=get_line,
             line_count=document.line_count,
-            cursor_position=translate_rowcol(document.cursor_position_row, document.cursor_position_col),
+            cursor_position=translate_rowcol(
+                document.cursor_position_row, document.cursor_position_col
+            ),
         )
 
         # If there is an auto completion going on, use that start point for a
@@ -776,7 +799,9 @@ class BufferControl(UIControl):
             menu_position = self.menu_position() if self.menu_position else None
             if menu_position is not None:
                 assert isinstance(menu_position, int)
-                menu_row, menu_col = buffer.document.translate_index_to_position(menu_position)
+                menu_row, menu_col = buffer.document.translate_index_to_position(
+                    menu_position
+                )
                 content.menu_position = translate_rowcol(menu_row, menu_col)
             elif buffer.complete_state:
                 # Position for completion menu.
@@ -818,9 +843,15 @@ class BufferControl(UIControl):
                     buffer.exit_selection()
                     buffer.cursor_position = index
 
-                elif mouse_event.event_type == MouseEventType.MOUSE_MOVE and mouse_event.button != MouseButton.NONE:
+                elif (
+                    mouse_event.event_type == MouseEventType.MOUSE_MOVE
+                    and mouse_event.button != MouseButton.NONE
+                ):
                     # Click and drag to highlight a selection
-                    if buffer.selection_state is None and abs(buffer.cursor_position - index) > 0:
+                    if (
+                        buffer.selection_state is None
+                        and abs(buffer.cursor_position - index) > 0
+                    ):
                         buffer.start_selection(selection_type=SelectionType.CHARACTERS)
                     buffer.cursor_position = index
 
@@ -832,12 +863,17 @@ class BufferControl(UIControl):
                     # will be repositioned automatically.)
                     if abs(buffer.cursor_position - index) > 1:
                         if buffer.selection_state is None:
-                            buffer.start_selection(selection_type=SelectionType.CHARACTERS)
+                            buffer.start_selection(
+                                selection_type=SelectionType.CHARACTERS
+                            )
                         buffer.cursor_position = index
 
                     # Select word around cursor on double click.
                     # Two MOUSE_UP events in a short timespan are considered a double click.
-                    double_click = self._last_click_timestamp and time.time() - self._last_click_timestamp < 0.3
+                    double_click = (
+                        self._last_click_timestamp
+                        and time.time() - self._last_click_timestamp < 0.3
+                    )
                     self._last_click_timestamp = time.time()
 
                     if double_click:
@@ -851,7 +887,10 @@ class BufferControl(UIControl):
 
         # Not focused, but focusing on click events.
         else:
-            if self.focus_on_click() and mouse_event.event_type == MouseEventType.MOUSE_UP:
+            if (
+                self.focus_on_click()
+                and mouse_event.event_type == MouseEventType.MOUSE_UP
+            ):
                 # Focus happens on mouseup. (If we did this on mousedown, the
                 # up event will be received at the point where this widget is
                 # focused and be handled anyway.)

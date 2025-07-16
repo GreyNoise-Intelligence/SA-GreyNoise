@@ -368,7 +368,11 @@ def emacs_mode() -> bool:
 @Condition
 def emacs_insert_mode() -> bool:
     app = get_app()
-    if app.editing_mode != EditingMode.EMACS or app.current_buffer.selection_state or app.current_buffer.read_only():
+    if (
+        app.editing_mode != EditingMode.EMACS
+        or app.current_buffer.selection_state
+        or app.current_buffer.read_only()
+    ):
         return False
     return True
 
@@ -376,13 +380,18 @@ def emacs_insert_mode() -> bool:
 @Condition
 def emacs_selection_mode() -> bool:
     app = get_app()
-    return bool(app.editing_mode == EditingMode.EMACS and app.current_buffer.selection_state)
+    return bool(
+        app.editing_mode == EditingMode.EMACS and app.current_buffer.selection_state
+    )
 
 
 @Condition
 def shift_selection_mode() -> bool:
     app = get_app()
-    return bool(app.current_buffer.selection_state and app.current_buffer.selection_state.shift_mode)
+    return bool(
+        app.current_buffer.selection_state
+        and app.current_buffer.selection_state.shift_mode
+    )
 
 
 @Condition
@@ -399,7 +408,9 @@ def control_is_searchable() -> bool:
 
     control = get_app().layout.current_control
 
-    return isinstance(control, BufferControl) and control.search_buffer_control is not None
+    return (
+        isinstance(control, BufferControl) and control.search_buffer_control is not None
+    )
 
 
 @Condition

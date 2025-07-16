@@ -38,7 +38,9 @@ class AppSession:
     :param output: Use this as a default output.
     """
 
-    def __init__(self, input: Input | None = None, output: Output | None = None) -> None:
+    def __init__(
+        self, input: Input | None = None, output: Output | None = None
+    ) -> None:
         self._input = input
         self._output = output
 
@@ -66,7 +68,9 @@ class AppSession:
         return self._output
 
 
-_current_app_session: ContextVar[AppSession] = ContextVar("_current_app_session", default=AppSession())
+_current_app_session: ContextVar[AppSession] = ContextVar(
+    "_current_app_session", default=AppSession()
+)
 
 
 def get_app_session() -> AppSession:
@@ -133,7 +137,9 @@ def set_app(app: Application[Any]) -> Generator[None, None, None]:
 
 
 @contextmanager
-def create_app_session(input: Input | None = None, output: Output | None = None) -> Generator[AppSession, None, None]:
+def create_app_session(
+    input: Input | None = None, output: Output | None = None
+) -> Generator[AppSession, None, None]:
     """
     Create a separate AppSession.
 

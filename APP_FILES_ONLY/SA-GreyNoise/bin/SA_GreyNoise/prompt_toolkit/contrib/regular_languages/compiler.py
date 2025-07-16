@@ -42,9 +42,8 @@ Partial matches are possible::
 from __future__ import annotations
 
 import re
-from typing import Callable, Dict, Iterable, Iterator
+from typing import Callable, Dict, Iterable, Iterator, Pattern, TypeVar, overload
 from typing import Match as RegexMatch
-from typing import Pattern, TypeVar, overload
 
 from .regex_parser import (
     AnyNode,
@@ -90,7 +89,9 @@ class _CompiledGrammar:
         self.unescape_funcs = unescape_funcs or {}
 
         #: Dictionary that will map the regex names to Node instances.
-        self._group_names_to_nodes: dict[str, str] = {}  # Maps regex group names to varnames.
+        self._group_names_to_nodes: dict[
+            str, str
+        ] = {}  # Maps regex group names to varnames.
         counter = [0]
 
         def create_group_func(node: Variable) -> str:
@@ -101,7 +102,9 @@ class _CompiledGrammar:
 
         # Compile regex strings.
         self._re_pattern = f"^{self._transform(root_node, create_group_func)}$"
-        self._re_prefix_patterns = list(self._transform_prefix(root_node, create_group_func))
+        self._re_prefix_patterns = list(
+            self._transform_prefix(root_node, create_group_func)
+        )
 
         # Compile the regex itself.
         flags = re.DOTALL  # Note that we don't need re.MULTILINE! (^ and $
@@ -135,7 +138,9 @@ class _CompiledGrammar:
         return f(value) if f else value
 
     @classmethod
-    def _transform(cls, root_node: Node, create_group_func: Callable[[Variable], str]) -> str:
+    def _transform(
+        cls, root_node: Node, create_group_func: Callable[[Variable], str]
+    ) -> str:
         """
         Turn a :class:`Node` object into a regular expression.
 
@@ -189,7 +194,9 @@ class _CompiledGrammar:
         return transform(root_node)
 
     @classmethod
-    def _transform_prefix(cls, root_node: Node, create_group_func: Callable[[Variable], str]) -> Iterable[str]:
+    def _transform_prefix(
+        cls, root_node: Node, create_group_func: Callable[[Variable], str]
+    ) -> Iterable[str]:
         """
         Yield all the regular expressions matching a prefix of the grammar
         defined by the `Node` instance.
@@ -248,7 +255,9 @@ class _CompiledGrammar:
 
                 # Merge options without variable together.
                 if children_without_variable:
-                    yield "|".join(r for c in children_without_variable for r in transform(c))
+                    yield "|".join(
+                        r for c in children_without_variable for r in transform(c)
+                    )
 
             # For a sequence, generate a pattern for each prefix that ends with
             # a variable + one pattern of the complete sequence.
@@ -354,7 +363,9 @@ class _CompiledGrammar:
         m = self._re.match(string)
 
         if m:
-            return Match(string, [(self._re, m)], self._group_names_to_nodes, self.unescape_funcs)
+            return Match(
+                string, [(self._re, m)], self._group_names_to_nodes, self.unescape_funcs
+            )
         return None
 
     def match_prefix(self, string: str) -> Match | None:
@@ -373,7 +384,9 @@ class _CompiledGrammar:
             matches2 = [(r, m) for r, m in matches if m]
 
             if matches2 != []:
-                return Match(string, matches2, self._group_names_to_nodes, self.unescape_funcs)
+                return Match(
+                    string, matches2, self._group_names_to_nodes, self.unescape_funcs
+                )
 
         return None
 
@@ -424,7 +437,11 @@ class Match:
         def get(sl: tuple[int, int]) -> str:
             return self.string[sl[0] : sl[1]]
 
-        return [(varname, get(slice), slice) for varname, slice in self._nodes_to_regs() if not is_none(slice)]
+        return [
+            (varname, get(slice), slice)
+            for varname, slice in self._nodes_to_regs()
+            if not is_none(slice)
+        ]
 
     def _unescape(self, varname: str, value: str) -> str:
         unwrapper = self._unescape_funcs.get(varname)
@@ -434,7 +451,9 @@ class Match:
         """
         Returns :class:`Variables` instance.
         """
-        return Variables([(k, self._unescape(k, v), sl) for k, v, sl in self._nodes_to_values()])
+        return Variables(
+            [(k, self._unescape(k, v), sl) for k, v, sl in self._nodes_to_values()]
+        )
 
     def trailing_input(self) -> MatchVariable | None:
         """
@@ -555,4 +574,6 @@ def _compile_from_parse_tree(
     Compile grammar (given as parse tree), returning a `CompiledGrammar`
     instance.
     """
-    return _CompiledGrammar(root_node, escape_funcs=escape_funcs, unescape_funcs=unescape_funcs)
+    return _CompiledGrammar(
+        root_node, escape_funcs=escape_funcs, unescape_funcs=unescape_funcs
+    )

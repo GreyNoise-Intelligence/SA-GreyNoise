@@ -1,8 +1,7 @@
 from __future__ import with_statement
 
-import sys
-
 import click
+import sys
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 
@@ -10,6 +9,7 @@ from ._completer import ClickCompleter
 from .exceptions import ClickExit  # type: ignore[attr-defined]
 from .exceptions import CommandLineParserError, ExitReplException, InvalidGroupFormat
 from .utils import _execute_internal_and_sys_cmds
+
 
 __all__ = ["bootstrap_prompt", "register_repl", "repl"]
 
@@ -36,7 +36,9 @@ def bootstrap_prompt(
     return defaults
 
 
-def repl(old_ctx, prompt_kwargs={}, allow_system_commands=True, allow_internal_commands=True):
+def repl(
+    old_ctx, prompt_kwargs={}, allow_system_commands=True, allow_internal_commands=True
+):
     """
     Start an interactive shell. All subcommands are available in it.
 
@@ -61,7 +63,11 @@ def repl(old_ctx, prompt_kwargs={}, allow_system_commands=True, allow_internal_c
     # executing the command
     # So, if there's an empty Optional Argument
     for param in group.params:
-        if isinstance(param, click.Argument) and group_ctx.params[param.name] is None and not param.required:
+        if (
+            isinstance(param, click.Argument)
+            and group_ctx.params[param.name] is None
+            and not param.required
+        ):
             raise InvalidGroupFormat(
                 f"{type(group).__name__} '{group.name}' requires value for "
                 f"an optional argument '{param.name}' in REPL mode"
@@ -75,7 +81,9 @@ def repl(old_ctx, prompt_kwargs={}, allow_system_commands=True, allow_internal_c
     repl_command_name = old_ctx.command.name
     if isinstance(group_ctx.command, click.CommandCollection):
         available_commands = {
-            cmd_name: cmd_obj for source in group_ctx.command.sources for cmd_name, cmd_obj in source.commands.items()
+            cmd_name: cmd_obj
+            for source in group_ctx.command.sources
+            for cmd_name, cmd_obj in source.commands.items()
         }
     else:
         available_commands = group_ctx.command.commands
@@ -107,7 +115,9 @@ def repl(old_ctx, prompt_kwargs={}, allow_system_commands=True, allow_internal_c
                 break
 
         try:
-            args = _execute_internal_and_sys_cmds(command, allow_internal_commands, allow_system_commands)
+            args = _execute_internal_and_sys_cmds(
+                command, allow_internal_commands, allow_system_commands
+            )
             if args is None:
                 continue
 

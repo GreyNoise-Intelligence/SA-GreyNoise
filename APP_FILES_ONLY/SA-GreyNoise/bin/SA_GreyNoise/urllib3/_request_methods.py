@@ -61,7 +61,10 @@ class RequestMethods:
         multipart_boundary: str | None = None,
         **kw: typing.Any,
     ) -> BaseHTTPResponse:  # Abstract
-        raise NotImplementedError("Classes extending RequestMethods must implement " "their own ``urlopen`` method.")
+        raise NotImplementedError(
+            "Classes extending RequestMethods must implement "
+            "their own ``urlopen`` method."
+        )
 
     def request(
         self,
@@ -109,7 +112,9 @@ class RequestMethods:
         method = method.upper()
 
         if json is not None and body is not None:
-            raise TypeError("request got values for both 'body' and 'json' parameters which are mutually exclusive")
+            raise TypeError(
+                "request got values for both 'body' and 'json' parameters which are mutually exclusive"
+            )
 
         if json is not None:
             if headers is None:
@@ -119,7 +124,9 @@ class RequestMethods:
                 headers = HTTPHeaderDict(headers)
                 headers["Content-Type"] = "application/json"
 
-            body = _json.dumps(json, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+            body = _json.dumps(json, separators=(",", ":"), ensure_ascii=False).encode(
+                "utf-8"
+            )
 
         if body is not None:
             urlopen_kw["body"] = body
@@ -133,7 +140,9 @@ class RequestMethods:
                 **urlopen_kw,
             )
         else:
-            return self.request_encode_body(method, url, fields=fields, headers=headers, **urlopen_kw)
+            return self.request_encode_body(
+                method, url, fields=fields, headers=headers, **urlopen_kw
+            )
 
     def request_encode_url(
         self,
@@ -247,10 +256,14 @@ class RequestMethods:
 
         if fields:
             if "body" in urlopen_kw:
-                raise TypeError("request got values for both 'fields' and 'body', can only specify one.")
+                raise TypeError(
+                    "request got values for both 'fields' and 'body', can only specify one."
+                )
 
             if encode_multipart:
-                body, content_type = encode_multipart_formdata(fields, boundary=multipart_boundary)
+                body, content_type = encode_multipart_formdata(
+                    fields, boundary=multipart_boundary
+                )
             else:
                 body, content_type = (
                     urlencode(fields),  # type: ignore[arg-type]

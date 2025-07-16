@@ -60,9 +60,7 @@ class SearchState:
         self.ignore_case = to_filter(ignore_case)
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}({self.text!r}, direction={self.direction!r}, ignore_case={self.ignore_case!r})"
-        )
+        return f"{self.__class__.__name__}({self.text!r}, direction={self.direction!r}, ignore_case={self.ignore_case!r})"
 
     def __invert__(self) -> SearchState:
         """
@@ -74,7 +72,9 @@ class SearchState:
         else:
             direction = SearchDirection.BACKWARD
 
-        return SearchState(text=self.text, direction=direction, ignore_case=self.ignore_case)
+        return SearchState(
+            text=self.text, direction=direction, ignore_case=self.ignore_case
+        )
 
 
 def start_search(
@@ -175,7 +175,9 @@ def do_incremental_search(direction: SearchDirection, count: int = 1) -> None:
 
     # Apply search to current buffer.
     if not direction_changed:
-        prev_control.buffer.apply_search(search_state, include_current_position=False, count=count)
+        prev_control.buffer.apply_search(
+            search_state, include_current_position=False, count=count
+        )
 
 
 def accept_search() -> None:
@@ -201,7 +203,9 @@ def accept_search() -> None:
         search_state.text = search_control.buffer.text
 
     # Apply search.
-    target_buffer_control.buffer.apply_search(search_state, include_current_position=True)
+    target_buffer_control.buffer.apply_search(
+        search_state, include_current_position=True
+    )
 
     # Add query to history of search line.
     search_control.buffer.append_to_history()
@@ -217,5 +221,6 @@ def _get_reverse_search_links(
     Return mapping from BufferControl to SearchBufferControl.
     """
     return {
-        buffer_control: search_buffer_control for search_buffer_control, buffer_control in layout.search_links.items()
+        buffer_control: search_buffer_control
+        for search_buffer_control, buffer_control in layout.search_links.items()
     }

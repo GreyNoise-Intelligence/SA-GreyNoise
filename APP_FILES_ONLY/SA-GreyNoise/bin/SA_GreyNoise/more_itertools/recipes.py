@@ -9,9 +9,10 @@ Some backward-compatible usability improvements have been made.
 """
 
 import random
+
 from collections import deque
-from collections.abc import Sized
 from contextlib import suppress
+from collections.abc import Sized
 from functools import lru_cache, partial
 from itertools import (
     accumulate,
@@ -28,61 +29,61 @@ from itertools import (
     tee,
     zip_longest,
 )
-from math import comb, gcd, isqrt, prod
-from operator import getitem, itemgetter, mul, not_
-from random import choice, randrange, sample
+from math import prod, comb, isqrt, gcd
+from operator import mul, not_, itemgetter, getitem
+from random import randrange, sample, choice
 from sys import hexversion
 
 __all__ = [
-    "all_equal",
-    "batched",
-    "before_and_after",
-    "consume",
-    "convolve",
-    "dotproduct",
-    "first_true",
-    "factor",
-    "flatten",
-    "grouper",
-    "is_prime",
-    "iter_except",
-    "iter_index",
-    "loops",
-    "matmul",
-    "multinomial",
-    "ncycles",
-    "nth",
-    "nth_combination",
-    "padnone",
-    "pad_none",
-    "pairwise",
-    "partition",
-    "polynomial_eval",
-    "polynomial_from_roots",
-    "polynomial_derivative",
-    "powerset",
-    "prepend",
-    "quantify",
-    "reshape",
-    "random_combination_with_replacement",
-    "random_combination",
-    "random_permutation",
-    "random_product",
-    "repeatfunc",
-    "roundrobin",
-    "sieve",
-    "sliding_window",
-    "subslices",
-    "sum_of_squares",
-    "tabulate",
-    "tail",
-    "take",
-    "totient",
-    "transpose",
-    "triplewise",
-    "unique",
-    "unique_everseen",
-    "unique_justseen",
+    'all_equal',
+    'batched',
+    'before_and_after',
+    'consume',
+    'convolve',
+    'dotproduct',
+    'first_true',
+    'factor',
+    'flatten',
+    'grouper',
+    'is_prime',
+    'iter_except',
+    'iter_index',
+    'loops',
+    'matmul',
+    'multinomial',
+    'ncycles',
+    'nth',
+    'nth_combination',
+    'padnone',
+    'pad_none',
+    'pairwise',
+    'partition',
+    'polynomial_eval',
+    'polynomial_from_roots',
+    'polynomial_derivative',
+    'powerset',
+    'prepend',
+    'quantify',
+    'reshape',
+    'random_combination_with_replacement',
+    'random_combination',
+    'random_permutation',
+    'random_product',
+    'repeatfunc',
+    'roundrobin',
+    'sieve',
+    'sliding_window',
+    'subslices',
+    'sum_of_squares',
+    'tabulate',
+    'tail',
+    'take',
+    'totient',
+    'transpose',
+    'triplewise',
+    'unique',
+    'unique_everseen',
+    'unique_justseen',
 ]
 
 _marker = object()
@@ -352,9 +353,11 @@ else:
 
 class UnequalIterablesError(ValueError):
     def __init__(self, details=None):
-        msg = "Iterables have different lengths"
+        msg = 'Iterables have different lengths'
         if details is not None:
-            msg += (": index 0 has length {}; index {} has length {}").format(*details)
+            msg += (': index 0 has length {}; index {} has length {}').format(
+                *details
+            )
 
         super().__init__(msg)
 
@@ -383,7 +386,7 @@ def _zip_equal(*iterables):
         return _zip_equal_generator(iterables)
 
 
-def grouper(iterable, n, incomplete="fill", fillvalue=None):
+def grouper(iterable, n, incomplete='fill', fillvalue=None):
     """Group elements from *iterable* into fixed-length groups of length *n*.
 
     >>> list(grouper('ABCDEF', 3))
@@ -413,14 +416,14 @@ def grouper(iterable, n, incomplete="fill", fillvalue=None):
 
     """
     iterators = [iter(iterable)] * n
-    if incomplete == "fill":
+    if incomplete == 'fill':
         return zip_longest(*iterators, fillvalue=fillvalue)
-    if incomplete == "strict":
+    if incomplete == 'strict':
         return _zip_equal(*iterators)
-    if incomplete == "ignore":
+    if incomplete == 'ignore':
         return zip(*iterators)
     else:
-        raise ValueError("Expected fill, strict, or ignore")
+        raise ValueError('Expected fill, strict, or ignore')
 
 
 def roundrobin(*iterables):
@@ -878,7 +881,7 @@ def sliding_window(iterable, n):
     elif n == 1:
         return zip(iterable)
     else:
-        raise ValueError(f"n should be at least one, not {n}")
+        raise ValueError(f'n should be at least one, not {n}')
 
 
 def subslices(iterable):
@@ -938,7 +941,7 @@ def iter_index(iterable, value, start=0, stop=None):
     associated with particular values.
 
     """
-    seq_index = getattr(iterable, "index", None)
+    seq_index = getattr(iterable, 'index', None)
     if seq_index is None:
         # Slow path for general iterables
         iterator = islice(iterable, start, stop)
@@ -987,11 +990,11 @@ def _batched(iterable, n, *, strict=False):
     On Python 3.13 and above, this is an alias for :func:`itertools.batched`.
     """
     if n < 1:
-        raise ValueError("n must be at least one")
+        raise ValueError('n must be at least one')
     iterator = iter(iterable)
     while batch := tuple(islice(iterator, n)):
         if strict and len(batch) != n:
-            raise ValueError("batched(): incomplete batch")
+            raise ValueError('batched(): incomplete batch')
         yield batch
 
 
@@ -1058,7 +1061,7 @@ def _factor_pollard(n):
             d = gcd(x - y, n)
         if d != n:
             return d
-    raise ValueError("prime or under 5")
+    raise ValueError('prime or under 5')
 
 
 _primes_below_211 = tuple(sieve(211))
@@ -1188,7 +1191,7 @@ _perfect_tests = [
 
 @lru_cache
 def _shift_to_odd(n):
-    "Return s, d such that 2**s * d == n"
+    'Return s, d such that 2**s * d == n'
     s = ((n - 1) ^ n).bit_length() - 1
     d = n >> s
     assert (1 << s) * d == n and d & 1 and s >= 0

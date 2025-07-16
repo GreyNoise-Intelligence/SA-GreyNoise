@@ -41,7 +41,9 @@ class _ExplodedList(List[_T]):
     @overload
     def __setitem__(self, index: slice, value: Iterable[_T]) -> None: ...
 
-    def __setitem__(self, index: SupportsIndex | slice, value: _T | Iterable[_T]) -> None:
+    def __setitem__(
+        self, index: SupportsIndex | slice, value: _T | Iterable[_T]
+    ) -> None:
         """
         Ensure that when `(style_str, 'long string')` is set, the string will be
         exploded.

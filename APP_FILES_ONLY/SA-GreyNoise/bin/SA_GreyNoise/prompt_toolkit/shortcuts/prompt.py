@@ -147,7 +147,9 @@ E = KeyPressEvent
 
 def _split_multiline_prompt(
     get_prompt_text: _StyleAndTextTuplesCallable,
-) -> tuple[Callable[[], bool], _StyleAndTextTuplesCallable, _StyleAndTextTuplesCallable]:
+) -> tuple[
+    Callable[[], bool], _StyleAndTextTuplesCallable, _StyleAndTextTuplesCallable
+]:
     """
     Take a `get_prompt_text` function and return three new functions instead.
     One that tells whether this prompt consists of multiple lines; one that
@@ -517,9 +519,9 @@ class PromptSession(Generic[_T]):
             enable_history_search=dyncond("enable_history_search"),
             validator=DynamicValidator(lambda: self.validator),
             completer=DynamicCompleter(
-                lambda: (
-                    ThreadedCompleter(self.completer) if self.complete_in_thread and self.completer else self.completer
-                )
+                lambda: ThreadedCompleter(self.completer)
+                if self.complete_in_thread and self.completer
+                else self.completer
             ),
             history=self.history,
             auto_suggest=DynamicAutoSuggest(lambda: self.auto_suggest),
@@ -556,7 +558,9 @@ class PromptSession(Generic[_T]):
         all_input_processors = [
             HighlightIncrementalSearchProcessor(),
             HighlightSelectionProcessor(),
-            ConditionalProcessor(AppendAutoSuggestion(), has_focus(default_buffer) & ~is_done),
+            ConditionalProcessor(
+                AppendAutoSuggestion(), has_focus(default_buffer) & ~is_done
+            ),
             ConditionalProcessor(PasswordProcessor(), dyncond("is_password")),
             DisplayMultipleCursors(),
             # Users can insert processors here.
@@ -570,15 +574,21 @@ class PromptSession(Generic[_T]):
         # Create bottom toolbars.
         bottom_toolbar = ConditionalContainer(
             Window(
-                FormattedTextControl(lambda: self.bottom_toolbar, style="class:bottom-toolbar.text"),
+                FormattedTextControl(
+                    lambda: self.bottom_toolbar, style="class:bottom-toolbar.text"
+                ),
                 style="class:bottom-toolbar",
                 dont_extend_height=True,
                 height=Dimension(min=1),
             ),
-            filter=Condition(lambda: self.bottom_toolbar is not None) & ~is_done & renderer_height_is_known,
+            filter=Condition(lambda: self.bottom_toolbar is not None)
+            & ~is_done
+            & renderer_height_is_known,
         )
 
-        search_toolbar = SearchToolbar(search_buffer, ignore_case=dyncond("search_ignore_case"))
+        search_toolbar = SearchToolbar(
+            search_buffer, ignore_case=dyncond("search_ignore_case")
+        )
 
         search_buffer_control = SearchBufferControl(
             buffer=search_buffer,
@@ -586,7 +596,9 @@ class PromptSession(Generic[_T]):
             ignore_case=dyncond("search_ignore_case"),
         )
 
-        system_toolbar = SystemToolbar(enable_global_bindings=dyncond("enable_system_prompt"))
+        system_toolbar = SystemToolbar(
+            enable_global_bindings=dyncond("enable_system_prompt")
+        )
 
         def get_search_buffer_control() -> SearchBufferControl:
             "Return the UIControl to be focused when searching start."
@@ -607,7 +619,9 @@ class PromptSession(Generic[_T]):
         default_buffer_window = Window(
             default_buffer_control,
             height=self._get_default_buffer_control_height,
-            get_line_prefix=partial(self._get_line_prefix, get_prompt_text_2=get_prompt_text_2),
+            get_line_prefix=partial(
+                self._get_line_prefix, get_prompt_text_2=get_prompt_text_2
+            ),
             wrap_lines=dyncond("wrap_lines"),
         )
 
@@ -631,11 +645,17 @@ class PromptSession(Generic[_T]):
                             ),
                             ConditionalContainer(
                                 default_buffer_window,
-                                Condition(lambda: get_app().layout.current_control != search_buffer_control),
+                                Condition(
+                                    lambda: get_app().layout.current_control
+                                    != search_buffer_control
+                                ),
                             ),
                             ConditionalContainer(
                                 Window(search_buffer_control),
-                                Condition(lambda: get_app().layout.current_control == search_buffer_control),
+                                Condition(
+                                    lambda: get_app().layout.current_control
+                                    == search_buffer_control
+                                ),
                             ),
                         ]
                     ),
@@ -651,7 +671,8 @@ class PromptSession(Generic[_T]):
                             content=CompletionsMenu(
                                 max_height=16,
                                 scroll_offset=1,
-                                extra_filter=has_focus(default_buffer) & ~multi_column_complete_style,
+                                extra_filter=has_focus(default_buffer)
+                                & ~multi_column_complete_style,
                             ),
                         ),
                         Float(
@@ -660,7 +681,8 @@ class PromptSession(Generic[_T]):
                             transparent=True,
                             content=MultiColumnCompletionsMenu(
                                 show_meta=True,
-                                extra_filter=has_focus(default_buffer) & multi_column_complete_style,
+                                extra_filter=has_focus(default_buffer)
+                                & multi_column_complete_style,
                             ),
                         ),
                         # The right prompt.
@@ -673,7 +695,9 @@ class PromptSession(Generic[_T]):
                     ],
                 ),
                 ConditionalContainer(ValidationToolbar(), filter=~is_done),
-                ConditionalContainer(system_toolbar, dyncond("enable_system_prompt") & ~is_done),
+                ConditionalContainer(
+                    system_toolbar, dyncond("enable_system_prompt") & ~is_done
+                ),
                 # In multiline mode, we use two toolbars for 'arg' and 'search'.
                 ConditionalContainer(
                     Window(FormattedTextControl(self._get_arg_text), height=1),
@@ -686,7 +710,9 @@ class PromptSession(Generic[_T]):
 
         return Layout(layout, default_buffer_window)
 
-    def _create_application(self, editing_mode: EditingMode, erase_when_done: bool) -> Application[_T]:
+    def _create_application(
+        self, editing_mode: EditingMode, erase_when_done: bool
+    ) -> Application[_T]:
         """
         Create the `Application` object.
         """
@@ -719,7 +745,8 @@ class PromptSession(Generic[_T]):
                             auto_suggest_bindings,
                             ConditionalKeyBindings(
                                 open_in_editor_bindings,
-                                dyncond("enable_open_in_editor") & has_focus(DEFAULT_BUFFER),
+                                dyncond("enable_open_in_editor")
+                                & has_focus(DEFAULT_BUFFER),
                             ),
                             prompt_bindings,
                         ]
@@ -770,7 +797,9 @@ class PromptSession(Generic[_T]):
 
         @Condition
         def do_accept() -> bool:
-            return not is_true(self.multiline) and self.app.layout.has_focus(DEFAULT_BUFFER)
+            return not is_true(self.multiline) and self.app.layout.has_focus(
+                DEFAULT_BUFFER
+            )
 
         @handle("enter", filter=do_accept & default_focused)
         def _accept_input(event: E) -> None:
@@ -797,7 +826,10 @@ class PromptSession(Generic[_T]):
             """Ctrl-D binding is only active when the default buffer is selected
             and empty."""
             app = get_app()
-            return app.current_buffer.name == DEFAULT_BUFFER and not app.current_buffer.text
+            return (
+                app.current_buffer.name == DEFAULT_BUFFER
+                and not app.current_buffer.text
+            )
 
         @handle("c-d", filter=ctrl_d_condition & default_focused)
         def _eof(event: E) -> None:
@@ -989,7 +1021,9 @@ class PromptSession(Generic[_T]):
             self.tempfile = tempfile
 
         self._add_pre_run_callables(pre_run, accept_default)
-        self.default_buffer.reset(default if isinstance(default, Document) else Document(default))
+        self.default_buffer.reset(
+            default if isinstance(default, Document) else Document(default)
+        )
         self.app.refresh_interval = self.refresh_interval  # This is not reactive.
 
         # If we are using the default output, and have a dumb terminal. Use the
@@ -1181,7 +1215,9 @@ class PromptSession(Generic[_T]):
             self.tempfile = tempfile
 
         self._add_pre_run_callables(pre_run, accept_default)
-        self.default_buffer.reset(default if isinstance(default, Document) else Document(default))
+        self.default_buffer.reset(
+            default if isinstance(default, Document) else Document(default)
+        )
         self.app.refresh_interval = self.refresh_interval  # This is not reactive.
 
         # If we are using the default output, and have a dumb terminal. Use the
@@ -1190,9 +1226,13 @@ class PromptSession(Generic[_T]):
             with self._dumb_prompt(self.message) as dump_app:
                 return await dump_app.run_async(handle_sigint=handle_sigint)
 
-        return await self.app.run_async(set_exception_handler=set_exception_handler, handle_sigint=handle_sigint)
+        return await self.app.run_async(
+            set_exception_handler=set_exception_handler, handle_sigint=handle_sigint
+        )
 
-    def _add_pre_run_callables(self, pre_run: Callable[[], None] | None, accept_default: bool) -> None:
+    def _add_pre_run_callables(
+        self, pre_run: Callable[[], None] | None, accept_default: bool
+    ) -> None:
         def pre_run2() -> None:
             if pre_run:
                 pre_run()
@@ -1217,7 +1257,10 @@ class PromptSession(Generic[_T]):
     def _get_default_buffer_control_height(self) -> Dimension:
         # If there is an autocompletion menu to be shown, make sure that our
         # layout has at least a minimal height in order to display it.
-        if self.completer is not None and self.complete_style != CompleteStyle.READLINE_LIKE:
+        if (
+            self.completer is not None
+            and self.complete_style != CompleteStyle.READLINE_LIKE
+        ):
             space = self.reserve_space_for_menu
         else:
             space = 0
@@ -1236,7 +1279,9 @@ class PromptSession(Generic[_T]):
     def _get_prompt(self) -> StyleAndTextTuples:
         return to_formatted_text(self.message, style="class:prompt")
 
-    def _get_continuation(self, width: int, line_number: int, wrap_count: int) -> StyleAndTextTuples:
+    def _get_continuation(
+        self, width: int, line_number: int, wrap_count: int
+    ) -> StyleAndTextTuples:
         """
         Insert the prompt continuation.
 
@@ -1248,7 +1293,9 @@ class PromptSession(Generic[_T]):
         prompt_continuation = self.prompt_continuation
 
         if callable(prompt_continuation):
-            continuation: AnyFormattedText = prompt_continuation(width, line_number, wrap_count)
+            continuation: AnyFormattedText = prompt_continuation(
+                width, line_number, wrap_count
+            )
         else:
             continuation = prompt_continuation
 
@@ -1426,7 +1473,9 @@ def prompt(
 prompt.__doc__ = PromptSession.prompt.__doc__
 
 
-def create_confirm_session(message: str, suffix: str = " (y/n) ") -> PromptSession[bool]:
+def create_confirm_session(
+    message: str, suffix: str = " (y/n) "
+) -> PromptSession[bool]:
     """
     Create a `PromptSession` object for the 'confirm' function.
     """
@@ -1450,7 +1499,9 @@ def create_confirm_session(message: str, suffix: str = " (y/n) ") -> PromptSessi
         pass
 
     complete_message = merge_formatted_text([message, suffix])
-    session: PromptSession[bool] = PromptSession(complete_message, key_bindings=bindings)
+    session: PromptSession[bool] = PromptSession(
+        complete_message, key_bindings=bindings
+    )
     return session
 
 

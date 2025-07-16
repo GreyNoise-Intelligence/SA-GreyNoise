@@ -32,7 +32,11 @@ def connection_requires_http_tunnel(
         return False
 
     # Support for forwarding with HTTPS proxies and HTTPS destinations.
-    if proxy_url.scheme == "https" and proxy_config and proxy_config.use_forwarding_for_https:
+    if (
+        proxy_url.scheme == "https"
+        and proxy_config
+        and proxy_config.use_forwarding_for_https
+    ):
         return False
 
     # Otherwise always use a tunnel.

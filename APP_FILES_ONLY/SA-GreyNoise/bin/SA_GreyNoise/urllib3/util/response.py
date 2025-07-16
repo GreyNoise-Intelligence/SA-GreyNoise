@@ -79,7 +79,9 @@ def assert_header_parsing(headers: httplib.HTTPMessage) -> None:
     defects = [
         defect
         for defect in headers.defects
-        if not isinstance(defect, (StartBoundaryNotFoundDefect, MultipartInvariantViolationDefect))
+        if not isinstance(
+            defect, (StartBoundaryNotFoundDefect, MultipartInvariantViolationDefect)
+        )
     ]
 
     if defects or unparsed_data:

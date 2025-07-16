@@ -27,14 +27,20 @@ if t.TYPE_CHECKING:
     class _MemcachedClient(te.Protocol):
         def get(self, key: str) -> bytes: ...
 
-        def set(self, key: str, value: bytes, timeout: t.Optional[int] = None) -> None: ...
+        def set(
+            self, key: str, value: bytes, timeout: t.Optional[int] = None
+        ) -> None: ...
 
 
 bc_version = 5
 # Magic bytes to identify Jinja bytecode cache files. Contains the
 # Python major and minor version to avoid loading incompatible bytecode
 # if a project upgrades its Python version.
-bc_magic = b"j2" + pickle.dumps(bc_version, 2) + pickle.dumps((sys.version_info[0] << 24) | sys.version_info[1], 2)
+bc_magic = (
+    b"j2"
+    + pickle.dumps(bc_version, 2)
+    + pickle.dumps((sys.version_info[0] << 24) | sys.version_info[1], 2)
+)
 
 
 class Bucket:
@@ -143,7 +149,9 @@ class BytecodeCache:
         by a particular environment.
         """
 
-    def get_cache_key(self, name: str, filename: t.Optional[t.Union[str]] = None) -> str:
+    def get_cache_key(
+        self, name: str, filename: t.Optional[t.Union[str]] = None
+    ) -> str:
         """Returns the unique hash key for this template name."""
         hash = sha1(name.encode("utf-8"))
 
@@ -195,7 +203,9 @@ class FileSystemBytecodeCache(BytecodeCache):
     This bytecode cache supports clearing of the cache using the clear method.
     """
 
-    def __init__(self, directory: t.Optional[str] = None, pattern: str = "__jinja2_%s.cache") -> None:
+    def __init__(
+        self, directory: t.Optional[str] = None, pattern: str = "__jinja2_%s.cache"
+    ) -> None:
         if directory is None:
             directory = self._get_default_cache_dir()
         self.directory = directory
@@ -203,7 +213,10 @@ class FileSystemBytecodeCache(BytecodeCache):
 
     def _get_default_cache_dir(self) -> str:
         def _unsafe_dir() -> "te.NoReturn":
-            raise RuntimeError("Cannot determine safe temp directory.  You " "need to explicitly provide one.")
+            raise RuntimeError(
+                "Cannot determine safe temp directory.  You "
+                "need to explicitly provide one."
+            )
 
         tmpdir = tempfile.gettempdir()
 

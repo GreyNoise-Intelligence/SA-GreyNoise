@@ -364,11 +364,15 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         """Is the error actually a timeout? Will raise a ReadTimeout or pass"""
 
         if isinstance(err, SocketTimeout):
-            raise ReadTimeoutError(self, url, f"Read timed out. (read timeout={timeout_value})") from err
+            raise ReadTimeoutError(
+                self, url, f"Read timed out. (read timeout={timeout_value})"
+            ) from err
 
         # See the above comment about EAGAIN in Python 3.
         if hasattr(err, "errno") and err.errno in _blocking_errnos:
-            raise ReadTimeoutError(self, url, f"Read timed out. (read timeout={timeout_value})") from err
+            raise ReadTimeoutError(
+                self, url, f"Read timed out. (read timeout={timeout_value})"
+            ) from err
 
     def _make_request(
         self,
@@ -477,9 +481,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
                 new_e = SSLError(e)
             # If the connection didn't successfully connect to it's proxy
             # then there
-            if isinstance(new_e, (OSError, NewConnectionError, TimeoutError, SSLError)) and (
-                conn and conn.proxy and not conn.has_connected_to_proxy
-            ):
+            if isinstance(
+                new_e, (OSError, NewConnectionError, TimeoutError, SSLError)
+            ) and (conn and conn.proxy and not conn.has_connected_to_proxy):
                 new_e = _wrap_proxy_error(new_e, conn.proxy.scheme)
             raise new_e
 
@@ -520,7 +524,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             # the exception and assuming all BadStatusLine exceptions are read
             # timeouts, check for a zero timeout before making the request.
             if read_timeout == 0:
-                raise ReadTimeoutError(self, url, f"Read timed out. (read timeout={read_timeout})")
+                raise ReadTimeoutError(
+                    self, url, f"Read timed out. (read timeout={read_timeout})"
+                )
             conn.timeout = read_timeout
 
         # Receive the response from the server
@@ -731,7 +737,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         # [1] <https://github.com/urllib3/urllib3/issues/651>
         release_this_conn = release_conn
 
-        http_tunnel_required = connection_requires_http_tunnel(self.proxy, self.proxy_config, destination_scheme)
+        http_tunnel_required = connection_requires_http_tunnel(
+            self.proxy, self.proxy_config, destination_scheme
+        )
 
         # Merge the proxy headers. Only done when not using HTTP CONNECT. We
         # have to copy the headers dict so we can safely change it without those
@@ -764,7 +772,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
                 try:
                     self._prepare_proxy(conn)
                 except (BaseSSLError, OSError, SocketTimeout) as e:
-                    self._raise_timeout(err=e, url=self.proxy.url, timeout_value=conn.timeout)
+                    self._raise_timeout(
+                        err=e, url=self.proxy.url, timeout_value=conn.timeout
+                    )
                     raise
 
             # If we're going to release the connection in ``finally:``, then
@@ -828,7 +838,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             elif isinstance(new_e, (OSError, HTTPException)):
                 new_e = ProtocolError("Connection aborted.", new_e)
 
-            retries = retries.increment(method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2])
+            retries = retries.increment(
+                method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+            )
             retries.sleep()
 
             # Keep track of the error for the retry warning.
@@ -853,7 +865,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
 
         if not conn:
             # Try again
-            log.warning("Retrying (%r) after connection broken by '%r': %s", retries, err, url)
+            log.warning(
+                "Retrying (%r) after connection broken by '%r': %s", retries, err, url
+            )
             return self.urlopen(
                 method,
                 url,
@@ -1040,7 +1054,9 @@ class HTTPSConnectionPool(HTTPConnectionPool):
         )
 
         if not self.ConnectionCls or self.ConnectionCls is DummyConnection:  # type: ignore[comparison-overlap]
-            raise ImportError("Can't connect to HTTPS URL because the SSL module is not available.")
+            raise ImportError(
+                "Can't connect to HTTPS URL because the SSL module is not available."
+            )
 
         actual_host: str = self.host
         actual_port = self.port
@@ -1144,7 +1160,9 @@ def _normalize_host(host: str | None, scheme: str | None) -> str | None:
     return host
 
 
-def _url_from_pool(pool: HTTPConnectionPool | HTTPSConnectionPool, path: str | None = None) -> str:
+def _url_from_pool(
+    pool: HTTPConnectionPool | HTTPSConnectionPool, path: str | None = None
+) -> str:
     """Returns the URL from a given connection pool. This is mainly used for testing and logging."""
     return Url(scheme=pool.scheme, host=pool.host, port=pool.port, path=path).url
 

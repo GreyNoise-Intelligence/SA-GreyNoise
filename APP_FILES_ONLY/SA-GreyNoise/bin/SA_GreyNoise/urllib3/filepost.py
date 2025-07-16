@@ -10,7 +10,9 @@ from .fields import _TYPE_FIELD_VALUE_TUPLE, RequestField
 
 writer = codecs.lookup("utf-8")[3]
 
-_TYPE_FIELDS_SEQUENCE = typing.Sequence[typing.Union[tuple[str, _TYPE_FIELD_VALUE_TUPLE], RequestField]]
+_TYPE_FIELDS_SEQUENCE = typing.Sequence[
+    typing.Union[tuple[str, _TYPE_FIELD_VALUE_TUPLE], RequestField]
+]
 _TYPE_FIELDS = typing.Union[
     _TYPE_FIELDS_SEQUENCE,
     typing.Mapping[str, _TYPE_FIELD_VALUE_TUPLE],
@@ -46,7 +48,9 @@ def iter_field_objects(fields: _TYPE_FIELDS) -> typing.Iterable[RequestField]:
             yield RequestField.from_tuples(*field)
 
 
-def encode_multipart_formdata(fields: _TYPE_FIELDS, boundary: str | None = None) -> tuple[bytes, str]:
+def encode_multipart_formdata(
+    fields: _TYPE_FIELDS, boundary: str | None = None
+) -> tuple[bytes, str]:
     """
     Encode a dictionary of ``fields`` using the multipart/form-data MIME format.
 

@@ -108,9 +108,7 @@ def check_bidi(label: str, check_ltr: bool = False) -> bool:
                 "BN",
                 "NSM",
             ]:
-                raise IDNABidiError(
-                    "Invalid direction for codepoint at position {} in a right-to-left label".format(idx)
-                )
+                raise IDNABidiError("Invalid direction for codepoint at position {} in a right-to-left label".format(idx))
             # Bidi rule 3
             if direction in ["R", "AL", "EN", "AN"]:
                 valid_ending = True
@@ -126,9 +124,7 @@ def check_bidi(label: str, check_ltr: bool = False) -> bool:
         else:
             # Bidi rule 5
             if direction not in ["L", "EN", "ES", "CS", "ET", "ON", "BN", "NSM"]:
-                raise IDNABidiError(
-                    "Invalid direction for codepoint at position {} in a left-to-right label".format(idx)
-                )
+                raise IDNABidiError("Invalid direction for codepoint at position {} in a left-to-right label".format(idx))
             # Bidi rule 6
             if direction in ["L", "EN"]:
                 valid_ending = True
@@ -342,9 +338,7 @@ def uts46_remap(domain: str, std3_rules: bool = True, transitional: bool = False
     for pos, char in enumerate(domain):
         code_point = ord(char)
         try:
-            uts46row = uts46data[
-                code_point if code_point < 256 else bisect.bisect_left(uts46data, (code_point, "Z")) - 1
-            ]
+            uts46row = uts46data[code_point if code_point < 256 else bisect.bisect_left(uts46data, (code_point, "Z")) - 1]
             status = uts46row[1]
             replacement: Optional[str] = None
             if len(uts46row) == 3:

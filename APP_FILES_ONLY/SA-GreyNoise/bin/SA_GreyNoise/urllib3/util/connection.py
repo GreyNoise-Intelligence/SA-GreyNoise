@@ -90,7 +90,9 @@ def create_connection(
         raise OSError("getaddrinfo returns an empty list")
 
 
-def _set_socket_options(sock: socket.socket, options: _TYPE_SOCKET_OPTIONS | None) -> None:
+def _set_socket_options(
+    sock: socket.socket, options: _TYPE_SOCKET_OPTIONS | None
+) -> None:
     if options is None:
         return
 

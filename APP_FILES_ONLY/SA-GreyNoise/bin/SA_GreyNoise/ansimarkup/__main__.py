@@ -1,6 +1,6 @@
-from sys import argv, exit, stdin, stdout
-
+from sys import argv, stdin, stdout, exit
 from . import ansiprint, parse
+
 
 if len(argv) == 1 and stdin.isatty():
     from textwrap import dedent

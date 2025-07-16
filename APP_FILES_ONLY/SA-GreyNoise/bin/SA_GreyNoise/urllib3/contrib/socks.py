@@ -138,12 +138,18 @@ class SOCKSConnection(HTTPConnection):
                 else:
                     # Adding `from e` messes with coverage somehow, so it's omitted.
                     # See #2386.
-                    raise NewConnectionError(self, f"Failed to establish a new connection: {error}")
+                    raise NewConnectionError(
+                        self, f"Failed to establish a new connection: {error}"
+                    )
             else:
-                raise NewConnectionError(self, f"Failed to establish a new connection: {e}") from e
+                raise NewConnectionError(
+                    self, f"Failed to establish a new connection: {e}"
+                ) from e
 
         except OSError as e:  # Defensive: PySocks should catch all these.
-            raise NewConnectionError(self, f"Failed to establish a new connection: {e}") from e
+            raise NewConnectionError(
+                self, f"Failed to establish a new connection: {e}"
+            ) from e
 
         return conn
 

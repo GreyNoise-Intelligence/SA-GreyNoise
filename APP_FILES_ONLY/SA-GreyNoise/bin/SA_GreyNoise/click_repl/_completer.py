@@ -4,7 +4,7 @@ import os
 from glob import iglob
 
 import click
-from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.completion import Completion, Completer
 
 from .utils import _resolve_context, split_arg_string
 
@@ -52,7 +52,9 @@ class ClickCompleter(Completer):
         if HAS_CLICK_V8:
             autocompletions = param.shell_complete(autocomplete_ctx, incomplete)
         else:
-            autocompletions = param.autocompletion(autocomplete_ctx, args, incomplete)  # type: ignore[attr-defined]
+            autocompletions = param.autocompletion(  # type: ignore[attr-defined]
+                autocomplete_ctx, args, incomplete
+            )
 
         for autocomplete in autocompletions:
             if isinstance(autocomplete, tuple):
@@ -64,11 +66,17 @@ class ClickCompleter(Completer):
                     )
                 )
 
-            elif HAS_CLICK_V8 and isinstance(autocomplete, click.shell_completion.CompletionItem):
-                param_choices.append(Completion(text_type(autocomplete.value), -len(incomplete)))
+            elif HAS_CLICK_V8 and isinstance(
+                autocomplete, click.shell_completion.CompletionItem
+            ):
+                param_choices.append(
+                    Completion(text_type(autocomplete.value), -len(incomplete))
+                )
 
             else:
-                param_choices.append(Completion(text_type(autocomplete), -len(incomplete)))
+                param_choices.append(
+                    Completion(text_type(autocomplete), -len(incomplete))
+                )
 
         return param_choices
 
@@ -134,7 +142,9 @@ class ClickCompleter(Completer):
 
     def _get_completion_for_Boolean_type(self, param, incomplete):
         return [
-            Completion(text_type(k), -len(incomplete), display_meta=text_type("/".join(v)))
+            Completion(
+                text_type(k), -len(incomplete), display_meta=text_type("/".join(v))
+            )
             for k, v in {
                 "true": ("1", "true", "t", "yes", "y", "on"),
                 "false": ("0", "false", "f", "no", "n", "off"),
@@ -149,7 +159,9 @@ class ClickCompleter(Completer):
 
         # shell_complete method for click.Choice is intorduced in click-v8
         if not HAS_CLICK_V8 and isinstance(param_type, click.Choice):
-            choices.extend(self._get_completion_from_choices_click_le_7(param, incomplete))
+            choices.extend(
+                self._get_completion_from_choices_click_le_7(param, incomplete)
+            )
 
         elif isinstance(param_type, click.types.BoolParamType):
             choices.extend(self._get_completion_for_Boolean_type(param, incomplete))
@@ -205,10 +217,16 @@ class ClickCompleter(Completer):
                         )
 
                 if param_called:
-                    choices = self._get_completion_from_params(autocomplete_ctx, args, param, incomplete)
+                    choices = self._get_completion_from_params(
+                        autocomplete_ctx, args, param, incomplete
+                    )
 
             elif isinstance(param, click.Argument):
-                choices.extend(self._get_completion_from_params(autocomplete_ctx, args, param, incomplete))
+                choices.extend(
+                    self._get_completion_from_params(
+                        autocomplete_ctx, args, param, incomplete
+                    )
+                )
 
         return choices
 
@@ -218,7 +236,9 @@ class ClickCompleter(Completer):
         args = split_arg_string(document.text_before_cursor, posix=False)
 
         choices = []
-        cursor_within_command = document.text_before_cursor.rstrip() == document.text_before_cursor
+        cursor_within_command = (
+            document.text_before_cursor.rstrip() == document.text_before_cursor
+        )
 
         if document.text_before_cursor.startswith(("!", ":")):
             return
@@ -241,7 +261,11 @@ class ClickCompleter(Completer):
             return
 
         try:
-            choices.extend(self._get_completion_for_cmd_args(self.ctx_command, incomplete, self.parsed_ctx, args))
+            choices.extend(
+                self._get_completion_for_cmd_args(
+                    self.ctx_command, incomplete, self.parsed_ctx, args
+                )
+            )
 
             if isinstance(self.ctx_command, click.MultiCommand):
                 incomplete_lower = incomplete.lower()

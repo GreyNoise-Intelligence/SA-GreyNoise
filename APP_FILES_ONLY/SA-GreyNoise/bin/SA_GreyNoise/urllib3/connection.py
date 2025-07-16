@@ -137,7 +137,9 @@ class HTTPConnection(_HTTPConnection):
         timeout: _TYPE_TIMEOUT = _DEFAULT_TIMEOUT,
         source_address: tuple[str, int] | None = None,
         blocksize: int = 16384,
-        socket_options: None | (connection._TYPE_SOCKET_OPTIONS) = default_socket_options,
+        socket_options: None | (
+            connection._TYPE_SOCKET_OPTIONS
+        ) = default_socket_options,
         proxy: Url | None = None,
         proxy_config: ProxyConfig | None = None,
     ) -> None:
@@ -208,7 +210,9 @@ class HTTPConnection(_HTTPConnection):
             ) from e
 
         except OSError as e:
-            raise NewConnectionError(self, f"Failed to establish a new connection: {e}") from e
+            raise NewConnectionError(
+                self, f"Failed to establish a new connection: {e}"
+            ) from e
 
         sys.audit("http.client.connect", self, self.host, self.port)
 
@@ -222,7 +226,9 @@ class HTTPConnection(_HTTPConnection):
         scheme: str = "http",
     ) -> None:
         if scheme not in ("http", "https"):
-            raise ValueError(f"Invalid proxy scheme for tunneling: {scheme!r}, must be either 'http' or 'https'")
+            raise ValueError(
+                f"Invalid proxy scheme for tunneling: {scheme!r}, must be either 'http' or 'https'"
+            )
         super().set_tunnel(host, port=port, headers=headers)
         self._tunnel_scheme = scheme
 
@@ -260,7 +266,9 @@ class HTTPConnection(_HTTPConnection):
 
                     if code != http.HTTPStatus.OK:
                         self.close()
-                        raise OSError(f"Tunnel connection failed: {code} {message.strip()}")
+                        raise OSError(
+                            f"Tunnel connection failed: {code} {message.strip()}"
+                        )
                     while True:
                         line = response.fp.readline(_MAXLINE + 1)
                         if len(line) > _MAXLINE:
@@ -306,7 +314,9 @@ class HTTPConnection(_HTTPConnection):
 
                     if code != http.HTTPStatus.OK:
                         self.close()
-                        raise OSError(f"Tunnel connection failed: {code} {message.strip()}")
+                        raise OSError(
+                            f"Tunnel connection failed: {code} {message.strip()}"
+                        )
 
                 finally:
                     response.close()
@@ -387,15 +397,21 @@ class HTTPConnection(_HTTPConnection):
                 f"Method cannot contain non-token characters {method!r} (found at least {match.group()!r})"
             )
 
-        return super().putrequest(method, url, skip_host=skip_host, skip_accept_encoding=skip_accept_encoding)
+        return super().putrequest(
+            method, url, skip_host=skip_host, skip_accept_encoding=skip_accept_encoding
+        )
 
     def putheader(self, header: str, *values: str) -> None:  # type: ignore[override]
         """"""
         if not any(isinstance(v, str) and v == SKIP_HEADER for v in values):
             super().putheader(header, *values)
         elif to_str(header.lower()) not in SKIPPABLE_HEADERS:
-            skippable_headers = "', '".join([str.title(header) for header in sorted(SKIPPABLE_HEADERS)])
-            raise ValueError(f"urllib3.util.SKIP_HEADER only supports '{skippable_headers}'")
+            skippable_headers = "', '".join(
+                [str.title(header) for header in sorted(SKIPPABLE_HEADERS)]
+            )
+            raise ValueError(
+                f"urllib3.util.SKIP_HEADER only supports '{skippable_headers}'"
+            )
 
     # `request` method's signature intentionally violates LSP.
     # urllib3's API is different from `http.client.HTTPConnection` and the subclassing is only incidental.
@@ -437,7 +453,9 @@ class HTTPConnection(_HTTPConnection):
         header_keys = frozenset(to_str(k.lower()) for k in headers)
         skip_accept_encoding = "accept-encoding" in header_keys
         skip_host = "host" in header_keys
-        self.putrequest(method, url, skip_accept_encoding=skip_accept_encoding, skip_host=skip_host)
+        self.putrequest(
+            method, url, skip_accept_encoding=skip_accept_encoding, skip_host=skip_host
+        )
 
         # Transform the body into an iterable of sendall()-able chunks
         # and detect if an explicit Content-Length is doable.
@@ -602,7 +620,9 @@ class HTTPSConnection(HTTPConnection):
         timeout: _TYPE_TIMEOUT = _DEFAULT_TIMEOUT,
         source_address: tuple[str, int] | None = None,
         blocksize: int = 16384,
-        socket_options: None | (connection._TYPE_SOCKET_OPTIONS) = HTTPConnection.default_socket_options,
+        socket_options: None | (
+            connection._TYPE_SOCKET_OPTIONS
+        ) = HTTPConnection.default_socket_options,
         proxy: Url | None = None,
         proxy_config: ProxyConfig | None = None,
         cert_reqs: int | str | None = None,
@@ -713,7 +733,9 @@ class HTTPSConnection(HTTPConnection):
         # probe to complete, or we get a value right away.
         target_supports_http2: bool | None
         if "h2" in ssl_.ALPN_PROTOCOLS:
-            target_supports_http2 = http2_probe.acquire_and_get(host=probe_http2_host, port=probe_http2_port)
+            target_supports_http2 = http2_probe.acquire_and_get(
+                host=probe_http2_host, port=probe_http2_port
+            )
         else:
             # If HTTP/2 isn't going to be offered it doesn't matter if
             # the target supports HTTP/2. Don't want to make a probe.
@@ -796,7 +818,9 @@ class HTTPSConnection(HTTPConnection):
                 )
 
             if target_supports_http2 is None:
-                http2_probe.set_and_release(host=probe_http2_host, port=probe_http2_port, supports_http2=None)
+                http2_probe.set_and_release(
+                    host=probe_http2_host, port=probe_http2_port, supports_http2=None
+                )
             raise
 
         # If this connection doesn't know if the origin supports HTTP/2
@@ -957,8 +981,14 @@ def _ssl_wrap_socket_and_match_hostname(
 
     try:
         if assert_fingerprint:
-            _assert_fingerprint(ssl_sock.getpeercert(binary_form=True), assert_fingerprint)
-        elif context.verify_mode != ssl.CERT_NONE and not context.check_hostname and assert_hostname is not False:
+            _assert_fingerprint(
+                ssl_sock.getpeercert(binary_form=True), assert_fingerprint
+            )
+        elif (
+            context.verify_mode != ssl.CERT_NONE
+            and not context.check_hostname
+            and assert_hostname is not False
+        ):
             cert: _TYPE_PEER_CERT_RET_DICT = ssl_sock.getpeercert()  # type: ignore[assignment]
 
             # Need to signal to our match_hostname whether to use 'commonName' or not.
@@ -967,7 +997,9 @@ def _ssl_wrap_socket_and_match_hostname(
             if default_ssl_context:
                 hostname_checks_common_name = False
             else:
-                hostname_checks_common_name = getattr(context, "hostname_checks_common_name", False) or False
+                hostname_checks_common_name = (
+                    getattr(context, "hostname_checks_common_name", False) or False
+                )
 
             _match_hostname(
                 cert,
@@ -977,7 +1009,8 @@ def _ssl_wrap_socket_and_match_hostname(
 
         return _WrappedAndVerifiedSocket(
             socket=ssl_sock,
-            is_verified=context.verify_mode == ssl.CERT_REQUIRED or bool(assert_fingerprint),
+            is_verified=context.verify_mode == ssl.CERT_REQUIRED
+            or bool(assert_fingerprint),
         )
     except BaseException:
         ssl_sock.close()
@@ -1050,7 +1083,9 @@ if not ssl:
 VerifiedHTTPSConnection = HTTPSConnection
 
 
-def _url_from_connection(conn: HTTPConnection | HTTPSConnection, path: str | None = None) -> str:
+def _url_from_connection(
+    conn: HTTPConnection | HTTPSConnection, path: str | None = None
+) -> str:
     """Returns the URL from a given connection. This is mainly used for testing and logging."""
 
     scheme = "https" if isinstance(conn, HTTPSConnection) else "http"

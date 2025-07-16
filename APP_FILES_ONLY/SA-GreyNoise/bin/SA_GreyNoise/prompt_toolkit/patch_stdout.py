@@ -195,7 +195,9 @@ class StdoutProxy:
 
         return app.loop
 
-    def _write_and_flush(self, loop: asyncio.AbstractEventLoop | None, text: str) -> None:
+    def _write_and_flush(
+        self, loop: asyncio.AbstractEventLoop | None, text: str
+    ) -> None:
         """
         Write the given text to stdout and flush.
         If an application is running, use `run_in_terminal`.

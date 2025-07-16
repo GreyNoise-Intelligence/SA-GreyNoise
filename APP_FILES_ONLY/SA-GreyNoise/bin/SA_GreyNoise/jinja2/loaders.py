@@ -18,7 +18,8 @@ from .exceptions import TemplateNotFound
 from .utils import internalcode
 
 if t.TYPE_CHECKING:
-    from .environment import Environment, Template
+    from .environment import Environment
+    from .environment import Template
 
 
 def split_template_path(template: str) -> t.List[str]:
@@ -27,7 +28,11 @@ def split_template_path(template: str) -> t.List[str]:
     """
     pieces = []
     for piece in template.split("/"):
-        if os.path.sep in piece or (os.path.altsep and os.path.altsep in piece) or piece == os.path.pardir:
+        if (
+            os.path.sep in piece
+            or (os.path.altsep and os.path.altsep in piece)
+            or piece == os.path.pardir
+        ):
             raise TemplateNotFound(template)
         elif piece and piece != ".":
             pieces.append(piece)
@@ -88,7 +93,9 @@ class BaseLoader:
         the template will be reloaded.
         """
         if not self.has_source_access:
-            raise RuntimeError(f"{type(self).__name__} cannot provide access to the source")
+            raise RuntimeError(
+                f"{type(self).__name__} cannot provide access to the source"
+            )
         raise TemplateNotFound(template)
 
     def list_templates(self) -> t.List[str]:
@@ -137,7 +144,9 @@ class BaseLoader:
             bucket.code = code
             bcc.set_bucket(bucket)
 
-        return environment.template_class.from_code(environment, code, globals, uptodate)
+        return environment.template_class.from_code(
+            environment, code, globals, uptodate
+        )
 
 
 class FileSystemLoader(BaseLoader):
@@ -169,7 +178,9 @@ class FileSystemLoader(BaseLoader):
 
     def __init__(
         self,
-        searchpath: t.Union[str, "os.PathLike[str]", t.Sequence[t.Union[str, "os.PathLike[str]"]]],
+        searchpath: t.Union[
+            str, "os.PathLike[str]", t.Sequence[t.Union[str, "os.PathLike[str]"]]
+        ],
         encoding: str = "utf-8",
         followlinks: bool = False,
     ) -> None:
@@ -180,7 +191,9 @@ class FileSystemLoader(BaseLoader):
         self.encoding = encoding
         self.followlinks = followlinks
 
-    def get_source(self, environment: "Environment", template: str) -> t.Tuple[str, str, t.Callable[[], bool]]:
+    def get_source(
+        self, environment: "Environment", template: str
+    ) -> t.Tuple[str, str, t.Callable[[], bool]]:
         pieces = split_template_path(template)
 
         for searchpath in self.searchpath:
@@ -219,7 +232,9 @@ class FileSystemLoader(BaseLoader):
             for dirpath, _, filenames in walk_dir:
                 for filename in filenames:
                     template = (
-                        os.path.join(dirpath, filename)[len(searchpath) :].strip(os.path.sep).replace(os.path.sep, "/")
+                        os.path.join(dirpath, filename)[len(searchpath) :]
+                        .strip(os.path.sep)
+                        .replace(os.path.sep, "/")
                     )
                     if template[:2] == "./":
                         template = template[2:]
@@ -234,16 +249,21 @@ if sys.version_info >= (3, 13):
         try:
             get_files = z._get_files
         except AttributeError as e:
-            raise TypeError("This zip import does not have the required" " metadata to list templates.") from e
+            raise TypeError(
+                "This zip import does not have the required"
+                " metadata to list templates."
+            ) from e
         return get_files()
-
 else:
 
     def _get_zipimporter_files(z: t.Any) -> t.Dict[str, object]:
         try:
             files = z._files
         except AttributeError as e:
-            raise TypeError("This zip import does not have the required" " metadata to list templates.") from e
+            raise TypeError(
+                "This zip import does not have the required"
+                " metadata to list templates."
+            ) from e
         return files  # type: ignore[no-any-return]
 
 
@@ -325,7 +345,8 @@ class PackageLoader(BaseLoader):
 
             if not roots:
                 raise ValueError(
-                    f"The {package_name!r} package was not installed in a" " way that PackageLoader understands."
+                    f"The {package_name!r} package was not installed in a"
+                    " way that PackageLoader understands."
                 )
 
             for root in roots:
@@ -336,7 +357,8 @@ class PackageLoader(BaseLoader):
                     break
             else:
                 raise ValueError(
-                    f"PackageLoader could not find a {package_path!r} directory" f" in the {package_name!r} package."
+                    f"PackageLoader could not find a {package_path!r} directory"
+                    f" in the {package_name!r} package."
                 )
 
         self._template_root = template_root
@@ -347,7 +369,9 @@ class PackageLoader(BaseLoader):
         # Use posixpath even on Windows to avoid "drive:" or UNC
         # segments breaking out of the search directory. Use normpath to
         # convert Windows altsep to sep.
-        p = os.path.normpath(posixpath.join(self._template_root, *split_template_path(template)))
+        p = os.path.normpath(
+            posixpath.join(self._template_root, *split_template_path(template))
+        )
         up_to_date: t.Optional[t.Callable[[], bool]]
 
         if self._archive is None:
@@ -386,12 +410,18 @@ class PackageLoader(BaseLoader):
 
             for dirpath, _, filenames in os.walk(self._template_root):
                 dirpath = dirpath[offset:].lstrip(os.path.sep)
-                results.extend(os.path.join(dirpath, name).replace(os.path.sep, "/") for name in filenames)
+                results.extend(
+                    os.path.join(dirpath, name).replace(os.path.sep, "/")
+                    for name in filenames
+                )
         else:
             files = _get_zipimporter_files(self._loader)
 
             # Package is a zip file.
-            prefix = self._template_root[len(self._archive) :].lstrip(os.path.sep) + os.path.sep
+            prefix = (
+                self._template_root[len(self._archive) :].lstrip(os.path.sep)
+                + os.path.sep
+            )
             offset = len(prefix)
 
             for name in files:
@@ -415,7 +445,9 @@ class DictLoader(BaseLoader):
     def __init__(self, mapping: t.Mapping[str, str]) -> None:
         self.mapping = mapping
 
-    def get_source(self, environment: "Environment", template: str) -> t.Tuple[str, None, t.Callable[[], bool]]:
+    def get_source(
+        self, environment: "Environment", template: str
+    ) -> t.Tuple[str, None, t.Callable[[], bool]]:
         if template in self.mapping:
             source = self.mapping[template]
             return source, None, lambda: source == self.mapping.get(template)
@@ -447,7 +479,11 @@ class FunctionLoader(BaseLoader):
         self,
         load_func: t.Callable[
             [str],
-            t.Optional[t.Union[str, t.Tuple[str, t.Optional[str], t.Optional[t.Callable[[], bool]]]]],
+            t.Optional[
+                t.Union[
+                    str, t.Tuple[str, t.Optional[str], t.Optional[t.Callable[[], bool]]]
+                ]
+            ],
         ],
     ) -> None:
         self.load_func = load_func
@@ -481,7 +517,9 @@ class PrefixLoader(BaseLoader):
     by loading ``'app2/index.html'`` the file from the second.
     """
 
-    def __init__(self, mapping: t.Mapping[str, BaseLoader], delimiter: str = "/") -> None:
+    def __init__(
+        self, mapping: t.Mapping[str, BaseLoader], delimiter: str = "/"
+    ) -> None:
         self.mapping = mapping
         self.delimiter = delimiter
 
@@ -593,7 +631,9 @@ class ModuleLoader(BaseLoader):
 
     def __init__(
         self,
-        path: t.Union[str, "os.PathLike[str]", t.Sequence[t.Union[str, "os.PathLike[str]"]]],
+        path: t.Union[
+            str, "os.PathLike[str]", t.Sequence[t.Union[str, "os.PathLike[str]"]]
+        ],
     ) -> None:
         package_name = f"_jinja2_module_templates_{id(self):x}"
 
@@ -606,7 +646,9 @@ class ModuleLoader(BaseLoader):
 
         mod.__path__ = [os.fspath(p) for p in path]
 
-        sys.modules[package_name] = weakref.proxy(mod, lambda x: sys.modules.pop(package_name, None))
+        sys.modules[package_name] = weakref.proxy(
+            mod, lambda x: sys.modules.pop(package_name, None)
+        )
 
         # the only strong reference, the sys.modules entry is weak
         # so that the garbage collector can remove it once the
@@ -646,4 +688,6 @@ class ModuleLoader(BaseLoader):
         if globals is None:
             globals = {}
 
-        return environment.template_class.from_module_dict(environment, mod.__dict__, globals)
+        return environment.template_class.from_module_dict(
+            environment, mod.__dict__, globals
+        )

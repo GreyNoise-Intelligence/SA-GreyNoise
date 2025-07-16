@@ -23,6 +23,7 @@ from urllib3.util import make_headers, parse_url
 
 from . import certs
 from .__version__ import __version__
+
 # to_native_string is unused here, but imported here for backwards compatibility
 from ._internal_utils import (  # noqa: F401
     _HEADER_VALIDATORS_BYTE,
@@ -65,7 +66,9 @@ DEFAULT_CA_BUNDLE_PATH = certs.where()
 DEFAULT_PORTS = {"http": 80, "https": 443}
 
 # Ensure that ', ' is used to preserve previous delimiter behavior.
-DEFAULT_ACCEPT_ENCODING = ", ".join(re.split(r",\s*", make_headers(accept_encoding=True)["accept-encoding"]))
+DEFAULT_ACCEPT_ENCODING = ", ".join(
+    re.split(r",\s*", make_headers(accept_encoding=True)["accept-encoding"])
+)
 
 
 if sys.platform == "win32":
@@ -491,7 +494,11 @@ def get_encodings_from_content(content):
     pragma_re = re.compile(r'<meta.*?content=["\']*;?charset=(.+?)["\'>]', flags=re.I)
     xml_re = re.compile(r'^<\?xml.*?encoding=["\']*(.+?)["\'>]')
 
-    return charset_re.findall(content) + pragma_re.findall(content) + xml_re.findall(content)
+    return (
+        charset_re.findall(content)
+        + pragma_re.findall(content)
+        + xml_re.findall(content)
+    )
 
 
 def _parse_content_type_header(header):
@@ -611,7 +618,9 @@ def get_unicode_from_response(r):
 
 
 # The unreserved URI characters (RFC 3986)
-UNRESERVED_SET = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" + "0123456789-._~")
+UNRESERVED_SET = frozenset(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" + "0123456789-._~"
+)
 
 
 def unquote_unreserved(uri):
@@ -1030,7 +1039,8 @@ def _validate_header_part(header, header_part, header_validator_index):
         validator = _HEADER_VALIDATORS_BYTE[header_validator_index]
     else:
         raise InvalidHeader(
-            f"Header part ({header_part!r}) from {header} " f"must be of type str or bytes, not {type(header_part)}"
+            f"Header part ({header_part!r}) from {header} "
+            f"must be of type str or bytes, not {type(header_part)}"
         )
 
     if not validator.match(header_part):
@@ -1063,10 +1073,14 @@ def rewind_body(prepared_request):
     so it can be read again on redirect.
     """
     body_seek = getattr(prepared_request.body, "seek", None)
-    if body_seek is not None and isinstance(prepared_request._body_position, integer_types):
+    if body_seek is not None and isinstance(
+        prepared_request._body_position, integer_types
+    ):
         try:
             body_seek(prepared_request._body_position)
         except OSError:
-            raise UnrewindableBodyError("An error occurred when rewinding request body for redirect.")
+            raise UnrewindableBodyError(
+                "An error occurred when rewinding request body for redirect."
+            )
     else:
         raise UnrewindableBodyError("Unable to rewind request body for redirect.")

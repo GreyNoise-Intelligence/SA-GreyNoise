@@ -38,7 +38,9 @@ if typing.TYPE_CHECKING:
 
         host: str
         port: int
-        timeout: None | (float)  # Instance doesn't store _DEFAULT_TIMEOUT, must be resolved.
+        timeout: None | (
+            float
+        )  # Instance doesn't store _DEFAULT_TIMEOUT, must be resolved.
         blocksize: int
         source_address: tuple[str, int] | None
         socket_options: _TYPE_SOCKET_OPTIONS | None

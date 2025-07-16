@@ -13,6 +13,9 @@ from urllib.parse import urlencode
 import cachetools
 import more_itertools
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 from greynoise.__version__ import __version__
 from greynoise.api.filter import Filter
 from greynoise.exceptions import RateLimitError, RequestFailure
@@ -24,8 +27,6 @@ from greynoise.util import (
     validate_timeline_field_value,
     validate_timeline_granularity,
 )
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 LOGGER = logging.getLogger(__name__)
 
@@ -66,7 +67,9 @@ class BaseAPIClient:
         )
 
         # Mount the adapter with retry strategy
-        adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=10, pool_maxsize=10)
+        adapter = HTTPAdapter(
+            max_retries=retry_strategy, pool_connections=10, pool_maxsize=10
+        )
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 
@@ -74,8 +77,12 @@ class BaseAPIClient:
 
     def _setup_cache(self) -> None:
         """Initialize cache with configured parameters."""
-        self.ip_quick_check_cache = initialize_cache(self.config.cache_max_size, self.config.cache_ttl)
-        self.ip_context_cache = initialize_cache(self.config.cache_max_size, self.config.cache_ttl)
+        self.ip_quick_check_cache = initialize_cache(
+            self.config.cache_max_size, self.config.cache_ttl
+        )
+        self.ip_context_cache = initialize_cache(
+            self.config.cache_max_size, self.config.cache_ttl
+        )
 
     def _request(
         self,
@@ -187,7 +194,9 @@ class BaseAPIClient:
         dict_results = defaultdict(list)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_chunk = {executor.submit(process_func, chunk): chunk for chunk in chunks}
+            future_to_chunk = {
+                executor.submit(process_func, chunk): chunk for chunk in chunks
+            }
 
             for future in as_completed(future_to_chunk):
                 try:
@@ -196,7 +205,9 @@ class BaseAPIClient:
                     if first_result_type is None:
                         first_result_type = type(chunk_results)
                         if first_result_type not in [list, dict]:
-                            raise TypeError("Unsupported result type: must be list or dict")
+                            raise TypeError(
+                                "Unsupported result type: must be list or dict"
+                            )
 
                     if isinstance(chunk_results, list):
                         list_results.extend(chunk_results)
@@ -257,7 +268,11 @@ class GreyNoise(BaseAPIClient):
 
     IP_MULTI_CHECK_CHUNK_SIZE = 10000
 
-    IPV4_REGEX = re.compile(r"(?:{octet}\.){{3}}{octet}".format(octet=r"(?:(?:25[0-5])|(?:2[0-4]\d)|(?:1?\d?\d))"))
+    IPV4_REGEX = re.compile(
+        r"(?:{octet}\.){{3}}{octet}".format(
+            octet=r"(?:(?:25[0-5])|(?:2[0-4]\d)|(?:1?\d?\d))"
+        )
+    )
 
     def __init__(self, config: APIConfig):
         super().__init__(config)
@@ -339,8 +354,12 @@ class GreyNoise(BaseAPIClient):
                     "noise_ip_count": response["details"].get("noise_ips", 0),
                     "not_noise_ip_count": response["details"].get("non_noise_ips", 0),
                     "riot_ip_count": response["details"].get("riot_ips", 0),
-                    "noise_ip_ratio": response["details"].get("percentage_of_noise_ips", 0),
-                    "riot_ip_ratio": response["details"].get("percentage_of_riot_ips", 0),
+                    "noise_ip_ratio": response["details"].get(
+                        "percentage_of_noise_ips", 0
+                    ),
+                    "riot_ip_ratio": response["details"].get(
+                        "percentage_of_riot_ips", 0
+                    ),
                 }
                 text_stats["stats"] = response.get("stats")
                 text_stats["query"] = unique_ip_list
@@ -366,7 +385,9 @@ class GreyNoise(BaseAPIClient):
 
         """
         gnfilter = Filter(self)
-        for filtered_chunk in gnfilter.filter(text, noise_only=noise_only, riot_only=riot_only):
+        for filtered_chunk in gnfilter.filter(
+            text, noise_only=noise_only, riot_only=riot_only
+        ):
             yield filtered_chunk
 
     def ip(self, ip_address):  # pylint: disable=C0103
@@ -388,7 +409,9 @@ class GreyNoise(BaseAPIClient):
         if self.config.use_cache:
             cache = self.ip_context_cache
             response = (
-                cache[ip_address] if ip_address in cache else cache.setdefault(ip_address, self._request(endpoint))
+                cache[ip_address]
+                if ip_address in cache
+                else cache.setdefault(ip_address, self._request(endpoint))
             )
         else:
             response = self._request(endpoint)
@@ -415,7 +438,9 @@ class GreyNoise(BaseAPIClient):
         if self.offering == "community":
             response = {"message": "GNQL not supported with Community offering"}
         else:
-            LOGGER.debug("Running GNQL query: %s %s %s %s...", query, size, scroll, quick)
+            LOGGER.debug(
+                "Running GNQL query: %s %s %s %s...", query, size, scroll, quick
+            )
             params = {"query": query, "quick": quick}
             if size is not None:
                 params["size"] = size
@@ -454,12 +479,16 @@ class GreyNoise(BaseAPIClient):
         LOGGER.debug("Getting noise status for %s IPs...", len(ip_addresses))
 
         valid_ip_addresses = [
-            ip_address for ip_address in ip_addresses if validate_ip(ip_address, strict=False, print_warning=False)
+            ip_address
+            for ip_address in ip_addresses
+            if validate_ip(ip_address, strict=False, print_warning=False)
         ]
 
         def process_chunk(chunk: List[str]) -> List[Dict[str, Any]]:
             """Process a chunk of IP addresses."""
-            api_result = self._request(self.EP_NOISE_MULTI, method="post", json={"ips": chunk})
+            api_result = self._request(
+                self.EP_NOISE_MULTI, method="post", json={"ips": chunk}
+            )
             return api_result
 
         # Process valid IPs in parallel batches
@@ -467,15 +496,26 @@ class GreyNoise(BaseAPIClient):
             # Keep the same ordering as in the input
             LOGGER.debug("Using cache for quick lookup")
             ordered_results = OrderedDict(
-                (ip_address, self.ip_quick_check_cache.get(ip_address)) for ip_address in valid_ip_addresses
+                (ip_address, self.ip_quick_check_cache.get(ip_address))
+                for ip_address in valid_ip_addresses
             )
-            api_ip_addresses = [ip_address for ip_address, result in ordered_results.items() if result is None]
+            api_ip_addresses = [
+                ip_address
+                for ip_address, result in ordered_results.items()
+                if result is None
+            ]
 
         else:
             LOGGER.debug("Not using cache for quick lookup")
             # Keep the same ordering as in the input
-            ordered_results = OrderedDict((ip_address, None) for ip_address in valid_ip_addresses)
-            api_ip_addresses = [ip_address for ip_address, result in ordered_results.items() if result is None]
+            ordered_results = OrderedDict(
+                (ip_address, None) for ip_address in valid_ip_addresses
+            )
+            api_ip_addresses = [
+                ip_address
+                for ip_address, result in ordered_results.items()
+                if result is None
+            ]
         if api_ip_addresses:
             api_results = self._process_batch_parallel(
                 api_ip_addresses,
@@ -548,11 +588,15 @@ class GreyNoise(BaseAPIClient):
 
         def process_chunk(chunk: List[str]) -> List[Dict[str, Any]]:
             """Process a chunk of IP addresses."""
-            api_result = self._request(self.EP_NOISE_CONTEXT_MULTI, method="post", json={"ips": chunk})
+            api_result = self._request(
+                self.EP_NOISE_CONTEXT_MULTI, method="post", json={"ips": chunk}
+            )
             return api_result
 
         if self.offering == "community":  # pylint: disable=R1702
-            results = [{"message": "IP Multi Lookup not supported with Community offering"}]
+            results = [
+                {"message": "IP Multi Lookup not supported with Community offering"}
+            ]
         else:
             if isinstance(ip_addresses, str):
                 ip_addresses = ip_addresses.split(",")
@@ -560,7 +604,9 @@ class GreyNoise(BaseAPIClient):
             LOGGER.debug("Getting noise context for %s IPs...", len(ip_addresses))
 
             valid_ip_addresses = [
-                ip_address for ip_address in ip_addresses if validate_ip(ip_address, strict=False, print_warning=False)
+                ip_address
+                for ip_address in ip_addresses
+                if validate_ip(ip_address, strict=False, print_warning=False)
             ]
 
             # Process valid IPs in parallel batches
@@ -568,15 +614,26 @@ class GreyNoise(BaseAPIClient):
                 # Keep the same ordering as in the input
                 LOGGER.debug("Using cache for ip_multi lookup")
                 ordered_results = OrderedDict(
-                    (ip_address, self.ip_context_cache.get(ip_address)) for ip_address in valid_ip_addresses
+                    (ip_address, self.ip_context_cache.get(ip_address))
+                    for ip_address in valid_ip_addresses
                 )
-                api_ip_addresses = [ip_address for ip_address, result in ordered_results.items() if result is None]
+                api_ip_addresses = [
+                    ip_address
+                    for ip_address, result in ordered_results.items()
+                    if result is None
+                ]
 
             else:
                 LOGGER.debug("Not using cache for ip_multi lookup")
                 # Keep the same ordering as in the input
-                ordered_results = OrderedDict((ip_address, None) for ip_address in valid_ip_addresses)
-                api_ip_addresses = [ip_address for ip_address, result in ordered_results.items() if result is None]
+                ordered_results = OrderedDict(
+                    (ip_address, None) for ip_address in valid_ip_addresses
+                )
+                api_ip_addresses = [
+                    ip_address
+                    for ip_address, result in ordered_results.items()
+                    if result is None
+                ]
             if api_ip_addresses:
                 api_results = self._process_batch_parallel(
                     api_ip_addresses,
@@ -625,7 +682,9 @@ class GreyNoise(BaseAPIClient):
                             },
                         }
 
-            results = [result for result in ordered_results.values() if result is not None]
+            results = [
+                result for result in ordered_results.values() if result is not None
+            ]
 
             return results
 
@@ -645,7 +704,9 @@ class GreyNoise(BaseAPIClient):
     def metadata(self):
         """Get metadata."""
         if self.offering == "community":
-            response = {"message": "Metadata lookup not supported with Community offering"}
+            response = {
+                "message": "Metadata lookup not supported with Community offering"
+            }
         else:
             LOGGER.debug("Getting metadata...")
             response = self._request(self.EP_META_METADATA)
@@ -668,7 +729,8 @@ class GreyNoise(BaseAPIClient):
 
         """
         LOGGER.warning(
-            "The riot() function is deprecated and will be removed in" " a future version. Please use ip() instead."
+            "The riot() function is deprecated and will be removed in"
+            " a future version. Please use ip() instead."
         )
         return self.ip(ip_address)
 
@@ -701,7 +763,9 @@ class GreyNoise(BaseAPIClient):
         elif file_format == "csv":
             params = {"format": file_format}
         else:
-            LOGGER.error(f"Value for file_format is not valid (valid: json, csv): {file_format}")
+            LOGGER.error(
+                f"Value for file_format is not valid (valid: json, csv): {file_format}"
+            )
             sys.exit(1)
 
         if start_time is not None:
@@ -752,7 +816,9 @@ class GreyNoise(BaseAPIClient):
         elif file_format == "csv":
             params = {"format": file_format}
         else:
-            LOGGER.error(f"Value for file_format is not valid (valid: json, csv): {file_format}")
+            LOGGER.error(
+                f"Value for file_format is not valid (valid: json, csv): {file_format}"
+            )
             sys.exit(1)
 
         if start_time is not None:
@@ -791,7 +857,9 @@ class GreyNoise(BaseAPIClient):
 
         """
         if self.offering == "community":
-            response = {"message": "Similarity lookup not supported with Community offering"}
+            response = {
+                "message": "Similarity lookup not supported with Community offering"
+            }
         else:
             LOGGER.debug("Checking IP Sim results for %s...", ip_address)
             validate_ip(ip_address)
@@ -832,7 +900,9 @@ class GreyNoise(BaseAPIClient):
 
         """
         if self.offering == "community":
-            response = {"message": "Timeline lookup not supported with Community offering"}
+            response = {
+                "message": "Timeline lookup not supported with Community offering"
+            }
         else:
             LOGGER.debug("Checking IP Timeline results for %s...", ip_address)
             validate_ip(ip_address)
@@ -876,7 +946,9 @@ class GreyNoise(BaseAPIClient):
 
         """
         if self.offering == "community":
-            response = {"message": "Timeline lookup not supported with Community offering"}
+            response = {
+                "message": "Timeline lookup not supported with Community offering"
+            }
         else:
             LOGGER.debug("Checking IP Timeline results for %s...", ip_address)
             validate_ip(ip_address)
@@ -915,7 +987,9 @@ class GreyNoise(BaseAPIClient):
 
         """
         if self.offering == "community":
-            response = {"message": "Timeline lookup not supported with Community offering"}
+            response = {
+                "message": "Timeline lookup not supported with Community offering"
+            }
         else:
             LOGGER.debug("Checking IP Timeline results for %s...", ip_address)
             validate_ip(ip_address)
@@ -944,7 +1018,9 @@ class GreyNoise(BaseAPIClient):
 
         """
         if self.offering == "community":
-            response = {"message": "Sensors List is not supported with Community offering"}
+            response = {
+                "message": "Sensors List is not supported with Community offering"
+            }
         else:
             LOGGER.debug("Getting Sensor List for Workspace ID: %s...", workspace_id)
 
@@ -971,7 +1047,9 @@ class GreyNoise(BaseAPIClient):
 
         """
         if self.offering == "community":
-            response = {"message": "Persona Details is not supported with Community offering"}
+            response = {
+                "message": "Persona Details is not supported with Community offering"
+            }
         else:
             LOGGER.debug("Getting Persona Details for Workspace ID: %s...", persona_id)
 
@@ -989,7 +1067,9 @@ class GreyNoise(BaseAPIClient):
 
         """
         if self.offering == "community":
-            response = {"message": "CVE lookup is not supported with Community offering"}
+            response = {
+                "message": "CVE lookup is not supported with Community offering"
+            }
         else:
             LOGGER.debug("Getting Details for CVE ID: %s...", cve_id)
 

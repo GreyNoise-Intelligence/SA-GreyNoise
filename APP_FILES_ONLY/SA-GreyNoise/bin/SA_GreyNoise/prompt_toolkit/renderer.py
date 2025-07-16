@@ -155,7 +155,11 @@ def _output_screen_diff(
         - The `Window` adds a style class to the current line for highlighting
           (cursor-line).
         """
-        numbers = (index for index, cell in row.items() if cell.char != " " or style_string_has_style[cell.style])
+        numbers = (
+            index
+            for index, cell in row.items()
+            if cell.char != " " or style_string_has_style[cell.style]
+        )
         return max(numbers, default=0)
 
     # Render for the first time: reset styling.
@@ -171,7 +175,9 @@ def _output_screen_diff(
 
     # When the previous screen has a different size, redraw everything anyway.
     # Also when we are done. (We might take up less rows, so clearing is important.)
-    if is_done or not previous_screen or previous_width != width:  # XXX: also consider height??
+    if (
+        is_done or not previous_screen or previous_width != width
+    ):  # XXX: also consider height??
         current_pos = move_cursor(Point(x=0, y=0))
         reset_attributes()
         output.erase_down()
@@ -300,7 +306,12 @@ class _StyleStringHasStyleCache(Dict[str, bool]):
     def __missing__(self, style_str: str) -> bool:
         attrs = self.style_string_to_attrs[style_str]
         is_default = bool(
-            attrs.color or attrs.bgcolor or attrs.underline or attrs.strike or attrs.blink or attrs.reverse
+            attrs.color
+            or attrs.bgcolor
+            or attrs.underline
+            or attrs.strike
+            or attrs.blink
+            or attrs.reverse
         )
 
         self[style_str] = is_default
@@ -576,7 +587,9 @@ class Renderer:
         for task in pending:
             task.cancel()
 
-    def render(self, app: Application[Any], layout: Layout, is_done: bool = False) -> None:
+    def render(
+        self, app: Application[Any], layout: Layout, is_done: bool = False
+    ) -> None:
         """
         Render the current interface to the output.
 
@@ -623,7 +636,9 @@ class Renderer:
             height = size.rows
         elif is_done:
             # When we are done, we don't necessary want to fill up until the bottom.
-            height = layout.container.preferred_height(size.columns, size.rows).preferred
+            height = layout.container.preferred_height(
+                size.columns, size.rows
+            ).preferred
         else:
             last_height = self._last_screen.height if self._last_screen else 0
             height = max(
@@ -643,7 +658,8 @@ class Renderer:
         # (But note that we still use _last_screen to calculate the height.)
         if (
             self.style.invalidation_hash() != self._last_style_hash
-            or app.style_transformation.invalidation_hash() != self._last_transformation_hash
+            or app.style_transformation.invalidation_hash()
+            != self._last_transformation_hash
             or app.color_depth != self._last_color_depth
         ):
             self._last_screen = None
@@ -655,7 +671,9 @@ class Renderer:
                 self.style.get_attrs_for_style_str, app.style_transformation
             )
         if self._style_string_has_style is None:
-            self._style_string_has_style = _StyleStringHasStyleCache(self._attrs_for_style)
+            self._style_string_has_style = _StyleStringHasStyleCache(
+                self._attrs_for_style
+            )
 
         self._last_style_hash = self.style.invalidation_hash()
         self._last_transformation_hash = app.style_transformation.invalidation_hash()
@@ -697,7 +715,10 @@ class Renderer:
 
         # Handle cursor shapes.
         new_cursor_shape = app.cursor.get_cursor_shape(app)
-        if self._last_cursor_shape is None or self._last_cursor_shape != new_cursor_shape:
+        if (
+            self._last_cursor_shape is None
+            or self._last_cursor_shape != new_cursor_shape
+        ):
             output.set_cursor_shape(new_cursor_shape)
             self._last_cursor_shape = new_cursor_shape
 
@@ -768,7 +789,9 @@ def print_formatted_text(
     last_attrs: Attrs | None = None
 
     # Print all (style_str, text) tuples.
-    attrs_for_style_string = _StyleStringToAttrsCache(style.get_attrs_for_style_str, style_transformation)
+    attrs_for_style_string = _StyleStringToAttrsCache(
+        style.get_attrs_for_style_str, style_transformation
+    )
 
     for style_str, text, *_ in fragments:
         attrs = attrs_for_style_string[style_str]

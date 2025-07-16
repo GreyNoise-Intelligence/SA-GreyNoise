@@ -27,7 +27,10 @@ from collections import deque
 from gettext import gettext as _
 from gettext import ngettext
 
-from .exceptions import BadArgumentUsage, BadOptionUsage, NoSuchOption, UsageError
+from .exceptions import BadArgumentUsage
+from .exceptions import BadOptionUsage
+from .exceptions import NoSuchOption
+from .exceptions import UsageError
 
 if t.TYPE_CHECKING:
     import typing_extensions as te
@@ -227,7 +230,9 @@ class Argument:
                 value = None
             elif holes != 0:
                 raise BadArgumentUsage(
-                    _("Argument {name!r} takes {nargs} values.").format(name=self.dest, nargs=self.nargs)
+                    _("Argument {name!r} takes {nargs} values.").format(
+                        name=self.dest, nargs=self.nargs
+                    )
                 )
 
         if self.nargs == -1 and self.obj.envvar is not None and value == ():
@@ -310,7 +315,9 @@ class OptionParser:
         for opt in option._long_opts:
             self._long_opt[opt] = option
 
-    def add_argument(self, obj: "CoreArgument", dest: t.Optional[str], nargs: int = 1) -> None:
+    def add_argument(
+        self, obj: "CoreArgument", dest: t.Optional[str], nargs: int = 1
+    ) -> None:
         """Adds a positional argument named `dest` to the parser.
 
         The `obj` can be used to identify the option in the order list
@@ -318,7 +325,9 @@ class OptionParser:
         """
         self._args.append(Argument(obj, dest=dest, nargs=nargs))
 
-    def parse_args(self, args: t.List[str]) -> t.Tuple[t.Dict[str, t.Any], t.List[str], t.List["CoreParameter"]]:
+    def parse_args(
+        self, args: t.List[str]
+    ) -> t.Tuple[t.Dict[str, t.Any], t.List[str], t.List["CoreParameter"]]:
         """Parses positional arguments and returns ``(values, args, order)``
         for the parsed options and arguments as well as the leftover
         arguments if there are any.  The order is a list of objects as they
@@ -335,7 +344,9 @@ class OptionParser:
         return state.opts, state.largs, state.order
 
     def _process_args_for_args(self, state: ParsingState) -> None:
-        pargs, args = _unpack_args(state.largs + state.rargs, [x.nargs for x in self._args])
+        pargs, args = _unpack_args(
+            state.largs + state.rargs, [x.nargs for x in self._args]
+        )
 
         for idx, arg in enumerate(self._args):
             arg.process(pargs[idx], state)
@@ -379,7 +390,9 @@ class OptionParser:
         # *empty* -- still a subset of [arg0, ..., arg(i-1)], but
         # not a very interesting subset!
 
-    def _match_long_opt(self, opt: str, explicit_value: t.Optional[str], state: ParsingState) -> None:
+    def _match_long_opt(
+        self, opt: str, explicit_value: t.Optional[str], state: ParsingState
+    ) -> None:
         if opt not in self._long_opt:
             from difflib import get_close_matches
 
@@ -398,7 +411,9 @@ class OptionParser:
             value = self._get_value_from_state(opt, option, state)
 
         elif explicit_value is not None:
-            raise BadOptionUsage(opt, _("Option {name!r} does not take a value.").format(name=opt))
+            raise BadOptionUsage(
+                opt, _("Option {name!r} does not take a value.").format(name=opt)
+            )
 
         else:
             value = None
@@ -445,7 +460,9 @@ class OptionParser:
         if self.ignore_unknown_options and unknown_options:
             state.largs.append(f"{prefix}{''.join(unknown_options)}")
 
-    def _get_value_from_state(self, option_name: str, option: Option, state: ParsingState) -> t.Any:
+    def _get_value_from_state(
+        self, option_name: str, option: Option, state: ParsingState
+    ) -> t.Any:
         nargs = option.nargs
 
         if len(state.rargs) < nargs:

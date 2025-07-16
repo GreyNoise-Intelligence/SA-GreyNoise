@@ -1,4 +1,5 @@
-from .ansi import Back, ExtendedStyle, Fore, Style
+from .ansi import Fore, Back, Style, ExtendedStyle
+
 
 style = {
     "b": Style.BRIGHT,

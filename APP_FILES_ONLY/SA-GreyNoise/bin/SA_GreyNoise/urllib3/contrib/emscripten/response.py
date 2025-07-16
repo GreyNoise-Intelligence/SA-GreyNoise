@@ -73,7 +73,9 @@ class EmscriptenHttpResponseWrapper(BaseHTTPResponse):
         # Override the request_url if retries has a redirect location.
         self._retries = retries
 
-    def stream(self, amt: int | None = 2**16, decode_content: bool | None = None) -> typing.Generator[bytes]:
+    def stream(
+        self, amt: int | None = 2**16, decode_content: bool | None = None
+    ) -> typing.Generator[bytes]:
         """
         A generator wrapper for the read() method. A call will block until
         ``amt`` bytes have been read from the connection or until the
@@ -110,7 +112,10 @@ class EmscriptenHttpResponseWrapper(BaseHTTPResponse):
                 # all values are the same. Otherwise, the header is invalid.
                 lengths = {int(val) for val in content_length.split(",")}
                 if len(lengths) > 1:
-                    raise InvalidHeader("Content-Length contained multiple " "unmatching values (%s)" % content_length)
+                    raise InvalidHeader(
+                        "Content-Length contained multiple "
+                        "unmatching values (%s)" % content_length
+                    )
                 length = lengths.pop()
             except ValueError:
                 length = None
@@ -122,7 +127,11 @@ class EmscriptenHttpResponseWrapper(BaseHTTPResponse):
             length = None
 
         # Check for responses that shouldn't include a body
-        if self.status in (204, 304) or 100 <= self.status < 200 or request_method == "HEAD":
+        if (
+            self.status in (204, 304)
+            or 100 <= self.status < 200
+            or request_method == "HEAD"
+        ):
             length = 0
 
         return length
@@ -157,7 +166,9 @@ class EmscriptenHttpResponseWrapper(BaseHTTPResponse):
                     self._body = data
             if self.length_remaining is not None:
                 self.length_remaining = max(self.length_remaining - len(data), 0)
-            if len(data) == 0 or (self.length_is_certain and self.length_remaining == 0):
+            if len(data) == 0 or (
+                self.length_is_certain and self.length_remaining == 0
+            ):
                 # definitely finished reading, close response stream
                 self._response.body.close()
             return typing.cast(bytes, data)
@@ -249,12 +260,18 @@ class EmscriptenHttpResponseWrapper(BaseHTTPResponse):
             if not clean_exit:
                 # The response may not be closed but we're not going to use it
                 # anymore so close it now
-                if isinstance(self._response.body, IOBase) and not self._response.body.closed:
+                if (
+                    isinstance(self._response.body, IOBase)
+                    and not self._response.body.closed
+                ):
                     self._response.body.close()
                 # release the connection back to the pool
                 self.release_conn()
             else:
                 # If we have read everything from the response stream,
                 # return the connection back to the pool.
-                if isinstance(self._response.body, IOBase) and self._response.body.closed:
+                if (
+                    isinstance(self._response.body, IOBase)
+                    and self._response.body.closed
+                ):
                     self.release_conn()

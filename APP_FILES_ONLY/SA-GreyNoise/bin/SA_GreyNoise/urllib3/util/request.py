@@ -126,10 +126,14 @@ def make_headers(
         headers["connection"] = "keep-alive"
 
     if basic_auth:
-        headers["authorization"] = f"Basic {b64encode(basic_auth.encode('latin-1')).decode()}"
+        headers["authorization"] = (
+            f"Basic {b64encode(basic_auth.encode('latin-1')).decode()}"
+        )
 
     if proxy_basic_auth:
-        headers["proxy-authorization"] = f"Basic {b64encode(proxy_basic_auth.encode('latin-1')).decode()}"
+        headers["proxy-authorization"] = (
+            f"Basic {b64encode(proxy_basic_auth.encode('latin-1')).decode()}"
+        )
 
     if disable_cache:
         headers["cache-control"] = "no-cache"
@@ -137,7 +141,9 @@ def make_headers(
     return headers
 
 
-def set_file_position(body: typing.Any, pos: _TYPE_BODY_POSITION | None) -> _TYPE_BODY_POSITION | None:
+def set_file_position(
+    body: typing.Any, pos: _TYPE_BODY_POSITION | None
+) -> _TYPE_BODY_POSITION | None:
     """
     If a position is provided, move file to that point.
     Otherwise, we'll attempt to record a position for future use.
@@ -171,13 +177,18 @@ def rewind_body(body: typing.IO[typing.AnyStr], body_pos: _TYPE_BODY_POSITION) -
         try:
             body_seek(body_pos)
         except OSError as e:
-            raise UnrewindableBodyError("An error occurred when rewinding request body for redirect/retry.") from e
+            raise UnrewindableBodyError(
+                "An error occurred when rewinding request body for redirect/retry."
+            ) from e
     elif body_pos is _FAILEDTELL:
         raise UnrewindableBodyError(
-            "Unable to record file position for rewinding " "request body during a redirect/retry."
+            "Unable to record file position for rewinding "
+            "request body during a redirect/retry."
         )
     else:
-        raise ValueError(f"body_pos must be of type integer, instead it was {type(body_pos)}.")
+        raise ValueError(
+            f"body_pos must be of type integer, instead it was {type(body_pos)}."
+        )
 
 
 class ChunksAndContentLength(typing.NamedTuple):
@@ -185,7 +196,9 @@ class ChunksAndContentLength(typing.NamedTuple):
     content_length: int | None
 
 
-def body_to_chunks(body: typing.Any | None, method: str, blocksize: int) -> ChunksAndContentLength:
+def body_to_chunks(
+    body: typing.Any | None, method: str, blocksize: int
+) -> ChunksAndContentLength:
     """Takes the HTTP request method, body, and blocksize and
     transforms them into an iterable of chunks to pass to
     socket.sendall() and an optional 'Content-Length' header.
@@ -242,7 +255,8 @@ def body_to_chunks(body: typing.Any | None, method: str, blocksize: int) -> Chun
                 content_length = None
             except TypeError:
                 raise TypeError(
-                    f"'body' must be a bytes-like object, file-like " f"object, or iterable. Instead was {body!r}"
+                    f"'body' must be a bytes-like object, file-like "
+                    f"object, or iterable. Instead was {body!r}"
                 ) from None
         else:
             # Since it implements the buffer API can be passed directly to socket.sendall()

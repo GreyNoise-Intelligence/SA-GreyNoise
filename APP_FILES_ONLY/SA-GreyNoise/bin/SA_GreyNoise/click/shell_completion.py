@@ -3,15 +3,13 @@ import re
 import typing as t
 from gettext import gettext as _
 
-from .core import (
-    Argument,
-    BaseCommand,
-    Context,
-    MultiCommand,
-    Option,
-    Parameter,
-    ParameterSource,
-)
+from .core import Argument
+from .core import BaseCommand
+from .core import Context
+from .core import MultiCommand
+from .core import Option
+from .core import Parameter
+from .core import ParameterSource
 from .parser import split_arg_string
 from .utils import echo
 
@@ -262,7 +260,9 @@ class ShellComplete:
         """
         raise NotImplementedError
 
-    def get_completions(self, args: t.List[str], incomplete: str) -> t.List[CompletionItem]:
+    def get_completions(
+        self, args: t.List[str], incomplete: str
+    ) -> t.List[CompletionItem]:
         """Determine the context and last complete command or parameter
         from the complete args. Call that object's ``shell_complete``
         method to get the completions for the incomplete value.
@@ -322,7 +322,10 @@ class BashComplete(ShellComplete):
 
             if major < "4" or major == "4" and minor < "4":
                 echo(
-                    _("Shell completion is not supported for Bash" " versions older than 4.4."),
+                    _(
+                        "Shell completion is not supported for Bash"
+                        " versions older than 4.4."
+                    ),
                     err=True,
                 )
         else:
@@ -408,7 +411,9 @@ _available_shells: t.Dict[str, t.Type[ShellComplete]] = {
 }
 
 
-def add_completion_class(cls: ShellCompleteType, name: t.Optional[str] = None) -> ShellCompleteType:
+def add_completion_class(
+    cls: ShellCompleteType, name: t.Optional[str] = None
+) -> ShellCompleteType:
     """Register a :class:`ShellComplete` subclass under the given name.
     The name will be provided by the completion instruction environment
     variable during completion.
@@ -453,7 +458,11 @@ def _is_incomplete_argument(ctx: Context, param: Parameter) -> bool:
     return (
         param.nargs == -1
         or ctx.get_parameter_source(param.name) is not ParameterSource.COMMANDLINE
-        or (param.nargs > 1 and isinstance(value, (tuple, list)) and len(value) < param.nargs)
+        or (
+            param.nargs > 1
+            and isinstance(value, (tuple, list))
+            and len(value) < param.nargs
+        )
     )
 
 

@@ -14,13 +14,13 @@ from _multibytecodec import (  # type: ignore[import-not-found,import]
 )
 
 from .constant import (
-    COMMON_CJK_CHARACTERS,
     ENCODING_MARKS,
     IANA_SUPPORTED_SIMILAR,
     RE_POSSIBLE_ENCODING_INDICATION,
     UNICODE_RANGES_COMBINED,
     UNICODE_SECONDARY_RANGE_KEYWORD,
     UTF8_MAXIMAL_ALLOCATION,
+    COMMON_CJK_CHARACTERS,
 )
 
 
@@ -339,7 +339,10 @@ def is_cp_similar(iana_name_a: str, iana_name_b: str) -> bool:
     Determine if two code page are at least 80% similar. IANA_SUPPORTED_SIMILAR dict was generated using
     the function cp_similarity.
     """
-    return iana_name_a in IANA_SUPPORTED_SIMILAR and iana_name_b in IANA_SUPPORTED_SIMILAR[iana_name_a]
+    return (
+        iana_name_a in IANA_SUPPORTED_SIMILAR
+        and iana_name_b in IANA_SUPPORTED_SIMILAR[iana_name_a]
+    )
 
 
 def set_logging_handler(
@@ -393,7 +396,10 @@ def cut_sequence_chunks(
             if is_multi_byte_decoder and i > 0:
                 chunk_partial_size_chk: int = min(chunk_size, 16)
 
-                if decoded_payload and chunk[:chunk_partial_size_chk] not in decoded_payload:
+                if (
+                    decoded_payload
+                    and chunk[:chunk_partial_size_chk] not in decoded_payload
+                ):
                     for j in range(i, i - 4, -1):
                         cut_sequence = sequences[j:chunk_end]
 

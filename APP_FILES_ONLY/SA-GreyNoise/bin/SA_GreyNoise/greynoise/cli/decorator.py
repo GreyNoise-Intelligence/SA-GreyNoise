@@ -8,12 +8,13 @@ import functools
 import logging
 
 import click
+from requests.exceptions import RequestException
+
 from greynoise.api import APIConfig, GreyNoise
 from greynoise.cli.formatter import FORMATTERS
 from greynoise.cli.parameter import ip_addresses_parameter
 from greynoise.exceptions import RequestFailure
 from greynoise.util import load_config
-from requests.exceptions import RequestException
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +40,9 @@ def echo_result(function):
             # For the text formatter, there's a separate formatter for each subcommand
             formatter = formatter[context.command.name]
         output = formatter(result, params.get("verbose", False)).strip("\n")
-        click.echo(output, file=params.get("output_file", click.open_file("-", mode="w")))
+        click.echo(
+            output, file=params.get("output_file", click.open_file("-", mode="w"))
+        )
 
     return wrapper
 
@@ -109,7 +112,9 @@ def pass_api_client(function):
                     "(in order of precedence):\n"
                     "- Pass it using the -k/--api-key option.\n"
                     "- Set it in the GREYNOISE_API_KEY environment variable.\n"
-                    "- Run {!r} to save it to the configuration file.\n".format("{} setup".format(prog_name))
+                    "- Run {!r} to save it to the configuration file.\n".format(
+                        "{} setup".format(prog_name)
+                    )
                 )
                 context.exit(-1)
             api_key = config["api_key"]
@@ -148,10 +153,13 @@ def gnql_command(function):
     @click.option(
         "-O",
         "--offering",
-        help="Which API offering to use, enterprise or community, " "defaults to enterprise",
+        help="Which API offering to use, enterprise or community, "
+        "defaults to enterprise",
     )
     @click.option("-i", "--input", "input_file", type=click.File(), help="Input file")
-    @click.option("-o", "--output", "output_file", type=click.File(mode="w"), help="Output file")
+    @click.option(
+        "-o", "--output", "output_file", type=click.File(mode="w"), help="Output file"
+    )
     @click.option(
         "-f",
         "--format",
@@ -181,10 +189,13 @@ def ip_lookup_command(function):
     @click.option(
         "-O",
         "--offering",
-        help="Which API offering to use, enterprise or community, " "defaults to enterprise",
+        help="Which API offering to use, enterprise or community, "
+        "defaults to enterprise",
     )
     @click.option("-i", "--input", "input_file", type=click.File(), help="Input file")
-    @click.option("-o", "--output", "output_file", type=click.File(mode="w"), help="Output file")
+    @click.option(
+        "-o", "--output", "output_file", type=click.File(mode="w"), help="Output file"
+    )
     @click.option(
         "-f",
         "--format",
@@ -242,10 +253,13 @@ def workspace_command(function):
     @click.option(
         "-O",
         "--offering",
-        help="Which API offering to use, enterprise or community, " "defaults to enterprise",
+        help="Which API offering to use, enterprise or community, "
+        "defaults to enterprise",
     )
     @click.option("-i", "--input", "input_file", type=click.File(), help="Input file")
-    @click.option("-o", "--output", "output_file", type=click.File(mode="w"), help="Output file")
+    @click.option(
+        "-o", "--output", "output_file", type=click.File(mode="w"), help="Output file"
+    )
     @click.option(
         "-f",
         "--format",
@@ -271,9 +285,13 @@ def sensor_activity_command(function):
 
     @click.command()
     @click.argument("workspace_id", required=True)
-    @click.option("--start_time", "start_time", help="Earliest session start time to return")
+    @click.option(
+        "--start_time", "start_time", help="Earliest session start time to return"
+    )
     @click.option("--end_time", "end_time", help="Latest session start time to return")
-    @click.option("--file_format", "file_format", help="Format for output file", default="json")
+    @click.option(
+        "--file_format", "file_format", help="Format for output file", default="json"
+    )
     @click.option("--persona_id", "persona_id", help="Id for the desired persona")
     @click.option("--source_ip", "source_ip", help="Ip for the desired source")
     @click.option("--size", "size", help="Max number of results to return")
@@ -282,10 +300,13 @@ def sensor_activity_command(function):
     @click.option(
         "-O",
         "--offering",
-        help="Which API offering to use, enterprise or community, " "defaults to enterprise",
+        help="Which API offering to use, enterprise or community, "
+        "defaults to enterprise",
     )
     @click.option("-i", "--input", "input_file", type=click.File(), help="Input file")
-    @click.option("-o", "--output", "output_file", type=click.File(mode="w"), help="Output file")
+    @click.option(
+        "-o", "--output", "output_file", type=click.File(mode="w"), help="Output file"
+    )
     @click.option(
         "-f",
         "--format",
@@ -315,10 +336,13 @@ def persona_command(function):
     @click.option(
         "-O",
         "--offering",
-        help="Which API offering to use, enterprise or community, " "defaults to enterprise",
+        help="Which API offering to use, enterprise or community, "
+        "defaults to enterprise",
     )
     @click.option("-i", "--input", "input_file", type=click.File(), help="Input file")
-    @click.option("-o", "--output", "output_file", type=click.File(mode="w"), help="Output file")
+    @click.option(
+        "-o", "--output", "output_file", type=click.File(mode="w"), help="Output file"
+    )
     @click.option(
         "-f",
         "--format",
@@ -348,10 +372,13 @@ def cve_command(function):
     @click.option(
         "-O",
         "--offering",
-        help="Which API offering to use, enterprise or community, " "defaults to enterprise",
+        help="Which API offering to use, enterprise or community, "
+        "defaults to enterprise",
     )
     @click.option("-i", "--input", "input_file", type=click.File(), help="Input file")
-    @click.option("-o", "--output", "output_file", type=click.File(mode="w"), help="Output file")
+    @click.option(
+        "-o", "--output", "output_file", type=click.File(mode="w"), help="Output file"
+    )
     @click.option(
         "-f",
         "--format",

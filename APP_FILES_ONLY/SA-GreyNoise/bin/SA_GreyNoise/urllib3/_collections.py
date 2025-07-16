@@ -134,7 +134,9 @@ class RecentlyUsedContainer(typing.Generic[_KT, _VT], typing.MutableMapping[_KT,
             return len(self._container)
 
     def __iter__(self) -> typing.NoReturn:
-        raise NotImplementedError("Iteration over this class is unlikely to be threadsafe.")
+        raise NotImplementedError(
+            "Iteration over this class is unlikely to be threadsafe."
+        )
 
     def clear(self) -> None:
         with self.lock:
@@ -336,7 +338,9 @@ class HTTPHeaderDict(typing.MutableMapping[str, str]):
         with self.add instead of self.__setitem__
         """
         if len(args) > 1:
-            raise TypeError(f"extend() takes at most 1 positional arguments ({len(args)} given)")
+            raise TypeError(
+                f"extend() takes at most 1 positional arguments ({len(args)} given)"
+            )
         other = args[0] if len(args) >= 1 else ()
 
         if isinstance(other, HTTPHeaderDict):
@@ -367,7 +371,9 @@ class HTTPHeaderDict(typing.MutableMapping[str, str]):
     @typing.overload
     def getlist(self, key: str, default: _DT) -> list[str] | _DT: ...
 
-    def getlist(self, key: str, default: _Sentinel | _DT = _Sentinel.not_passed) -> list[str] | _DT:
+    def getlist(
+        self, key: str, default: _Sentinel | _DT = _Sentinel.not_passed
+    ) -> list[str] | _DT:
         """Returns a list of all the values for the named field. Returns an
         empty list if the key doesn't exist."""
         try:

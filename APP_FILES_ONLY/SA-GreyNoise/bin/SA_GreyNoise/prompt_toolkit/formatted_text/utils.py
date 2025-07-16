@@ -54,7 +54,12 @@ def fragment_list_width(fragments: StyleAndTextTuples) -> int:
         ``(style_str, text, mouse_handler)`` tuples.
     """
     ZeroWidthEscape = "[ZeroWidthEscape]"
-    return sum(get_cwidth(c) for item in fragments for c in item[1] if ZeroWidthEscape not in item[0])
+    return sum(
+        get_cwidth(c)
+        for item in fragments
+        for c in item[1]
+        if ZeroWidthEscape not in item[0]
+    )
 
 
 def fragment_list_to_text(fragments: StyleAndTextTuples) -> str:

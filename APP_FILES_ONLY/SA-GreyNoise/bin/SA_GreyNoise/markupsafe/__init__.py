@@ -119,7 +119,9 @@ class Markup(str):
 
     __slots__ = ()
 
-    def __new__(cls, object: t.Any = "", encoding: str | None = None, errors: str = "strict") -> te.Self:
+    def __new__(
+        cls, object: t.Any = "", encoding: str | None = None, errors: str = "strict"
+    ) -> te.Self:
         if hasattr(object, "__html__"):
             object = object.__html__()
 
@@ -178,7 +180,9 @@ class Markup(str):
     ) -> list[te.Self]:
         return [self.__class__(v) for v in super().rsplit(sep, maxsplit)]
 
-    def splitlines(self, /, keepends: bool = False) -> list[te.Self]:  # type: ignore[override]
+    def splitlines(  # type: ignore[override]
+        self, /, keepends: bool = False
+    ) -> list[te.Self]:
         return [self.__class__(v) for v in super().splitlines(keepends)]
 
     def unescape(self, /) -> str:

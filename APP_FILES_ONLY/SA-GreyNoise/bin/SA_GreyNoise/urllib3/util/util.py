@@ -4,7 +4,9 @@ import typing
 from types import TracebackType
 
 
-def to_bytes(x: str | bytes, encoding: str | None = None, errors: str | None = None) -> bytes:
+def to_bytes(
+    x: str | bytes, encoding: str | None = None, errors: str | None = None
+) -> bytes:
     if isinstance(x, bytes):
         return x
     elif not isinstance(x, str):
@@ -14,7 +16,9 @@ def to_bytes(x: str | bytes, encoding: str | None = None, errors: str | None = N
     return x.encode()
 
 
-def to_str(x: str | bytes, encoding: str | None = None, errors: str | None = None) -> str:
+def to_str(
+    x: str | bytes, encoding: str | None = None, errors: str | None = None
+) -> str:
     if isinstance(x, str):
         return x
     elif not isinstance(x, bytes):

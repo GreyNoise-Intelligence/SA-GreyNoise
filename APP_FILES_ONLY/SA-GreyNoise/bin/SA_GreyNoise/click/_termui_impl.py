@@ -15,16 +15,14 @@ from io import StringIO
 from shutil import which
 from types import TracebackType
 
-from ._compat import (
-    CYGWIN,
-    WIN,
-    _default_text_stdout,
-    get_best_encoding,
-    isatty,
-    open_stream,
-    strip_ansi,
-    term_len,
-)
+from ._compat import _default_text_stdout
+from ._compat import CYGWIN
+from ._compat import get_best_encoding
+from ._compat import isatty
+from ._compat import open_stream
+from ._compat import strip_ansi
+from ._compat import term_len
+from ._compat import WIN
 from .exceptions import ClickException
 from .utils import echo
 
@@ -193,7 +191,12 @@ class ProgressBar(t.Generic[V]):
         else:
             chars = list(self.empty_char * (self.width or 1))
             if self.time_per_iteration != 0:
-                chars[int((math.cos(self.pos * self.time_per_iteration) / 2.0 + 0.5) * self.width)] = self.fill_char
+                chars[
+                    int(
+                        (math.cos(self.pos * self.time_per_iteration) / 2.0 + 0.5)
+                        * self.width
+                    )
+                ] = self.fill_char
             bar = "".join(chars)
         return bar
 
@@ -376,7 +379,9 @@ def pager(generator: t.Iterable[str], color: t.Optional[bool] = None) -> None:
             return
     if os.environ.get("TERM") in ("dumb", "emacs"):
         return _nullpager(stdout, generator, color)
-    if (WIN or sys.platform.startswith("os2")) and _tempfilepager(generator, "more", color):
+    if (WIN or sys.platform.startswith("os2")) and _tempfilepager(
+        generator, "more", color
+    ):
         return
     if _pipepager(generator, "less", color):
         return
@@ -496,7 +501,9 @@ def _tempfilepager(
     return True
 
 
-def _nullpager(stream: t.TextIO, generator: t.Iterable[str], color: t.Optional[bool]) -> None:
+def _nullpager(
+    stream: t.TextIO, generator: t.Iterable[str], color: t.Optional[bool]
+) -> None:
     """Simply print unformatted text.  This is the ultimate fallback."""
     for text in generator:
         if not color:
@@ -545,9 +552,13 @@ class Editor:
             c = subprocess.Popen(f'{editor} "{filename}"', env=environ, shell=True)
             exit_code = c.wait()
             if exit_code != 0:
-                raise ClickException(_("{editor}: Editing failed").format(editor=editor))
+                raise ClickException(
+                    _("{editor}: Editing failed").format(editor=editor)
+                )
         except OSError as e:
-            raise ClickException(_("{editor}: Editing failed: {e}").format(editor=editor, e=e)) from e
+            raise ClickException(
+                _("{editor}: Editing failed: {e}").format(editor=editor, e=e)
+            ) from e
 
     def edit(self, text: t.Optional[t.AnyStr]) -> t.Optional[t.AnyStr]:
         import tempfile

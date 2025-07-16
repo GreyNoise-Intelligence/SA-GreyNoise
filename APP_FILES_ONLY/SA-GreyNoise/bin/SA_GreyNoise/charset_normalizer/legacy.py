@@ -16,7 +16,9 @@ if TYPE_CHECKING:
         confidence: float | None
 
 
-def detect(byte_str: bytes, should_rename_legacy: bool = False, **kwargs: Any) -> ResultDict:
+def detect(
+    byte_str: bytes, should_rename_legacy: bool = False, **kwargs: Any
+) -> ResultDict:
     """
     chardet legacy method
     Detect the encoding of the given byte string. It should be mostly backward-compatible.
@@ -29,10 +31,14 @@ def detect(byte_str: bytes, should_rename_legacy: bool = False, **kwargs: Any) -
                                   to their more modern equivalents?
     """
     if len(kwargs):
-        warn(f"charset-normalizer disregard arguments '{','.join(list(kwargs.keys()))}' in legacy function detect()")
+        warn(
+            f"charset-normalizer disregard arguments '{','.join(list(kwargs.keys()))}' in legacy function detect()"
+        )
 
     if not isinstance(byte_str, (bytearray, bytes)):
-        raise TypeError(f"Expected object of type bytes or bytearray, got: {type(byte_str)}")  # pragma: nocover
+        raise TypeError(  # pragma: nocover
+            f"Expected object of type bytes or bytearray, got: {type(byte_str)}"
+        )
 
     if isinstance(byte_str, bytearray):
         byte_str = bytes(byte_str)

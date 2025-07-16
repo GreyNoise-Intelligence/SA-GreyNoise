@@ -1,5 +1,6 @@
 from .markup import AnsiMarkup, AnsiMarkupError, MismatchedTag, UnbalancedTag
 
+
 _ansimarkup = AnsiMarkup()
 parse = _ansimarkup.parse
 strip = _ansimarkup.strip

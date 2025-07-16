@@ -80,7 +80,9 @@ class Filter(metaclass=ABCMeta):
         defaults for `None` values should be done through an `is None` check
         instead of for instance ``filter1 or Always()``.
         """
-        raise ValueError("The truth value of a Filter is ambiguous. Instead, call it as a function.")
+        raise ValueError(
+            "The truth value of a Filter is ambiguous. Instead, call it as a function."
+        )
 
 
 def _remove_duplicates(filters: list[Filter]) -> list[Filter]:

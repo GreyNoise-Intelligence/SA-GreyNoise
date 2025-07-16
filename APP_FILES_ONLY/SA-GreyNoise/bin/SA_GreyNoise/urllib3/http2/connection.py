@@ -83,7 +83,9 @@ class _LockedObject(typing.Generic[T]):
 
 
 class HTTP2Connection(HTTPSConnection):
-    def __init__(self, host: str, port: int | None = None, **kwargs: typing.Any) -> None:
+    def __init__(
+        self, host: str, port: int | None = None, **kwargs: typing.Any
+    ) -> None:
         self._h2_conn = self._new_h2_conn()
         self._h2_stream: int | None = None
         self._headers: list[tuple[bytes, bytes]] = []
@@ -205,7 +207,10 @@ class HTTP2Connection(HTTPSConnection):
                             self.sock.sendall(data_to_send)
                     conn.end_stream(self._h2_stream)
             except TypeError:
-                raise TypeError("`data` should be str, bytes, iterable, or file. got %r" % type(data))
+                raise TypeError(
+                    "`data` should be str, bytes, iterable, or file. got %r"
+                    % type(data)
+                )
 
     def set_tunnel(
         self,
@@ -214,7 +219,9 @@ class HTTP2Connection(HTTPSConnection):
         headers: typing.Mapping[str, str] | None = None,
         scheme: str = "http",
     ) -> None:
-        raise NotImplementedError("HTTP/2 does not support setting up a tunnel through a proxy")
+        raise NotImplementedError(
+            "HTTP/2 does not support setting up a tunnel through a proxy"
+        )
 
     def getresponse(  # type: ignore[override]
         self,
@@ -234,11 +241,15 @@ class HTTP2Connection(HTTPSConnection):
                                 if header == b":status":
                                     status = int(value.decode())
                                 else:
-                                    headers.add(header.decode("ascii"), value.decode("ascii"))
+                                    headers.add(
+                                        header.decode("ascii"), value.decode("ascii")
+                                    )
 
                         elif isinstance(event, h2.events.DataReceived):
                             data += event.data
-                            conn.acknowledge_received_data(event.flow_controlled_length, event.stream_id)
+                            conn.acknowledge_received_data(
+                                event.flow_controlled_length, event.stream_id
+                            )
 
                         elif isinstance(event, h2.events.StreamEnded):
                             end_stream = True

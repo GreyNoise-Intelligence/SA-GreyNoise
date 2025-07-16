@@ -27,7 +27,14 @@ class HECConfig:
 
     input_type = "http"
 
-    def __init__(self, session_key: str, scheme: str = None, host: str = None, port: int = None, **context: dict):
+    def __init__(
+        self,
+        session_key: str,
+        scheme: str = None,
+        host: str = None,
+        port: int = None,
+        **context: dict
+    ):
         """Initializes HECConfig.
 
         Arguments:
@@ -38,7 +45,12 @@ class HECConfig:
             context: Other configurations for Splunk rest client.
         """
         self._rest_client = rest_client.SplunkRestClient(
-            session_key, "splunk_httpinput", scheme=scheme, host=host, port=port, **context
+            session_key,
+            "splunk_httpinput",
+            scheme=scheme,
+            host=host,
+            port=port,
+            **context
         )
 
     @retry(exceptions=[binding.HTTPError])

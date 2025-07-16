@@ -19,9 +19,10 @@
 import json
 from typing import Any, Dict, Optional
 
+from splunklib import binding
+
 from solnlib import splunk_rest_client as rest_client
 from solnlib import utils
-from splunklib import binding
 
 __all__ = ["ServerInfo", "ServerInfoException"]
 
@@ -60,7 +61,9 @@ class ServerInfo:
         )
 
     @classmethod
-    def from_server_uri(cls, server_uri: str, session_key: str, **context: Any) -> "ServerInfo":
+    def from_server_uri(
+        cls, server_uri: str, session_key: str, **context: Any
+    ) -> "ServerInfo":
         """Creates ServerInfo class using server_uri and session_key.
 
         Note: splunktalib uses these parameters to create it's ServerInfo class,
@@ -193,12 +196,16 @@ class ServerInfo:
             List of SHC members [(label, peer_scheme_host_port) ...].
         """
         try:
-            content = self._rest_client.get(self.SHC_MEMBER_ENDPOINT, output_mode="json").body.read()
+            content = self._rest_client.get(
+                self.SHC_MEMBER_ENDPOINT, output_mode="json"
+            ).body.read()
         except binding.HTTPError as e:
             if e.status != 404 and e.status != 503:
                 raise
 
-            raise ServerInfoException("This server is not a SHC member and has no SHC members.")
+            raise ServerInfoException(
+                "This server is not a SHC member and has no SHC members."
+            )
 
         members = []
         for member in json.loads(content)["entry"]:
@@ -231,7 +238,9 @@ class ServerInfo:
         """
 
         cap_info = self.captain_info()
-        return utils.is_true(cap_info["service_ready_flag"]) and utils.is_false(cap_info["maintenance_mode"])
+        return utils.is_true(cap_info["service_ready_flag"]) and utils.is_false(
+            cap_info["maintenance_mode"]
+        )
 
     @utils.retry(exceptions=[binding.HTTPError])
     def captain_info(self) -> dict:
@@ -245,7 +254,9 @@ class ServerInfo:
         """
 
         try:
-            content = self._rest_client.get(self.SHC_CAPTAIN_INFO_ENDPOINT, output_mode="json").body.read()
+            content = self._rest_client.get(
+                self.SHC_CAPTAIN_INFO_ENDPOINT, output_mode="json"
+            ).body.read()
         except binding.HTTPError as e:
             if e.status == 503 and "not available" in str(e):
                 raise ServerInfoException(str(e))

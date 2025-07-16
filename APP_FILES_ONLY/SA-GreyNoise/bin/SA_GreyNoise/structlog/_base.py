@@ -51,7 +51,9 @@ class BoundLoggerBase:
         self._context = context
 
     def __repr__(self) -> str:
-        return "<{}(context={!r}, processors={!r})>".format(self.__class__.__name__, self._context, self._processors)
+        return "<{}(context={!r}, processors={!r})>".format(
+            self.__class__.__name__, self._context, self._processors
+        )
 
     def __eq__(self, other: Any) -> bool:
         try:
@@ -174,7 +176,9 @@ class BoundLoggerBase:
                 "or a str."
             )
 
-    def _proxy_to_logger(self, method_name: str, event: str | None = None, **event_kw: Any) -> Any:
+    def _proxy_to_logger(
+        self, method_name: str, event: str | None = None, **event_kw: Any
+    ) -> Any:
         """
         Run processor chain on event & call *method_name* on wrapped logger.
 

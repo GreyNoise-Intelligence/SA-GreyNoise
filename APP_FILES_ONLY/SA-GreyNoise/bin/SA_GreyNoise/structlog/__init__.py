@@ -41,6 +41,7 @@ from structlog._output import (
 from structlog.exceptions import DropEvent
 from structlog.testing import ReturnLogger, ReturnLoggerFactory
 
+
 try:
     from structlog import twisted
 except ImportError:

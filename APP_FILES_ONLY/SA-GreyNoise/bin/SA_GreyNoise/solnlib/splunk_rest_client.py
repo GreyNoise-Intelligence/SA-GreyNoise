@@ -75,7 +75,9 @@ def _request_handler(context):
         import requests
     except ImportError:
         # FIXME proxy ?
-        return binding.handler(key_file=context.get("key_file"), cert_file=context.get("cert_file"))
+        return binding.handler(
+            key_file=context.get("key_file"), cert_file=context.get("cert_file")
+        )
 
     try:
         requests.urllib3.disable_warnings()
@@ -207,7 +209,9 @@ class SplunkRestClient(client.Service):
             scheme, host, port = get_splunkd_access_info()
         if os.environ.get("SPLUNK_HOME") is None:
             if not all([scheme, host, port]):
-                raise ValueError("scheme, host, port should be provided outside of Splunk environment")
+                raise ValueError(
+                    "scheme, host, port should be provided outside of Splunk environment"
+                )
 
         validate_scheme_host_port(scheme, host, port)
         if host == "[::1]":

@@ -66,7 +66,13 @@ class ACLManager:
             context: Other configurations for Splunk rest client.
         """
         self._rest_client = rest_client.SplunkRestClient(
-            session_key, app, owner=owner, scheme=scheme, host=host, port=port, **context
+            session_key,
+            app,
+            owner=owner,
+            scheme=scheme,
+            host=host,
+            port=port,
+            **context
         )
 
     @retry(exceptions=[binding.HTTPError])
@@ -136,7 +142,9 @@ class ACLManager:
         """
 
         if not path.endswith("/acl") and not path.endswith("/_acl"):
-            raise ACLException("Invalid endpoint: %s, must end with /acl or /_acl." % path)
+            raise ACLException(
+                "Invalid endpoint: %s, must end with /acl or /_acl." % path
+            )
 
         curr_acl = self.get(path)
 
@@ -162,7 +170,9 @@ class ACLManager:
         postargs["sharing"] = curr_acl["sharing"]
 
         try:
-            content = self._rest_client.post(path, body=binding._encode(**postargs), output_mode="json").body.read()
+            content = self._rest_client.post(
+                path, body=binding._encode(**postargs), output_mode="json"
+            ).body.read()
         except binding.HTTPError as e:
             if e.status != 404:
                 raise

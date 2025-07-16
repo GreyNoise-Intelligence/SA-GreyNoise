@@ -139,7 +139,9 @@ class TimeParser:
         """
 
         try:
-            response = self._rest_client.get(self.URL, output_mode="json", time=time_str).body.read()
+            response = self._rest_client.get(
+                self.URL, output_mode="json", time=time_str
+            ).body.read()
         except binding.HTTPError as e:
             if e.status != 400:
                 raise

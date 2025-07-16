@@ -15,6 +15,7 @@ probably change to something more elegant.
 from __future__ import annotations
 
 import sys
+
 from types import TracebackType
 from typing import (
     Any,
@@ -28,6 +29,7 @@ from typing import (
     Type,
     Union,
 )
+
 
 if sys.version_info >= (3, 8):
     from typing import Protocol, runtime_checkable
@@ -114,7 +116,8 @@ class ExceptionTransformer(Protocol):
     .. versionadded:: 22.1
     """
 
-    def __call__(self, exc_info: ExcInfo) -> Any: ...
+    def __call__(self, exc_info: ExcInfo) -> Any:
+        ...
 
 
 @runtime_checkable
@@ -128,13 +131,17 @@ class BindableLogger(Protocol):
 
     _context: Context
 
-    def bind(self, **new_values: Any) -> BindableLogger: ...
+    def bind(self, **new_values: Any) -> BindableLogger:
+        ...
 
-    def unbind(self, *keys: str) -> BindableLogger: ...
+    def unbind(self, *keys: str) -> BindableLogger:
+        ...
 
-    def try_unbind(self, *keys: str) -> BindableLogger: ...
+    def try_unbind(self, *keys: str) -> BindableLogger:
+        ...
 
-    def new(self, **new_values: Any) -> BindableLogger: ...
+    def new(self, **new_values: Any) -> BindableLogger:
+        ...
 
 
 class FilteringBoundLogger(BindableLogger, Protocol):

@@ -20,6 +20,7 @@ from ._config import configure, get_config
 from .exceptions import DropEvent
 from .typing import EventDict, WrappedLogger
 
+
 __all__ = [
     "CapturedCall",
     "CapturingLogger",
@@ -47,7 +48,9 @@ class LogCapture:
     def __init__(self) -> None:
         self.entries = []
 
-    def __call__(self, _: WrappedLogger, method_name: str, event_dict: EventDict) -> NoReturn:
+    def __call__(
+        self, _: WrappedLogger, method_name: str, event_dict: EventDict
+    ) -> NoReturn:
         event_dict["log_level"] = method_name
         self.entries.append(event_dict)
 
@@ -193,7 +196,6 @@ class CapturingLoggerFactory:
 
     .. versionadded:: 20.2.0
     """
-
     logger: CapturingLogger
 
     def __init__(self) -> None:

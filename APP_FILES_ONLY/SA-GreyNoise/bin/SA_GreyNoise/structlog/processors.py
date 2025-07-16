@@ -19,13 +19,27 @@ import os
 import sys
 import threading
 import time
-from typing import Any, Callable, ClassVar, Collection, NamedTuple, Sequence, TextIO
 
-from ._frames import _find_first_app_frame_and_name, _format_exception, _format_stack
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Collection,
+    NamedTuple,
+    Sequence,
+    TextIO,
+)
+
+from ._frames import (
+    _find_first_app_frame_and_name,
+    _format_exception,
+    _format_stack,
+)
 from ._log_levels import _NAME_TO_LEVEL, add_log_level
 from ._utils import get_processname
 from .tracebacks import ExceptionDictTransformer
 from .typing import EventDict, ExceptionTransformer, ExcInfo, WrappedLogger
+
 
 __all__ = [
     "_NAME_TO_LEVEL",  # some people rely on it being here
@@ -86,8 +100,12 @@ class KeyValueRenderer:
 
             self._repr = _repr
 
-    def __call__(self, _: WrappedLogger, __: str, event_dict: EventDict) -> str:
-        return " ".join(k + "=" + self._repr(v) for k, v in self._ordered_items(event_dict))
+    def __call__(
+        self, _: WrappedLogger, __: str, event_dict: EventDict
+    ) -> str:
+        return " ".join(
+            k + "=" + self._repr(v) for k, v in self._ordered_items(event_dict)
+        )
 
 
 class LogfmtRenderer:
@@ -121,7 +139,9 @@ class LogfmtRenderer:
         self._ordered_items = _items_sorter(sort_keys, key_order, drop_missing)
         self.bool_as_flag = bool_as_flag
 
-    def __call__(self, _: WrappedLogger, __: str, event_dict: EventDict) -> str:
+    def __call__(
+        self, _: WrappedLogger, __: str, event_dict: EventDict
+    ) -> str:
 
         elements: list[str] = []
         for key, value in self._ordered_items(event_dict):
@@ -191,7 +211,9 @@ def _items_sorter(
             return sorted(event_dict.items())
 
     else:
-        ordered_items = operator.methodcaller("items")  # type: ignore[assignment]
+        ordered_items = operator.methodcaller(  # type: ignore[assignment]
+            "items"
+        )
 
     return ordered_items
 
@@ -213,11 +235,15 @@ class UnicodeEncoder:
     _encoding: str
     _errors: str
 
-    def __init__(self, encoding: str = "utf-8", errors: str = "backslashreplace") -> None:
+    def __init__(
+        self, encoding: str = "utf-8", errors: str = "backslashreplace"
+    ) -> None:
         self._encoding = encoding
         self._errors = errors
 
-    def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> EventDict:
+    def __call__(
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> EventDict:
         for key, value in event_dict.items():
             if isinstance(value, str):
                 event_dict[key] = value.encode(self._encoding, self._errors)
@@ -244,11 +270,15 @@ class UnicodeDecoder:
     _encoding: str
     _errors: str
 
-    def __init__(self, encoding: str = "utf-8", errors: str = "replace") -> None:
+    def __init__(
+        self, encoding: str = "utf-8", errors: str = "replace"
+    ) -> None:
         self._encoding = encoding
         self._errors = errors
 
-    def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> EventDict:
+    def __call__(
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> EventDict:
         for key, value in event_dict.items():
             if isinstance(value, bytes):
                 event_dict[key] = value.decode(self._encoding, self._errors)
@@ -289,7 +319,9 @@ class JSONRenderer:
         self._dumps_kw = dumps_kw
         self._dumps = serializer
 
-    def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> str | bytes:
+    def __call__(
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> str | bytes:
         """
         The return type of this depends on the return type of self._dumps.
         """
@@ -348,10 +380,14 @@ class ExceptionRenderer:
     ) -> None:
         self.format_exception = exception_formatter
 
-    def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> EventDict:
+    def __call__(
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> EventDict:
         exc_info = event_dict.pop("exc_info", None)
         if exc_info:
-            event_dict["exception"] = self.format_exception(_figure_out_exc_info(exc_info))
+            event_dict["exception"] = self.format_exception(
+                _figure_out_exc_info(exc_info)
+            )
 
         return event_dict
 
@@ -412,7 +448,9 @@ class TimeStamper:
 
         self._stamper = _make_stamper(fmt, utc, key)
 
-    def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> EventDict:
+    def __call__(
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> EventDict:
         return self._stamper(event_dict)
 
     def __getstate__(self) -> dict[str, Any]:
@@ -426,7 +464,9 @@ class TimeStamper:
         self._stamper = _make_stamper(**state)
 
 
-def _make_stamper(fmt: str | None, utc: bool, key: str) -> Callable[[EventDict], EventDict]:
+def _make_stamper(
+    fmt: str | None, utc: bool, key: str
+) -> Callable[[EventDict], EventDict]:
     """
     Create a stamper function.
     """
@@ -523,7 +563,9 @@ class ExceptionPrettyPrinter:
         else:
             self._file = sys.stdout
 
-    def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> EventDict:
+    def __call__(
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> EventDict:
         exc = event_dict.pop("exception", None)
         if exc is None:
             exc_info = _figure_out_exc_info(event_dict.pop("exc_info", None))
@@ -561,9 +603,13 @@ class StackInfoRenderer:
     def __init__(self, additional_ignores: list[str] | None = None) -> None:
         self._additional_ignores = additional_ignores
 
-    def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> EventDict:
+    def __call__(
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> EventDict:
         if event_dict.pop("stack_info", None):
-            event_dict["stack"] = _format_stack(_find_first_app_frame_and_name(self._additional_ignores)[0])
+            event_dict["stack"] = _format_stack(
+                _find_first_app_frame_and_name(self._additional_ignores)[0]
+            )
 
         return event_dict
 
@@ -644,18 +690,36 @@ class CallsiteParameterAdder:
     .. versionadded:: 21.5.0
     """
 
-    _handlers: ClassVar[dict[CallsiteParameter, Callable[[str, inspect.Traceback], Any]]] = {
-        CallsiteParameter.PATHNAME: (lambda module, frame_info: frame_info.filename),
-        CallsiteParameter.FILENAME: (lambda module, frame_info: os.path.basename(frame_info.filename)),
-        CallsiteParameter.MODULE: (
-            lambda module, frame_info: os.path.splitext(os.path.basename(frame_info.filename))[0]
+    _handlers: ClassVar[
+        dict[CallsiteParameter, Callable[[str, inspect.Traceback], Any]]
+    ] = {
+        CallsiteParameter.PATHNAME: (
+            lambda module, frame_info: frame_info.filename
         ),
-        CallsiteParameter.FUNC_NAME: (lambda module, frame_info: frame_info.function),
-        CallsiteParameter.LINENO: (lambda module, frame_info: frame_info.lineno),
-        CallsiteParameter.THREAD: (lambda module, frame_info: threading.get_ident()),
-        CallsiteParameter.THREAD_NAME: (lambda module, frame_info: threading.current_thread().name),
+        CallsiteParameter.FILENAME: (
+            lambda module, frame_info: os.path.basename(frame_info.filename)
+        ),
+        CallsiteParameter.MODULE: (
+            lambda module, frame_info: os.path.splitext(
+                os.path.basename(frame_info.filename)
+            )[0]
+        ),
+        CallsiteParameter.FUNC_NAME: (
+            lambda module, frame_info: frame_info.function
+        ),
+        CallsiteParameter.LINENO: (
+            lambda module, frame_info: frame_info.lineno
+        ),
+        CallsiteParameter.THREAD: (
+            lambda module, frame_info: threading.get_ident()
+        ),
+        CallsiteParameter.THREAD_NAME: (
+            lambda module, frame_info: threading.current_thread().name
+        ),
         CallsiteParameter.PROCESS: (lambda module, frame_info: os.getpid()),
-        CallsiteParameter.PROCESS_NAME: (lambda module, frame_info: get_processname()),
+        CallsiteParameter.PROCESS_NAME: (
+            lambda module, frame_info: get_processname()
+        ),
     }
     _record_attribute_map: ClassVar[dict[CallsiteParameter, str]] = {
         CallsiteParameter.PATHNAME: "pathname",
@@ -692,10 +756,14 @@ class CallsiteParameterAdder:
         # processor is used in ProcessorFormatter, and additionally the logging
         # module should not be logging using structlog.
         self._additional_ignores = ["logging", *additional_ignores]
-        self._active_handlers: list[tuple[CallsiteParameter, Callable[[str, inspect.Traceback], Any]]] = []
+        self._active_handlers: list[
+            tuple[CallsiteParameter, Callable[[str, inspect.Traceback], Any]]
+        ] = []
         self._record_mappings: list[CallsiteParameterAdder._RecordMapping] = []
         for parameter in parameters:
-            self._active_handlers.append((parameter, self._handlers[parameter]))
+            self._active_handlers.append(
+                (parameter, self._handlers[parameter])
+            )
             self._record_mappings.append(
                 self._RecordMapping(
                     parameter.value,
@@ -703,16 +771,22 @@ class CallsiteParameterAdder:
                 )
             )
 
-    def __call__(self, logger: logging.Logger, name: str, event_dict: EventDict) -> EventDict:
+    def __call__(
+        self, logger: logging.Logger, name: str, event_dict: EventDict
+    ) -> EventDict:
         record: logging.LogRecord | None = event_dict.get("_record")
         from_structlog: bool | None = event_dict.get("_from_structlog")
         # If the event dictionary has a record, but it comes from structlog,
         # then the callsite parameters of the record will not be correct.
         if record is not None and not from_structlog:
             for mapping in self._record_mappings:
-                event_dict[mapping.event_dict_key] = record.__dict__[mapping.record_attribute]
+                event_dict[mapping.event_dict_key] = record.__dict__[
+                    mapping.record_attribute
+                ]
         else:
-            frame, module = _find_first_app_frame_and_name(additional_ignores=self._additional_ignores)
+            frame, module = _find_first_app_frame_and_name(
+                additional_ignores=self._additional_ignores
+            )
             frame_info = inspect.getframeinfo(frame)
             for parameter, handler in self._active_handlers:
                 event_dict[parameter.value] = handler(module, frame_info)
@@ -746,7 +820,9 @@ class EventRenamer:
         self.to = to
         self.replace_by = replace_by
 
-    def __call__(self, logger: logging.Logger, name: str, event_dict: EventDict) -> EventDict:
+    def __call__(
+        self, logger: logging.Logger, name: str, event_dict: EventDict
+    ) -> EventDict:
         event = event_dict.pop("event")
         event_dict[self.to] = event
 

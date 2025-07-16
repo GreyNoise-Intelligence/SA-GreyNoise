@@ -18,9 +18,10 @@
 import re
 from typing import Any, Dict, Optional, Union
 
+from splunklib import binding, client
+
 from solnlib import splunk_rest_client
 from solnlib.utils import retry
-from splunklib import binding, client
 
 
 @retry(exceptions=[binding.HTTPError])

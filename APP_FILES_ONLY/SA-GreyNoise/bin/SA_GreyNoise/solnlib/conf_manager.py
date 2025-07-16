@@ -134,7 +134,11 @@ class ConfFile:
         return stanza
 
     def _decrypt_stanza(self, stanza_name, encrypted_stanza):
-        encrypted_keys = [key for key in encrypted_stanza if encrypted_stanza[key] == self.ENCRYPTED_TOKEN]
+        encrypted_keys = [
+            key
+            for key in encrypted_stanza
+            if encrypted_stanza[key] == self.ENCRYPTED_TOKEN
+        ]
         if encrypted_keys:
             encrypted_fields = json.loads(self._cred_mgr.get_password(stanza_name))
             for key in encrypted_keys:
@@ -208,7 +212,9 @@ class ConfFile:
         try:
             if only_current_app:
                 stanza_mgrs = self._conf.list(
-                    search="eai:acl.app={} name={}".format(self._app, stanza_name.replace("=", r"\="))
+                    search="eai:acl.app={} name={}".format(
+                        self._app, stanza_name.replace("=", r"\=")
+                    )
                 )
             else:
                 stanza_mgrs = self._conf.list(name=stanza_name)
@@ -216,10 +222,14 @@ class ConfFile:
             if e.status != 404:
                 raise
 
-            raise ConfStanzaNotExistException(f"Stanza: {stanza_name} does not exist in {self._name}.conf")
+            raise ConfStanzaNotExistException(
+                f"Stanza: {stanza_name} does not exist in {self._name}.conf"
+            )
 
         if len(stanza_mgrs) == 0:
-            raise ConfStanzaNotExistException(f"Stanza: {stanza_name} does not exist in {self._name}.conf")
+            raise ConfStanzaNotExistException(
+                f"Stanza: {stanza_name} does not exist in {self._name}.conf"
+            )
 
         stanza = self._decrypt_stanza(stanza_mgrs[0].name, stanza_mgrs[0].content)
         stanza["eai:access"] = stanza_mgrs[0].access
@@ -329,8 +339,12 @@ class ConfFile:
         try:
             self._conf.delete(stanza_name)
         except KeyError:
-            logging.error("Delete stanza: %s error: %s.", stanza_name, traceback.format_exc())
-            raise ConfStanzaNotExistException(f"Stanza: {stanza_name} does not exist in {self._name}.conf")
+            logging.error(
+                "Delete stanza: %s error: %s.", stanza_name, traceback.format_exc()
+            )
+            raise ConfStanzaNotExistException(
+                f"Stanza: {stanza_name} does not exist in {self._name}.conf"
+            )
 
     @retry(exceptions=[binding.HTTPError])
     def reload(self):
@@ -527,11 +541,17 @@ def get_log_level(
         )
         conf = cfm.get_conf(conf_name)
     except ConfManagerException:
-        logger.error(f"Failed to fetch configuration file {conf_name}, " f"taking {default_log_level} as log level.")
+        logger.error(
+            f"Failed to fetch configuration file {conf_name}, "
+            f"taking {default_log_level} as log level."
+        )
         return default_log_level
     try:
         logging_details = conf.get("logging")
         return logging_details.get(log_level_field, default_log_level)
     except ConfStanzaNotExistException:
-        logger.error(f'"logging" stanza does not exist under {conf_name}, ' f"taking {default_log_level} as log level.")
+        logger.error(
+            f'"logging" stanza does not exist under {conf_name}, '
+            f"taking {default_log_level} as log level."
+        )
         return default_log_level

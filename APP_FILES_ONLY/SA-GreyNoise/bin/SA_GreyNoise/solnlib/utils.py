@@ -157,7 +157,9 @@ def retry(
                         func.__name__,
                         traceback.format_exc(),
                     )
-                    if not exceptions or any(isinstance(e, exception) for exception in exceptions):
+                    if not exceptions or any(
+                        isinstance(e, exception) for exception in exceptions
+                    ):
                         last_ex = e
                         if i < max_tries - 1:
                             time.sleep(2**i)

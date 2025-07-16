@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import sys
 import warnings
+
 from typing import Any, Callable, Iterable, Sequence, Type, cast
 
 from ._log_levels import make_filtering_bound_logger
@@ -19,6 +20,7 @@ from .contextvars import merge_contextvars
 from .dev import ConsoleRenderer, _use_colors, set_exc_info
 from .processors import StackInfoRenderer, TimeStamper, add_log_level
 from .typing import BindableLogger, Context, Processor, WrappedLogger
+
 
 """
    Any changes to these defaults must be reflected in:
@@ -33,7 +35,10 @@ _BUILTIN_DEFAULT_PROCESSORS: Sequence[Processor] = [
     set_exc_info,
     TimeStamper(fmt="%Y-%m-%d %H:%M:%S", utc=False),
     ConsoleRenderer(
-        colors=_use_colors and sys.stdout is not None and hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
+        colors=_use_colors
+        and sys.stdout is not None
+        and hasattr(sys.stdout, "isatty")
+        and sys.stdout.isatty()
     ),
 ]
 _BUILTIN_DEFAULT_CONTEXT_CLASS = cast(Type[Context], dict)
@@ -51,7 +56,9 @@ class _Configuration:
     default_processors: Iterable[Processor] = _BUILTIN_DEFAULT_PROCESSORS[:]
     default_context_class: type[Context] = _BUILTIN_DEFAULT_CONTEXT_CLASS
     default_wrapper_class: Any = _BUILTIN_DEFAULT_WRAPPER_CLASS
-    logger_factory: Callable[..., WrappedLogger] = _BUILTIN_DEFAULT_LOGGER_FACTORY
+    logger_factory: Callable[
+        ..., WrappedLogger
+    ] = _BUILTIN_DEFAULT_LOGGER_FACTORY
     cache_logger_on_first_use: bool = _BUILTIN_CACHE_LOGGER_ON_FIRST_USE
 
 
@@ -329,7 +336,9 @@ class BoundLoggerLazyProxy:
         cls = self._wrapper_class or _CONFIG.default_wrapper_class
         # Looks like Protocols ignore definitions of __init__ so we have to
         # silence Mypy here.
-        logger = cls(_logger, processors=procs, context=ctx)  # type: ignore[call-arg]
+        logger = cls(
+            _logger, processors=procs, context=ctx  # type: ignore[call-arg]
+        )
 
         def finalized_bind(**new_values: Any) -> BindableLogger:
             """
@@ -341,7 +350,8 @@ class BoundLoggerLazyProxy:
                 return logger
 
         if self._cache_logger_on_first_use is True or (
-            self._cache_logger_on_first_use is None and _CONFIG.cache_logger_on_first_use is True
+            self._cache_logger_on_first_use is None
+            and _CONFIG.cache_logger_on_first_use is True
         ):
             self.bind = finalized_bind  # type: ignore[assignment]
 

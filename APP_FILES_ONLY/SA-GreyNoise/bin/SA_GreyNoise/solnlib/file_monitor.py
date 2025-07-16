@@ -87,7 +87,9 @@ class FileMonitor:
       >>> fm.start()
     """
 
-    def __init__(self, callback: Callable[[List[str]], Any], files: List, interval: int = 1):
+    def __init__(
+        self, callback: Callable[[List[str]], Any], files: List, interval: int = 1
+    ):
         """Initializes FileMonitor.
 
         Arguments:

@@ -140,7 +140,9 @@ def make_splunkhome_path(parts: Union[List, Tuple]) -> str:
 
     # Check that we haven't escaped from intended parent directories.
     if os.path.relpath(fullpath, basepath)[0:2] == "..":
-        raise ValueError(f'Illegal escape from parent directory "{basepath}": {fullpath}')
+        raise ValueError(
+            f'Illegal escape from parent directory "{basepath}": {fullpath}'
+        )
     return fullpath
 
 

@@ -13,11 +13,13 @@ from __future__ import annotations
 
 import sys
 import warnings
+
 from io import StringIO
 from typing import Any, Iterable, TextIO, Type, Union
 
 from ._frames import _format_exception
 from .typing import EventDict, ExceptionRenderer, ExcInfo, WrappedLogger
+
 
 if sys.version_info >= (3, 8):
     from typing import Protocol
@@ -37,6 +39,7 @@ except ImportError:
 
 try:
     import rich
+
     from rich.console import Console
     from rich.traceback import Traceback
 except ImportError:
@@ -180,7 +183,9 @@ def rich_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
     .. versionadded:: 21.2
     """
     sio.write("\n")
-    Console(file=sio, color_system="truecolor").print(Traceback.from_exception(*exc_info, show_locals=True))
+    Console(file=sio, color_system="truecolor").print(
+        Traceback.from_exception(*exc_info, show_locals=True)
+    )
 
 
 def better_traceback(sio: TextIO, exc_info: ExcInfo) -> None:
@@ -314,7 +319,9 @@ class ConsoleRenderer:
 
         for key in self._level_to_color.keys():
             self._level_to_color[key] += styles.bright
-        self._longest_level = len(max(self._level_to_color.keys(), key=lambda e: len(e)))
+        self._longest_level = len(
+            max(self._level_to_color.keys(), key=lambda e: len(e))
+        )
 
         self._repr_native_str = repr_native_str
         self._exception_formatter = exception_formatter
@@ -334,7 +341,9 @@ class ConsoleRenderer:
         else:
             return repr(val)
 
-    def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> str:
+    def __call__(
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> str:
 
         sio = StringIO()
 
@@ -350,7 +359,11 @@ class ConsoleRenderer:
         level = event_dict.pop("level", None)
         if level is not None:
             sio.write(
-                "[" + self._level_to_color.get(level, "") + _pad(level, self._longest_level) + self._styles.reset + "] "
+                "["
+                + self._level_to_color.get(level, "")
+                + _pad(level, self._longest_level)
+                + self._styles.reset
+                + "] "
             )
 
         # force event to str for compatibility with standard library
@@ -369,7 +382,14 @@ class ConsoleRenderer:
             logger_name = event_dict.pop("logger_name", None)
 
         if logger_name is not None:
-            sio.write("[" + self._styles.logger_name + self._styles.bright + logger_name + self._styles.reset + "] ")
+            sio.write(
+                "["
+                + self._styles.logger_name
+                + self._styles.bright
+                + logger_name
+                + self._styles.reset
+                + "] "
+            )
 
         stack = event_dict.pop("stack", None)
         exc = event_dict.pop("exception", None)
@@ -404,7 +424,10 @@ class ConsoleRenderer:
             self._exception_formatter(sio, exc_info)
         elif exc is not None:
             if self._exception_formatter is not plain_traceback:
-                warnings.warn("Remove `format_exc_info` from your processor chain " "if you want pretty exceptions.")
+                warnings.warn(
+                    "Remove `format_exc_info` from your processor chain "
+                    "if you want pretty exceptions."
+                )
             sio.write("\n" + exc)
 
         return sio.getvalue()
@@ -445,13 +468,19 @@ class ConsoleRenderer:
 _SENTINEL = object()
 
 
-def set_exc_info(logger: WrappedLogger, method_name: str, event_dict: EventDict) -> EventDict:
+def set_exc_info(
+    logger: WrappedLogger, method_name: str, event_dict: EventDict
+) -> EventDict:
+
     """
     Set ``event_dict["exc_info"] = True`` if *method_name* is ``"exception"``.
 
     Do nothing if the name is different or ``exc_info`` is already set.
     """
-    if method_name != "exception" or event_dict.get("exc_info", _SENTINEL) is not _SENTINEL:
+    if (
+        method_name != "exception"
+        or event_dict.get("exc_info", _SENTINEL) is not _SENTINEL
+    ):
         return event_dict
 
     event_dict["exc_info"] = True

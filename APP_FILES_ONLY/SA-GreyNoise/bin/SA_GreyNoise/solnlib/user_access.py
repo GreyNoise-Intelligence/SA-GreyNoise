@@ -19,10 +19,11 @@
 import json
 from typing import List, Optional
 
+from splunklib import binding
+
 from solnlib import _utils
 from solnlib import splunk_rest_client as rest_client
 from solnlib import utils
-from splunklib import binding
 
 __all__ = [
     "ObjectACLException",
@@ -106,7 +107,9 @@ class ObjectACL:
     @classmethod
     def _check_perms(cls, obj_perms):
         if not isinstance(obj_perms, dict):
-            raise ObjectACLException("Invalid object acl perms type: %s, should be a dict." % type(obj_perms))
+            raise ObjectACLException(
+                "Invalid object acl perms type: %s, should be a dict." % type(obj_perms)
+            )
 
         if not (
             cls.OBJ_PERMS_READ_KEY in obj_perms
@@ -114,7 +117,8 @@ class ObjectACL:
             and cls.OBJ_PERMS_DELETE_KEY in obj_perms
         ):
             raise ObjectACLException(
-                "Invalid object acl perms: %s, " "should include read, write and delete perms." % obj_perms
+                "Invalid object acl perms: %s, "
+                "should include read, write and delete perms." % obj_perms
             )
 
     @property
@@ -167,7 +171,9 @@ class ObjectACL:
             Object acl record key.
         """
 
-        return "{obj_collection}_{obj_id}".format(obj_collection=obj_collection, obj_id=obj_id)
+        return "{obj_collection}_{obj_id}".format(
+            obj_collection=obj_collection, obj_id=obj_id
+        )
 
     @staticmethod
     def parse(obj_acl_record: dict) -> "ObjectACL":
@@ -200,7 +206,9 @@ class ObjectACL:
 
         for perm_key in self._obj_perms:
             self._obj_perms[perm_key] = list(
-                set.union(set(self._obj_perms[perm_key]), set(obj_acl._obj_perms[perm_key]))
+                set.union(
+                    set(self._obj_perms[perm_key]), set(obj_acl._obj_perms[perm_key])
+                )
             )
             if self.OBJ_PERMS_ALLOW_ALL in self._obj_perms[perm_key]:
                 self._obj_perms[perm_key] = [self.OBJ_PERMS_ALLOW_ALL]
@@ -256,7 +264,9 @@ class ObjectACLManager:
         Raises:
             ObjectACLManagerException: If init ObjectACLManager failed.
         """
-        collection_name = "{app}_{collection_name}".format(app=app, collection_name=collection_name)
+        collection_name = "{app}_{collection_name}".format(
+            app=app, collection_name=collection_name
+        )
         try:
             self._collection_data = _utils.get_collection_data(
                 collection_name,
@@ -270,7 +280,9 @@ class ObjectACLManager:
                 **context,
             )
         except KeyError:
-            raise ObjectACLManagerException(f"Get object acl collection: {collection_name} fail.")
+            raise ObjectACLManagerException(
+                f"Get object acl collection: {collection_name} fail."
+            )
 
     @utils.retry(exceptions=[binding.HTTPError])
     def update_acl(
@@ -416,7 +428,11 @@ class ObjectACLManager:
             if e.status != 404:
                 raise
 
-            raise ObjectACLNotExistException("Object ACL info of {}_{} does not exist.".format(obj_collection, obj_id))
+            raise ObjectACLNotExistException(
+                "Object ACL info of {}_{} does not exist.".format(
+                    obj_collection, obj_id
+                )
+            )
 
         return ObjectACL.parse(obj_acl)
 
@@ -435,7 +451,14 @@ class ObjectACLManager:
             List of `ObjectACL` instances.
         """
 
-        query = json.dumps({"$or": [{"_key": ObjectACL.generate_key(obj_collection, obj_id)} for obj_id in obj_ids]})
+        query = json.dumps(
+            {
+                "$or": [
+                    {"_key": ObjectACL.generate_key(obj_collection, obj_id)}
+                    for obj_id in obj_ids
+                ]
+            }
+        )
         obj_acls = self._collection_data.query(query=query)
 
         return [ObjectACL.parse(obj_acl) for obj_acl in obj_acls]
@@ -462,7 +485,11 @@ class ObjectACLManager:
             if e.status != 404:
                 raise
 
-            raise ObjectACLNotExistException("Object ACL info of {}_{} does not exist.".format(obj_collection, obj_id))
+            raise ObjectACLNotExistException(
+                "Object ACL info of {}_{} does not exist.".format(
+                    obj_collection, obj_id
+                )
+            )
 
     @utils.retry(exceptions=[binding.HTTPError])
     def delete_acls(self, obj_collection: str, obj_ids: List[str]):
@@ -476,7 +503,14 @@ class ObjectACLManager:
             obj_ids: IDs of objects.
         """
 
-        query = json.dumps({"$or": [{"_key": ObjectACL.generate_key(obj_collection, obj_id)} for obj_id in obj_ids]})
+        query = json.dumps(
+            {
+                "$or": [
+                    {"_key": ObjectACL.generate_key(obj_collection, obj_id)}
+                    for obj_id in obj_ids
+                ]
+            }
+        )
         self._collection_data.delete(query=query)
 
     @utils.retry(exceptions=[binding.HTTPError])
@@ -572,7 +606,9 @@ class AppCapabilityManager:
                 **context,
             )
         except KeyError:
-            raise AppCapabilityManagerException(f"Get app capabilities collection: {collection_name} failed.")
+            raise AppCapabilityManagerException(
+                f"Get app capabilities collection: {collection_name} failed."
+            )
 
     @utils.retry(exceptions=[binding.HTTPError])
     def register_capabilities(self, capabilities: dict):
@@ -612,7 +648,9 @@ class AppCapabilityManager:
             if e.status != 404:
                 raise
 
-            raise AppCapabilityNotExistException("App capabilities for %s have not been registered." % self._app)
+            raise AppCapabilityNotExistException(
+                "App capabilities for %s have not been registered." % self._app
+            )
 
     @utils.retry(exceptions=[binding.HTTPError])
     def capabilities_are_registered(self) -> bool:
@@ -649,7 +687,9 @@ class AppCapabilityManager:
             if e.status != 404:
                 raise
 
-            raise AppCapabilityNotExistException("App capabilities for %s have not been registered." % self._app)
+            raise AppCapabilityNotExistException(
+                "App capabilities for %s have not been registered." % self._app
+            )
 
         return record["capabilities"]
 
@@ -711,7 +751,9 @@ def check_user_access(
        >>>     ...
     """
 
-    username = get_current_username(session_key, scheme=scheme, host=host, port=port, **context)
+    username = get_current_username(
+        session_key, scheme=scheme, host=host, port=port, **context
+    )
     capability = capabilities[obj_type][operation]
     if not user_is_capable(
         session_key,
@@ -722,7 +764,10 @@ def check_user_access(
         port=port,
         **context,
     ):
-        raise UserAccessException("Permission denied, %s does not have the capability: %s." % (username, capability))
+        raise UserAccessException(
+            "Permission denied, %s does not have the capability: %s."
+            % (username, capability)
+        )
 
 
 class InvalidSessionKeyException(Exception):
@@ -759,9 +804,13 @@ def get_current_username(
        >>> user_name = user_access.get_current_username(session_key)
     """
 
-    _rest_client = rest_client.SplunkRestClient(session_key, "-", scheme=scheme, host=host, port=port, **context)
+    _rest_client = rest_client.SplunkRestClient(
+        session_key, "-", scheme=scheme, host=host, port=port, **context
+    )
     try:
-        response = _rest_client.get("/services/authentication/current-context", output_mode="json").body.read()
+        response = _rest_client.get(
+            "/services/authentication/current-context", output_mode="json"
+        ).body.read()
     except binding.HTTPError as e:
         if e.status != 401:
             raise
@@ -807,7 +856,9 @@ def get_user_capabilities(
        >>>     session_key, 'test_user')
     """
 
-    _rest_client = rest_client.SplunkRestClient(session_key, "-", scheme=scheme, host=host, port=port, **context)
+    _rest_client = rest_client.SplunkRestClient(
+        session_key, "-", scheme=scheme, host=host, port=port, **context
+    )
     url = f"/services/authentication/users/{username}"
     try:
         response = _rest_client.get(url, output_mode="json").body.read()
@@ -852,12 +903,16 @@ def user_is_capable(
        >>>     session_key, 'test_user', 'object_read_capability')
     """
 
-    capabilities = get_user_capabilities(session_key, username, scheme=scheme, host=host, port=port, **context)
+    capabilities = get_user_capabilities(
+        session_key, username, scheme=scheme, host=host, port=port, **context
+    )
     return capability in capabilities
 
 
 @utils.retry(exceptions=[binding.HTTPError])
-def get_user_roles(session_key: str, username: str, scheme=None, host=None, port=None, **context) -> List:
+def get_user_roles(
+    session_key: str, username: str, scheme=None, host=None, port=None, **context
+) -> List:
     """Get user roles.
 
     Arguments:
@@ -879,7 +934,9 @@ def get_user_roles(session_key: str, username: str, scheme=None, host=None, port
        >>> user_roles = user_access.get_user_roles(session_key, 'test_user')
     """
 
-    _rest_client = rest_client.SplunkRestClient(session_key, "-", scheme=scheme, host=host, port=port, **context)
+    _rest_client = rest_client.SplunkRestClient(
+        session_key, "-", scheme=scheme, host=host, port=port, **context
+    )
     url = f"/services/authentication/users/{username}"
     try:
         response = _rest_client.get(url, output_mode="json").body.read()

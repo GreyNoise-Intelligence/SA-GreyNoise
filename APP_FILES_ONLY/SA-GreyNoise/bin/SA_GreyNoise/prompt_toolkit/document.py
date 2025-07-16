@@ -25,9 +25,7 @@ __all__ = [
 # (This is a 'word' in Vi.)
 _FIND_WORD_RE = re.compile(r"([a-zA-Z0-9_]+|[^a-zA-Z0-9_\s]+)")
 _FIND_CURRENT_WORD_RE = re.compile(r"^([a-zA-Z0-9_]+|[^a-zA-Z0-9_\s]+)")
-_FIND_CURRENT_WORD_INCLUDE_TRAILING_WHITESPACE_RE = re.compile(
-    r"^(([a-zA-Z0-9_]+|[^a-zA-Z0-9_\s]+)\s*)"
-)
+_FIND_CURRENT_WORD_INCLUDE_TRAILING_WHITESPACE_RE = re.compile(r"^(([a-zA-Z0-9_]+|[^a-zA-Z0-9_\s]+)\s*)")
 
 # Regex for finding "WORDS" in documents.
 # (This is a 'WORD in Vi.)
@@ -435,9 +433,7 @@ class Document:
             pass
         return None
 
-    def get_word_before_cursor(
-        self, WORD: bool = False, pattern: Pattern[str] | None = None
-    ) -> str:
+    def get_word_before_cursor(self, WORD: bool = False, pattern: Pattern[str] | None = None) -> str:
         """
         Give the word before the cursor.
         If we have whitespace before the cursor this returns an empty string.
@@ -454,15 +450,11 @@ class Document:
 
         return text_before_cursor[len(text_before_cursor) + start :]
 
-    def _is_word_before_cursor_complete(
-        self, WORD: bool = False, pattern: Pattern[str] | None = None
-    ) -> bool:
+    def _is_word_before_cursor_complete(self, WORD: bool = False, pattern: Pattern[str] | None = None) -> bool:
         if pattern:
             return self.find_start_of_previous_word(WORD=WORD, pattern=pattern) is None
         else:
-            return (
-                self.text_before_cursor == "" or self.text_before_cursor[-1:].isspace()
-            )
+            return self.text_before_cursor == "" or self.text_before_cursor[-1:].isspace()
 
     def find_start_of_previous_word(
         self, count: int = 1, WORD: bool = False, pattern: Pattern[str] | None = None
@@ -548,9 +540,7 @@ class Document:
         start, end = self.find_boundaries_of_current_word(WORD=WORD)
         return self.text[self.cursor_position + start : self.cursor_position + end]
 
-    def find_next_word_beginning(
-        self, count: int = 1, WORD: bool = False
-    ) -> int | None:
+    def find_next_word_beginning(self, count: int = 1, WORD: bool = False) -> int | None:
         """
         Return an index relative to the cursor position pointing to the start
         of the next word. Return `None` if nothing was found.
@@ -605,9 +595,7 @@ class Document:
             pass
         return None
 
-    def find_previous_word_beginning(
-        self, count: int = 1, WORD: bool = False
-    ) -> int | None:
+    def find_previous_word_beginning(self, count: int = 1, WORD: bool = False) -> int | None:
         """
         Return an index relative to the cursor position pointing to the start
         of the previous word. Return `None` if nothing was found.
@@ -626,9 +614,7 @@ class Document:
             pass
         return None
 
-    def find_previous_word_ending(
-        self, count: int = 1, WORD: bool = False
-    ) -> int | None:
+    def find_previous_word_ending(self, count: int = 1, WORD: bool = False) -> int | None:
         """
         Return an index relative to the cursor position pointing to the end
         of the previous word. Return `None` if nothing was found.
@@ -653,9 +639,7 @@ class Document:
             pass
         return None
 
-    def find_next_matching_line(
-        self, match_func: Callable[[str], bool], count: int = 1
-    ) -> int | None:
+    def find_next_matching_line(self, match_func: Callable[[str], bool], count: int = 1) -> int | None:
         """
         Look downwards for empty lines.
         Return the line index, relative to the current line.
@@ -672,9 +656,7 @@ class Document:
 
         return result
 
-    def find_previous_matching_line(
-        self, match_func: Callable[[str], bool], count: int = 1
-    ) -> int | None:
+    def find_previous_matching_line(self, match_func: Callable[[str], bool], count: int = 1) -> int | None:
         """
         Look upwards for empty lines.
         Return the line index, relative to the current line.
@@ -709,9 +691,7 @@ class Document:
 
         return min(count, len(self.current_line_after_cursor))
 
-    def get_cursor_up_position(
-        self, count: int = 1, preferred_column: int | None = None
-    ) -> int:
+    def get_cursor_up_position(self, count: int = 1, preferred_column: int | None = None) -> int:
         """
         Return the relative cursor position (character index) where we would be if the
         user pressed the arrow-up button.
@@ -720,20 +700,11 @@ class Document:
                                  staying at the current column.
         """
         assert count >= 1
-        column = (
-            self.cursor_position_col if preferred_column is None else preferred_column
-        )
+        column = self.cursor_position_col if preferred_column is None else preferred_column
 
-        return (
-            self.translate_row_col_to_index(
-                max(0, self.cursor_position_row - count), column
-            )
-            - self.cursor_position
-        )
+        return self.translate_row_col_to_index(max(0, self.cursor_position_row - count), column) - self.cursor_position
 
-    def get_cursor_down_position(
-        self, count: int = 1, preferred_column: int | None = None
-    ) -> int:
+    def get_cursor_down_position(self, count: int = 1, preferred_column: int | None = None) -> int:
         """
         Return the relative cursor position (character index) where we would be if the
         user pressed the arrow-down button.
@@ -742,18 +713,11 @@ class Document:
                                  staying at the current column.
         """
         assert count >= 1
-        column = (
-            self.cursor_position_col if preferred_column is None else preferred_column
-        )
+        column = self.cursor_position_col if preferred_column is None else preferred_column
 
-        return (
-            self.translate_row_col_to_index(self.cursor_position_row + count, column)
-            - self.cursor_position
-        )
+        return self.translate_row_col_to_index(self.cursor_position_row + count, column) - self.cursor_position
 
-    def find_enclosing_bracket_right(
-        self, left_ch: str, right_ch: str, end_pos: int | None = None
-    ) -> int | None:
+    def find_enclosing_bracket_right(self, left_ch: str, right_ch: str, end_pos: int | None = None) -> int | None:
         """
         Find the right bracket enclosing current position. Return the relative
         position to the cursor position.
@@ -784,9 +748,7 @@ class Document:
 
         return None
 
-    def find_enclosing_bracket_left(
-        self, left_ch: str, right_ch: str, start_pos: int | None = None
-    ) -> int | None:
+    def find_enclosing_bracket_left(self, left_ch: str, right_ch: str, start_pos: int | None = None) -> int | None:
         """
         Find the left bracket enclosing current position. Return the relative
         position to the cursor position.
@@ -817,9 +779,7 @@ class Document:
 
         return None
 
-    def find_matching_bracket_position(
-        self, start_pos: int | None = None, end_pos: int | None = None
-    ) -> int:
+    def find_matching_bracket_position(self, start_pos: int | None = None, end_pos: int | None = None) -> int:
         """
         Return relative cursor position of matching [, (, { or < bracket.
 
@@ -849,11 +809,7 @@ class Document:
         """Relative position for the start of this line."""
         if after_whitespace:
             current_line = self.current_line
-            return (
-                len(current_line)
-                - len(current_line.lstrip())
-                - self.cursor_position_col
-            )
+            return len(current_line) - len(current_line.lstrip()) - self.cursor_position_col
         else:
             return -len(self.current_line_before_cursor)
 
@@ -881,9 +837,7 @@ class Document:
 
     def selection_range(
         self,
-    ) -> tuple[
-        int, int
-    ]:  # XXX: shouldn't this return `None` if there is no selection???
+    ) -> tuple[int, int]:  # XXX: shouldn't this return `None` if there is no selection???
         """
         Return (from, to) tuple of the selection.
         start and end position are included.
@@ -892,9 +846,7 @@ class Document:
         `selection_ranges` instead.
         """
         if self.selection:
-            from_, to = sorted(
-                [self.cursor_position, self.selection.original_cursor_position]
-            )
+            from_, to = sorted([self.cursor_position, self.selection.original_cursor_position])
         else:
             from_, to = self.cursor_position, self.cursor_position
 
@@ -910,9 +862,7 @@ class Document:
         selection.
         """
         if self.selection:
-            from_, to = sorted(
-                [self.cursor_position, self.selection.original_cursor_position]
-            )
+            from_, to = sorted([self.cursor_position, self.selection.original_cursor_position])
 
             if self.selection.type == SelectionType.BLOCK:
                 from_line, from_column = self.translate_index_to_position(from_)
@@ -929,9 +879,7 @@ class Document:
                     if from_column <= line_length:
                         yield (
                             self.translate_row_col_to_index(l, from_column),
-                            self.translate_row_col_to_index(
-                                l, min(line_length, to_column)
-                            ),
+                            self.translate_row_col_to_index(l, min(line_length, to_column)),
                         )
             else:
                 # In case of a LINES selection, go to the start/end of the lines.
@@ -965,9 +913,7 @@ class Document:
             row_start = self.translate_row_col_to_index(row, 0)
             row_end = self.translate_row_col_to_index(row, len(line))
 
-            from_, to = sorted(
-                [self.cursor_position, self.selection.original_cursor_position]
-            )
+            from_, to = sorted([self.cursor_position, self.selection.original_cursor_position])
 
             # Take the intersection of the current line and the selection.
             intersection_start = max(row_start, from_)
@@ -1055,14 +1001,10 @@ class Document:
         if data.type == SelectionType.CHARACTERS:
             if after:
                 new_text = (
-                    self.text[: self.cursor_position + 1]
-                    + data.text * count
-                    + self.text[self.cursor_position + 1 :]
+                    self.text[: self.cursor_position + 1] + data.text * count + self.text[self.cursor_position + 1 :]
                 )
             else:
-                new_text = (
-                    self.text_before_cursor + data.text * count + self.text_after_cursor
-                )
+                new_text = self.text_before_cursor + data.text * count + self.text_after_cursor
 
             new_cursor_position = self.cursor_position + len(data.text) * count
             if before:
@@ -1090,11 +1032,7 @@ class Document:
                     lines.append("")
 
                 lines[index] = lines[index].ljust(start_column)
-                lines[index] = (
-                    lines[index][:start_column]
-                    + line * count
-                    + lines[index][start_column:]
-                )
+                lines[index] = lines[index][:start_column] + line * count + lines[index][start_column:]
 
             new_text = "\n".join(lines)
             new_cursor_position = self.cursor_position + (0 if before else 1)
@@ -1122,9 +1060,7 @@ class Document:
         def match_func(text: str) -> bool:
             return not text or text.isspace()
 
-        line_index = self.find_previous_matching_line(
-            match_func=match_func, count=count
-        )
+        line_index = self.find_previous_matching_line(match_func=match_func, count=count)
 
         if line_index:
             add = 0 if before else 1
@@ -1170,8 +1106,7 @@ class Document:
 
         if selection_state:
             selection_state = SelectionState(
-                original_cursor_position=selection_state.original_cursor_position
-                + len(text),
+                original_cursor_position=selection_state.original_cursor_position + len(text),
                 type=selection_state.type,
             )
 

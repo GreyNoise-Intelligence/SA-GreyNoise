@@ -4,12 +4,7 @@ import typing as t
 from functools import update_wrapper
 from gettext import gettext as _
 
-from .core import Argument
-from .core import Command
-from .core import Context
-from .core import Group
-from .core import Option
-from .core import Parameter
+from .core import Argument, Command, Context, Group, Option, Parameter
 from .globals import get_current_context
 from .utils import echo
 
@@ -93,7 +88,7 @@ def make_pass_decorator(
 
         return update_wrapper(new_func, f)
 
-    return decorator  # type: ignore[return-value]
+    return decorator
 
 
 def pass_meta_key(
@@ -122,11 +117,8 @@ def pass_meta_key(
     if doc_description is None:
         doc_description = f"the {key!r} key from :attr:`click.Context.meta`"
 
-    decorator.__doc__ = (
-        f"Decorator that passes {doc_description} as the first argument"
-        " to the decorated function."
-    )
-    return decorator  # type: ignore[return-value]
+    decorator.__doc__ = f"Decorator that passes {doc_description} as the first argument" " to the decorated function."
+    return decorator
 
 
 CmdType = t.TypeVar("CmdType", bound=Command)
@@ -134,8 +126,7 @@ CmdType = t.TypeVar("CmdType", bound=Command)
 
 # variant: no call, directly as decorator for a function.
 @t.overload
-def command(name: _AnyCallable) -> Command:
-    ...
+def command(name: _AnyCallable) -> Command: ...
 
 
 # variant: with positional name and with positional or keyword cls argument:
@@ -145,8 +136,7 @@ def command(
     name: t.Optional[str],
     cls: t.Type[CmdType],
     **attrs: t.Any,
-) -> t.Callable[[_AnyCallable], CmdType]:
-    ...
+) -> t.Callable[[_AnyCallable], CmdType]: ...
 
 
 # variant: name omitted, cls _must_ be a keyword argument, @command(cls=CommandCls, ...)
@@ -156,16 +146,12 @@ def command(
     *,
     cls: t.Type[CmdType],
     **attrs: t.Any,
-) -> t.Callable[[_AnyCallable], CmdType]:
-    ...
+) -> t.Callable[[_AnyCallable], CmdType]: ...
 
 
 # variant: with optional string name, no cls argument provided.
 @t.overload
-def command(
-    name: t.Optional[str] = ..., cls: None = None, **attrs: t.Any
-) -> t.Callable[[_AnyCallable], Command]:
-    ...
+def command(name: t.Optional[str] = ..., cls: None = None, **attrs: t.Any) -> t.Callable[[_AnyCallable], Command]: ...
 
 
 def command(
@@ -255,8 +241,7 @@ GrpType = t.TypeVar("GrpType", bound=Group)
 
 # variant: no call, directly as decorator for a function.
 @t.overload
-def group(name: _AnyCallable) -> Group:
-    ...
+def group(name: _AnyCallable) -> Group: ...
 
 
 # variant: with positional name and with positional or keyword cls argument:
@@ -266,8 +251,7 @@ def group(
     name: t.Optional[str],
     cls: t.Type[GrpType],
     **attrs: t.Any,
-) -> t.Callable[[_AnyCallable], GrpType]:
-    ...
+) -> t.Callable[[_AnyCallable], GrpType]: ...
 
 
 # variant: name omitted, cls _must_ be a keyword argument, @group(cmd=GroupCls, ...)
@@ -277,16 +261,12 @@ def group(
     *,
     cls: t.Type[GrpType],
     **attrs: t.Any,
-) -> t.Callable[[_AnyCallable], GrpType]:
-    ...
+) -> t.Callable[[_AnyCallable], GrpType]: ...
 
 
 # variant: with optional string name, no cls argument provided.
 @t.overload
-def group(
-    name: t.Optional[str] = ..., cls: None = None, **attrs: t.Any
-) -> t.Callable[[_AnyCallable], Group]:
-    ...
+def group(name: t.Optional[str] = ..., cls: None = None, **attrs: t.Any) -> t.Callable[[_AnyCallable], Group]: ...
 
 
 def group(
@@ -320,9 +300,7 @@ def _param_memo(f: t.Callable[..., t.Any], param: Parameter) -> None:
         f.__click_params__.append(param)  # type: ignore
 
 
-def argument(
-    *param_decls: str, cls: t.Optional[t.Type[Argument]] = None, **attrs: t.Any
-) -> t.Callable[[FC], FC]:
+def argument(*param_decls: str, cls: t.Optional[t.Type[Argument]] = None, **attrs: t.Any) -> t.Callable[[FC], FC]:
     """Attaches an argument to the command.  All positional arguments are
     passed as parameter declarations to :class:`Argument`; all keyword
     arguments are forwarded unchanged (except ``cls``).
@@ -348,9 +326,7 @@ def argument(
     return decorator
 
 
-def option(
-    *param_decls: str, cls: t.Optional[t.Type[Option]] = None, **attrs: t.Any
-) -> t.Callable[[FC], FC]:
+def option(*param_decls: str, cls: t.Optional[t.Type[Option]] = None, **attrs: t.Any) -> t.Callable[[FC], FC]:
     """Attaches an option to the command.  All positional arguments are
     passed as parameter declarations to :class:`Option`; all keyword
     arguments are forwarded unchanged (except ``cls``).
@@ -495,7 +471,7 @@ def version_option(
             metadata: t.Optional[types.ModuleType]
 
             try:
-                from importlib import metadata  # type: ignore
+                from importlib import metadata
             except ImportError:
                 # Python < 3.8
                 import importlib_metadata as metadata  # type: ignore
@@ -504,14 +480,11 @@ def version_option(
                 version = metadata.version(package_name)  # type: ignore
             except metadata.PackageNotFoundError:  # type: ignore
                 raise RuntimeError(
-                    f"{package_name!r} is not installed. Try passing"
-                    " 'package_name' instead."
+                    f"{package_name!r} is not installed. Try passing" " 'package_name' instead."
                 ) from None
 
         if version is None:
-            raise RuntimeError(
-                f"Could not determine the version for {package_name!r} automatically."
-            )
+            raise RuntimeError(f"Could not determine the version for {package_name!r} automatically.")
 
         echo(
             message % {"prog": prog_name, "package": package_name, "version": version},
@@ -530,32 +503,41 @@ def version_option(
     return option(*param_decls, **kwargs)
 
 
-def help_option(*param_decls: str, **kwargs: t.Any) -> t.Callable[[FC], FC]:
-    """Add a ``--help`` option which immediately prints the help page
+class HelpOption(Option):
+    """Pre-configured ``--help`` option which immediately prints the help page
     and exits the program.
+    """
 
-    This is usually unnecessary, as the ``--help`` option is added to
-    each command automatically unless ``add_help_option=False`` is
-    passed.
+    def __init__(
+        self,
+        param_decls: t.Optional[t.Sequence[str]] = None,
+        **kwargs: t.Any,
+    ) -> None:
+        if not param_decls:
+            param_decls = ("--help",)
+
+        kwargs.setdefault("is_flag", True)
+        kwargs.setdefault("expose_value", False)
+        kwargs.setdefault("is_eager", True)
+        kwargs.setdefault("help", _("Show this message and exit."))
+        kwargs.setdefault("callback", self.show_help)
+
+        super().__init__(param_decls, **kwargs)
+
+    @staticmethod
+    def show_help(ctx: Context, param: Parameter, value: bool) -> None:
+        """Callback that print the help page on ``<stdout>`` and exits."""
+        if value and not ctx.resilient_parsing:
+            echo(ctx.get_help(), color=ctx.color)
+            ctx.exit()
+
+
+def help_option(*param_decls: str, **kwargs: t.Any) -> t.Callable[[FC], FC]:
+    """Decorator for the pre-configured ``--help`` option defined above.
 
     :param param_decls: One or more option names. Defaults to the single
         value ``"--help"``.
     :param kwargs: Extra arguments are passed to :func:`option`.
     """
-
-    def callback(ctx: Context, param: Parameter, value: bool) -> None:
-        if not value or ctx.resilient_parsing:
-            return
-
-        echo(ctx.get_help(), color=ctx.color)
-        ctx.exit()
-
-    if not param_decls:
-        param_decls = ("--help",)
-
-    kwargs.setdefault("is_flag", True)
-    kwargs.setdefault("expose_value", False)
-    kwargs.setdefault("is_eager", True)
-    kwargs.setdefault("help", _("Show this message and exit."))
-    kwargs["callback"] = callback
+    kwargs.setdefault("cls", HelpOption)
     return option(*param_decls, **kwargs)

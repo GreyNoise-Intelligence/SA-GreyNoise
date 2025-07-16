@@ -134,20 +134,14 @@ def _normalize_extra_values(results: Any) -> Any:
     return results
 
 
-def _format_marker(
-    marker: list[str] | MarkerAtom | str, first: bool | None = True
-) -> str:
+def _format_marker(marker: list[str] | MarkerAtom | str, first: bool | None = True) -> str:
     assert isinstance(marker, (list, tuple, str))
 
     # Sometimes we have a structure like [[...]] which is a single item list
     # where the single item is itself it's own list. In that case we want skip
     # the rest of this function so that we don't get extraneous () on the
     # outside.
-    if (
-        isinstance(marker, list)
-        and len(marker) == 1
-        and isinstance(marker[0], (list, tuple))
-    ):
+    if isinstance(marker, list) and len(marker) == 1 and isinstance(marker[0], (list, tuple)):
         return _format_marker(marker[0])
 
     if isinstance(marker, list):
@@ -316,9 +310,7 @@ class Marker:
             if current_environment["extra"] is None:
                 current_environment["extra"] = ""
 
-        return _evaluate_markers(
-            self._markers, _repair_python_full_version(current_environment)
-        )
+        return _evaluate_markers(self._markers, _repair_python_full_version(current_environment))
 
 
 def _repair_python_full_version(env: dict[str, str]) -> dict[str, str]:

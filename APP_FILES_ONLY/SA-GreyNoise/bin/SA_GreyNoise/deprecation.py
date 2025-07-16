@@ -13,15 +13,14 @@ import collections
 import functools
 import textwrap
 import warnings
+from datetime import date
 
 from packaging import version
-from datetime import date
 
 __version__ = "2.1.0"
 
 # This is mostly here so automodule docs are ordered more ideally.
-__all__ = ["deprecated", "message_location", "fail_if_not_removed",
-           "DeprecatedWarning", "UnsupportedWarning"]
+__all__ = ["deprecated", "message_location", "fail_if_not_removed", "DeprecatedWarning", "UnsupportedWarning"]
 
 #: Location where the details are added to a deprecated docstring
 #:
@@ -58,8 +57,7 @@ class DeprecatedWarning(DeprecationWarning):
         self.deprecated_in = deprecated_in
         self.removed_in = removed_in
         self.details = details
-        super(DeprecatedWarning, self).__init__(function, deprecated_in,
-                                                removed_in, details)
+        super(DeprecatedWarning, self).__init__(function, deprecated_in, removed_in, details)
 
     def __str__(self):
         # Use a defaultdict to give us the empty string
@@ -70,15 +68,15 @@ class DeprecatedWarning(DeprecationWarning):
         if self.deprecated_in:
             parts["deprecated"] = " as of %s" % self.deprecated_in
         if self.removed_in:
-            parts["removed"] = " and will be removed {} {}".format("on" if isinstance(self.removed_in, date) else "in",
-                                                                   self.removed_in)
+            parts["removed"] = " and will be removed {} {}".format(
+                "on" if isinstance(self.removed_in, date) else "in", self.removed_in
+            )
         if any([self.deprecated_in, self.removed_in, self.details]):
             parts["period"] = "."
         if self.details:
             parts["details"] = " %s" % self.details
 
-        return ("%(function)s is deprecated%(deprecated)s%(removed)s"
-                "%(period)s%(details)s" % (parts))
+        return "%(function)s is deprecated%(deprecated)s%(removed)s" "%(period)s%(details)s" % (parts)
 
 
 class UnsupportedWarning(DeprecatedWarning):
@@ -99,12 +97,10 @@ class UnsupportedWarning(DeprecatedWarning):
         if self.details:
             parts["details"] = " %s" % self.details
 
-        return ("%(function)s is unsupported as of %(removed)s."
-                "%(details)s" % (parts))
+        return "%(function)s is unsupported as of %(removed)s." "%(details)s" % (parts)
 
 
-def deprecated(deprecated_in=None, removed_in=None, current_version=None,
-               details=""):
+def deprecated(deprecated_in=None, removed_in=None, current_version=None, details=""):
     """Decorate a function to signify its deprecation
 
     This function wraps a method that will soon be removed and does two things:
@@ -148,8 +144,7 @@ def deprecated(deprecated_in=None, removed_in=None, current_version=None,
     # You can't just jump to removal. It's weird, unfair, and also makes
     # building up the docstring weird.
     if deprecated_in is None and removed_in is not None:
-        raise TypeError("Cannot set removed_in to a value "
-                        "without also setting deprecated_in")
+        raise TypeError("Cannot set removed_in to a value " "without also setting deprecated_in")
 
     # Only warn when it's appropriate. There may be cases when it makes sense
     # to add this decorator before a formal deprecation period begins.
@@ -169,11 +164,9 @@ def deprecated(deprecated_in=None, removed_in=None, current_version=None,
     elif current_version:
         current_version = version.parse(current_version)
 
-        if (removed_in
-                and current_version >= version.parse(removed_in)):
+        if removed_in and current_version >= version.parse(removed_in):
             is_unsupported = True
-        elif (deprecated_in
-              and current_version >= version.parse(deprecated_in)):
+        elif deprecated_in and current_version >= version.parse(deprecated_in):
             is_deprecated = True
     else:
         # If we can't actually calculate that we're in a period of
@@ -197,16 +190,18 @@ def deprecated(deprecated_in=None, removed_in=None, current_version=None,
             # If removed_in is a date, use "removed on"
             # If removed_in is a version, use "removed in"
             parts = {
-                "deprecated_in":
-                    " %s" % deprecated_in if deprecated_in else "",
-                "removed_in":
-                    "\n   This will be removed {} {}.".format("on" if isinstance(removed_in, date) else "in",
-                                                              removed_in) if removed_in else "",
-                "details":
-                    " %s" % details if details else ""}
+                "deprecated_in": " %s" % deprecated_in if deprecated_in else "",
+                "removed_in": (
+                    "\n   This will be removed {} {}.".format(
+                        "on" if isinstance(removed_in, date) else "in", removed_in
+                    )
+                    if removed_in
+                    else ""
+                ),
+                "details": " %s" % details if details else "",
+            }
 
-            deprecation_note = (".. deprecated::{deprecated_in}"
-                                "{removed_in}{details}".format(**parts))
+            deprecation_note = ".. deprecated::{deprecated_in}" "{removed_in}{details}".format(**parts)
 
             # default location for insertion of deprecation note
             loc = 1
@@ -252,13 +247,13 @@ def deprecated(deprecated_in=None, removed_in=None, current_version=None,
                 else:
                     cls = DeprecatedWarning
 
-                the_warning = cls(function.__name__, deprecated_in,
-                                  removed_in, details)
-                warnings.warn(the_warning, category=DeprecationWarning,
-                              stacklevel=2)
+                the_warning = cls(function.__name__, deprecated_in, removed_in, details)
+                warnings.warn(the_warning, category=DeprecationWarning, stacklevel=2)
 
             return function(*args, **kwargs)
+
         return _inner
+
     return _function_wrapper
 
 
@@ -273,6 +268,7 @@ def fail_if_not_removed(method):
              :class:`~deprecation.UnsupportedWarning`
              is raised while running the test method.
     """
+
     # NOTE(briancurtin): Unless this is named test_inner, nose won't work
     # properly. See Issue #32.
     @functools.wraps(method)
@@ -283,8 +279,7 @@ def fail_if_not_removed(method):
 
         for warning in caught_warnings:
             if warning.category == UnsupportedWarning:
-                raise AssertionError(
-                    ("%s uses a function that should be removed: %s" %
-                     (method, str(warning.message))))
+                raise AssertionError(("%s uses a function that should be removed: %s" % (method, str(warning.message))))
         return rv
+
     return test_inner

@@ -112,9 +112,7 @@ class BaseStyle(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def get_attrs_for_style_str(
-        self, style_str: str, default: Attrs = DEFAULT_ATTRS
-    ) -> Attrs:
+    def get_attrs_for_style_str(self, style_str: str, default: Attrs = DEFAULT_ATTRS) -> Attrs:
         """
         Return :class:`.Attrs` for the given style string.
 
@@ -145,9 +143,7 @@ class DummyStyle(BaseStyle):
     A style that doesn't style anything.
     """
 
-    def get_attrs_for_style_str(
-        self, style_str: str, default: Attrs = DEFAULT_ATTRS
-    ) -> Attrs:
+    def get_attrs_for_style_str(self, style_str: str, default: Attrs = DEFAULT_ATTRS) -> Attrs:
         return default
 
     def invalidation_hash(self) -> Hashable:
@@ -169,9 +165,7 @@ class DynamicStyle(BaseStyle):
         self.get_style = get_style
         self._dummy = DummyStyle()
 
-    def get_attrs_for_style_str(
-        self, style_str: str, default: Attrs = DEFAULT_ATTRS
-    ) -> Attrs:
+    def get_attrs_for_style_str(self, style_str: str, default: Attrs = DEFAULT_ATTRS) -> Attrs:
         style = self.get_style() or self._dummy
 
         return style.get_attrs_for_style_str(style_str, default)

@@ -10,6 +10,18 @@ compatibility until the next major version.
 import importlib
 import sys
 
+# -------
+# urllib3
+# -------
+from urllib3 import __version__ as urllib3_version
+
+# Detect which major version of urllib3 is being used.
+try:
+    is_urllib3_1 = int(urllib3_version.split(".")[0]) == 1
+except (TypeError, AttributeError):
+    # If we can't discern a version, prefer old functionality.
+    is_urllib3_1 = True
+
 # -------------------
 # Character Detection
 # -------------------
@@ -62,7 +74,6 @@ from collections.abc import Callable, Mapping, MutableMapping
 from http import cookiejar as cookielib
 from http.cookies import Morsel
 from io import StringIO
-
 # --------------
 # Legacy Imports
 # --------------

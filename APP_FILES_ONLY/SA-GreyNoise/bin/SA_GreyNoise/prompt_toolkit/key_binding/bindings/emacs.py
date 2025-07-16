@@ -88,13 +88,9 @@ def load_emacs_bindings() -> KeyBindingsBase:
     handle("c-home")(get_by_name("beginning-of-buffer"))
     handle("c-end")(get_by_name("end-of-buffer"))
 
-    handle("c-_", save_before=(lambda e: False), filter=insert_mode)(
-        get_by_name("undo")
-    )
+    handle("c-_", save_before=(lambda e: False), filter=insert_mode)(get_by_name("undo"))
 
-    handle("c-x", "c-u", save_before=(lambda e: False), filter=insert_mode)(
-        get_by_name("undo")
-    )
+    handle("c-x", "c-u", save_before=(lambda e: False), filter=insert_mode)(get_by_name("undo"))
 
     handle("escape", "<", filter=~has_selection)(get_by_name("beginning-of-history"))
     handle("escape", ">", filter=~has_selection)(get_by_name("end-of-history"))
@@ -153,20 +149,14 @@ def load_emacs_bindings() -> KeyBindingsBase:
         event.app.key_processor.arg = "-"
 
     # Meta + Enter: always accept input.
-    handle("escape", "enter", filter=insert_mode & is_returnable)(
-        get_by_name("accept-line")
-    )
+    handle("escape", "enter", filter=insert_mode & is_returnable)(get_by_name("accept-line"))
 
     # Enter: accept input in single line mode.
-    handle("enter", filter=insert_mode & is_returnable & ~is_multiline)(
-        get_by_name("accept-line")
-    )
+    handle("enter", filter=insert_mode & is_returnable & ~is_multiline)(get_by_name("accept-line"))
 
     def character_search(buff: Buffer, char: str, count: int) -> None:
         if count < 0:
-            match = buff.document.find_backwards(
-                char, in_current_line=True, count=-count
-            )
+            match = buff.document.find_backwards(char, in_current_line=True, count=-count)
         else:
             match = buff.document.find(char, in_current_line=True, count=count)
 
@@ -211,9 +201,7 @@ def load_emacs_bindings() -> KeyBindingsBase:
 
         # List all completions.
         complete_event = CompleteEvent(text_inserted=False, completion_requested=True)
-        completions = list(
-            buff.completer.get_completions(buff.document, complete_event)
-        )
+        completions = list(buff.completer.get_completions(buff.document, complete_event))
 
         # Insert them.
         text_to_insert = " ".join(c.text for c in completions)
@@ -228,9 +216,7 @@ def load_emacs_bindings() -> KeyBindingsBase:
         buffer = event.current_buffer
 
         if buffer.document.is_cursor_at_the_end_of_line:
-            buffer.cursor_position += buffer.document.get_start_of_line_position(
-                after_whitespace=False
-            )
+            buffer.cursor_position += buffer.document.get_start_of_line_position(after_whitespace=False)
         else:
             buffer.cursor_position += buffer.document.get_end_of_line_position()
 
@@ -282,9 +268,7 @@ def load_emacs_bindings() -> KeyBindingsBase:
         Cursor to start of previous word.
         """
         buffer = event.current_buffer
-        buffer.cursor_position += (
-            buffer.document.find_previous_word_beginning(count=event.arg) or 0
-        )
+        buffer.cursor_position += buffer.document.find_previous_word_beginning(count=event.arg) or 0
 
     @handle("escape", "right")
     def _start_next_word(event: E) -> None:
@@ -293,8 +277,7 @@ def load_emacs_bindings() -> KeyBindingsBase:
         """
         buffer = event.current_buffer
         buffer.cursor_position += (
-            buffer.document.find_next_word_beginning(count=event.arg)
-            or buffer.document.get_end_of_document_position()
+            buffer.document.find_next_word_beginning(count=event.arg) or buffer.document.get_end_of_document_position()
         )
 
     @handle("escape", "/", filter=insert_mode)
@@ -315,9 +298,7 @@ def load_emacs_bindings() -> KeyBindingsBase:
         """
         buffer = event.current_buffer
 
-        buffer.cursor_position += buffer.document.get_start_of_line_position(
-            after_whitespace=True
-        )
+        buffer.cursor_position += buffer.document.get_start_of_line_position(after_whitespace=True)
 
         from_, to = buffer.document.selection_range()
         from_, _ = buffer.document.translate_index_to_position(from_)
@@ -373,18 +354,10 @@ def load_emacs_search_bindings() -> KeyBindingsBase:
     # If Read-only: also include the following key bindings:
 
     # '/' and '?' key bindings for searching, just like Vi mode.
-    handle("?", filter=is_read_only & ~vi_search_direction_reversed)(
-        search.start_reverse_incremental_search
-    )
-    handle("/", filter=is_read_only & ~vi_search_direction_reversed)(
-        search.start_forward_incremental_search
-    )
-    handle("?", filter=is_read_only & vi_search_direction_reversed)(
-        search.start_forward_incremental_search
-    )
-    handle("/", filter=is_read_only & vi_search_direction_reversed)(
-        search.start_reverse_incremental_search
-    )
+    handle("?", filter=is_read_only & ~vi_search_direction_reversed)(search.start_reverse_incremental_search)
+    handle("/", filter=is_read_only & ~vi_search_direction_reversed)(search.start_forward_incremental_search)
+    handle("?", filter=is_read_only & vi_search_direction_reversed)(search.start_forward_incremental_search)
+    handle("/", filter=is_read_only & vi_search_direction_reversed)(search.start_reverse_incremental_search)
 
     @handle("n", filter=is_read_only)
     def _jump_next(event: E) -> None:

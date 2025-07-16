@@ -91,19 +91,13 @@ class SystemToolbar:
         self.buffer_control = BufferControl(
             buffer=self.system_buffer,
             lexer=SimpleLexer(style="class:system-toolbar.text"),
-            input_processors=[
-                BeforeInput(lambda: self.prompt, style="class:system-toolbar")
-            ],
+            input_processors=[BeforeInput(lambda: self.prompt, style="class:system-toolbar")],
             key_bindings=self._bindings,
         )
 
-        self.window = Window(
-            self.buffer_control, height=1, style="class:system-toolbar"
-        )
+        self.window = Window(self.buffer_control, height=1, style="class:system-toolbar")
 
-        self.container = ConditionalContainer(
-            content=self.window, filter=has_focus(self.system_buffer)
-        )
+        self.container = ConditionalContainer(content=self.window, filter=has_focus(self.system_buffer))
 
     def _get_display_before_text(self) -> StyleAndTextTuples:
         return [
@@ -233,9 +227,7 @@ class SearchToolbar:
         def get_before_input() -> AnyFormattedText:
             if not is_searching():
                 return text_if_not_searching
-            elif (
-                self.control.searcher_search_state.direction == SearchDirection.BACKWARD
-            ):
+            elif self.control.searcher_search_state.direction == SearchDirection.BACKWARD:
                 return "?" if vi_mode else backward_search_prompt
             else:
                 return "/" if vi_mode else forward_search_prompt
@@ -244,9 +236,7 @@ class SearchToolbar:
 
         self.control = SearchBufferControl(
             buffer=search_buffer,
-            input_processors=[
-                BeforeInput(get_before_input, style="class:search-toolbar.prompt")
-            ],
+            input_processors=[BeforeInput(get_before_input, style="class:search-toolbar.prompt")],
             lexer=SimpleLexer(style="class:search-toolbar.text"),
             ignore_case=ignore_case,
         )
@@ -309,17 +299,13 @@ class _CompletionsToolbarControl(UIControl):
 
             # Return fragments
             all_fragments.append(("", " "))
-            all_fragments.append(
-                ("class:completion-toolbar.arrow", "<" if cut_left else " ")
-            )
+            all_fragments.append(("class:completion-toolbar.arrow", "<" if cut_left else " "))
             all_fragments.append(("", " "))
 
             all_fragments.extend(fragments)
 
             all_fragments.append(("", " "))
-            all_fragments.append(
-                ("class:completion-toolbar.arrow", ">" if cut_right else " ")
-            )
+            all_fragments.append(("class:completion-toolbar.arrow", ">" if cut_right else " "))
             all_fragments.append(("", " "))
 
         def get_line(i: int) -> StyleAndTextTuples:
@@ -331,9 +317,7 @@ class _CompletionsToolbarControl(UIControl):
 class CompletionsToolbar:
     def __init__(self) -> None:
         self.container = ConditionalContainer(
-            content=Window(
-                _CompletionsToolbarControl(), height=1, style="class:completion-toolbar"
-            ),
+            content=Window(_CompletionsToolbarControl(), height=1, style="class:completion-toolbar"),
             filter=has_completions,
         )
 
@@ -347,9 +331,7 @@ class ValidationToolbar:
             buff = get_app().current_buffer
 
             if buff.validation_error:
-                row, column = buff.document.translate_index_to_position(
-                    buff.validation_error.cursor_position
-                )
+                row, column = buff.document.translate_index_to_position(buff.validation_error.cursor_position)
 
                 if show_position:
                     text = f"{buff.validation_error.message} (line={row + 1} column={column + 1})"
@@ -362,9 +344,7 @@ class ValidationToolbar:
 
         self.control = FormattedTextControl(get_formatted_text)
 
-        self.container = ConditionalContainer(
-            content=Window(self.control, height=1), filter=has_validation_error
-        )
+        self.container = ConditionalContainer(content=Window(self.control, height=1), filter=has_validation_error)
 
     def __pt_container__(self) -> Container:
         return self.container

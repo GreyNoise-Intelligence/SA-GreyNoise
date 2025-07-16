@@ -22,7 +22,6 @@ import re
 import warnings
 
 import defusedxml.minidom as xdm
-
 import splunktalib.common.util as util
 import splunktalib.common.xml_dom_parser as xdp
 import splunktalib.rest as rest
@@ -45,8 +44,7 @@ class CredNotFound(CredException):
 
 def create_credential_manager(username, password, splunkd_uri, app, owner, realm):
     warnings.warn(
-        "This function is deprecated. "
-        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -163,14 +161,10 @@ class CredentialManager:
         except CredException:
             payload = {"password": password}
             endpoint = self._get_endpoint(name)
-            response = rest.splunkd_request(
-                endpoint, self._session_key, method="POST", data=payload
-            )
+            response = rest.splunkd_request(endpoint, self._session_key, method="POST", data=payload)
             if not response or response.status_code not in (200, 201):
                 raise CredException(
-                    "Unable to update password for username={}, status={}".format(
-                        name, response.status_code
-                    )
+                    "Unable to update password for username={}, status={}".format(name, response.status_code)
                 )
 
     def _create(self, name, str_to_encrypt):
@@ -186,9 +180,7 @@ class CredentialManager:
         }
 
         endpoint = self._get_endpoint(name)
-        resp = rest.splunkd_request(
-            endpoint, self._session_key, method="POST", data=payload
-        )
+        resp = rest.splunkd_request(endpoint, self._session_key, method="POST", data=payload)
         if not resp or resp.status_code not in (200, 201):
             raise CredException("Failed to encrypt username {}".format(name))
 
@@ -241,9 +233,7 @@ class CredentialManager:
                 raise CredNotFound("Credential stanza not exits - {}".format(name))
         elif not response or response.status_code not in (200, 201):
             if throw:
-                raise CredException(
-                    "Failed to delete credential stanza {}".format(name)
-                )
+                raise CredException("Failed to delete credential stanza {}".format(name))
 
     def get_all_passwords(self):
         results = {}
@@ -259,9 +249,7 @@ class CredentialManager:
                 else:
                     exist_stanza = stanza
                     exist_stanza["name"] = actual_name
-                    exist_stanza["username"] = exist_stanza["username"].split(
-                        self._sep
-                    )[0]
+                    exist_stanza["username"] = exist_stanza["username"].split(self._sep)[0]
                     exist_stanza["clears"] = {}
                     exist_stanza["encrs"] = {}
 
@@ -381,11 +369,7 @@ class CredentialManager:
 
         if name:
             realm_user = self._build_name(self._realm, name)
-            rest_endpoint = "{}/servicesNS/{}/{}/storage/passwords/{}".format(
-                self._splunkd_uri, owner, app, realm_user
-            )
+            rest_endpoint = "{}/servicesNS/{}/{}/storage/passwords/{}".format(self._splunkd_uri, owner, app, realm_user)
         else:
-            rest_endpoint = "{}/servicesNS/{}/{}/storage/passwords?count=-1" "".format(
-                self._splunkd_uri, owner, app
-            )
+            rest_endpoint = "{}/servicesNS/{}/{}/storage/passwords?count=-1" "".format(self._splunkd_uri, owner, app)
         return rest_endpoint

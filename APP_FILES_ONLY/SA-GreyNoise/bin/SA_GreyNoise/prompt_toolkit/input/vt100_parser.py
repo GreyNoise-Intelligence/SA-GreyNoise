@@ -48,17 +48,11 @@ class _IsPrefixOfLongerMatchCache(Dict[str, bool]):
     def __missing__(self, prefix: str) -> bool:
         # (hard coded) If this could be a prefix of a CPR response, return
         # True.
-        if _cpr_response_prefix_re.match(prefix) or _mouse_event_prefix_re.match(
-            prefix
-        ):
+        if _cpr_response_prefix_re.match(prefix) or _mouse_event_prefix_re.match(prefix):
             result = True
         else:
             # If this could be a prefix of anything else, also return True.
-            result = any(
-                v
-                for k, v in ANSI_SEQUENCES.items()
-                if k.startswith(prefix) and k != prefix
-            )
+            result = any(v for k, v in ANSI_SEQUENCES.items() if k.startswith(prefix) and k != prefix)
 
         self[prefix] = result
         return result
@@ -170,9 +164,7 @@ class Vt100Parser:
                         self._call_handler(prefix[0], prefix[0])
                         prefix = prefix[1:]
 
-    def _call_handler(
-        self, key: str | Keys | tuple[Keys, ...], insert_text: str
-    ) -> None:
+    def _call_handler(self, key: str | Keys | tuple[Keys, ...], insert_text: str) -> None:
         """
         Callback to handler.
         """

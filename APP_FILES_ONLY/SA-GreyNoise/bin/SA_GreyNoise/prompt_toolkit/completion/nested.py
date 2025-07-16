@@ -28,9 +28,7 @@ class NestedCompleter(Completer):
     If you need multiple levels, check out the `from_nested_dict` classmethod.
     """
 
-    def __init__(
-        self, options: dict[str, Completer | None], ignore_case: bool = True
-    ) -> None:
+    def __init__(self, options: dict[str, Completer | None], ignore_case: bool = True) -> None:
         self.options = options
         self.ignore_case = ignore_case
 
@@ -69,16 +67,14 @@ class NestedCompleter(Completer):
             elif isinstance(value, dict):
                 options[key] = cls.from_nested_dict(value)
             elif isinstance(value, set):
-                options[key] = cls.from_nested_dict({item: None for item in value})
+                options[key] = cls.from_nested_dict(dict.fromkeys(value))
             else:
                 assert value is None
                 options[key] = None
 
         return cls(options)
 
-    def get_completions(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         # Split document.
         text = document.text_before_cursor.lstrip()
         stripped_len = len(document.text_before_cursor) - len(text)
@@ -103,7 +99,5 @@ class NestedCompleter(Completer):
 
         # No space in the input: behave exactly like `WordCompleter`.
         else:
-            completer = WordCompleter(
-                list(self.options.keys()), ignore_case=self.ignore_case
-            )
+            completer = WordCompleter(list(self.options.keys()), ignore_case=self.ignore_case)
             yield from completer.get_completions(document, complete_event)

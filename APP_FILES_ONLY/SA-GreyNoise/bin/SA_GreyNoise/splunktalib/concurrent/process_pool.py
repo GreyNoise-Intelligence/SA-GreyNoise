@@ -32,9 +32,7 @@ class ProcessPool:
         if size <= 0:
             size = multiprocessing.cpu_count()
         self.size = size
-        self._pool = multiprocessing.Pool(
-            processes=size, maxtasksperchild=maxtasksperchild
-        )
+        self._pool = multiprocessing.Pool(processes=size, maxtasksperchild=maxtasksperchild)
         self._stopped = False
 
     def tear_down(self):

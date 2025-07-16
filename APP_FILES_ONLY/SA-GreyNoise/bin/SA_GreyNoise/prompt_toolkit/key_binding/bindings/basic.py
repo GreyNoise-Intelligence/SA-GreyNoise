@@ -156,18 +156,10 @@ def load_basic_bindings() -> KeyBindings:
 
     handle("c-k", filter=insert_mode)(get_by_name("kill-line"))
     handle("c-u", filter=insert_mode)(get_by_name("unix-line-discard"))
-    handle("backspace", filter=insert_mode, save_before=if_no_repeat)(
-        get_by_name("backward-delete-char")
-    )
-    handle("delete", filter=insert_mode, save_before=if_no_repeat)(
-        get_by_name("delete-char")
-    )
-    handle("c-delete", filter=insert_mode, save_before=if_no_repeat)(
-        get_by_name("delete-char")
-    )
-    handle(Keys.Any, filter=insert_mode, save_before=if_no_repeat)(
-        get_by_name("self-insert")
-    )
+    handle("backspace", filter=insert_mode, save_before=if_no_repeat)(get_by_name("backward-delete-char"))
+    handle("delete", filter=insert_mode, save_before=if_no_repeat)(get_by_name("delete-char"))
+    handle("c-delete", filter=insert_mode, save_before=if_no_repeat)(get_by_name("delete-char"))
+    handle(Keys.Any, filter=insert_mode, save_before=if_no_repeat)(get_by_name("self-insert"))
     handle("c-t", filter=insert_mode)(get_by_name("transpose-chars"))
     handle("c-i", filter=insert_mode)(get_by_name("menu-complete"))
     handle("s-tab", filter=insert_mode)(get_by_name("menu-complete-backward"))
@@ -181,9 +173,7 @@ def load_basic_bindings() -> KeyBindings:
 
     # CTRL keys.
 
-    handle("c-d", filter=has_text_before_cursor & insert_mode)(
-        get_by_name("delete-char")
-    )
+    handle("c-d", filter=has_text_before_cursor & insert_mode)(get_by_name("delete-char"))
 
     @handle("enter", filter=insert_mode & is_multiline)
     def _newline(event: E) -> None:

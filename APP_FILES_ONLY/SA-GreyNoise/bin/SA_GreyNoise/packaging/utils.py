@@ -34,9 +34,7 @@ class InvalidSdistFilename(ValueError):
 
 
 # Core metadata spec for `Name`
-_validate_regex = re.compile(
-    r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.IGNORECASE
-)
+_validate_regex = re.compile(r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.IGNORECASE)
 _canonicalize_regex = re.compile(r"[-_.]+")
 _normalized_regex = re.compile(r"^([a-z0-9]|[a-z0-9]([a-z0-9-](?!--))*[a-z0-9])$")
 # PEP 427: The build number must start with a digit.
@@ -56,9 +54,7 @@ def is_normalized_name(name: str) -> bool:
 
 
 @functools.singledispatch
-def canonicalize_version(
-    version: Version | str, *, strip_trailing_zero: bool = True
-) -> str:
+def canonicalize_version(version: Version | str, *, strip_trailing_zero: bool = True) -> str:
     """
     Return a canonical form of a version as a string.
 
@@ -95,16 +91,12 @@ def parse_wheel_filename(
     filename: str,
 ) -> tuple[NormalizedName, Version, BuildTag, frozenset[Tag]]:
     if not filename.endswith(".whl"):
-        raise InvalidWheelFilename(
-            f"Invalid wheel filename (extension must be '.whl'): {filename!r}"
-        )
+        raise InvalidWheelFilename(f"Invalid wheel filename (extension must be '.whl'): {filename!r}")
 
     filename = filename[:-4]
     dashes = filename.count("-")
     if dashes not in (4, 5):
-        raise InvalidWheelFilename(
-            f"Invalid wheel filename (wrong number of parts): {filename!r}"
-        )
+        raise InvalidWheelFilename(f"Invalid wheel filename (wrong number of parts): {filename!r}")
 
     parts = filename.split("-", dashes - 2)
     name_part = parts[0]
@@ -116,17 +108,13 @@ def parse_wheel_filename(
     try:
         version = Version(parts[1])
     except InvalidVersion as e:
-        raise InvalidWheelFilename(
-            f"Invalid wheel filename (invalid version): {filename!r}"
-        ) from e
+        raise InvalidWheelFilename(f"Invalid wheel filename (invalid version): {filename!r}") from e
 
     if dashes == 5:
         build_part = parts[2]
         build_match = _build_tag_regex.match(build_part)
         if build_match is None:
-            raise InvalidWheelFilename(
-                f"Invalid build number: {build_part} in {filename!r}"
-            )
+            raise InvalidWheelFilename(f"Invalid build number: {build_part} in {filename!r}")
         build = cast(BuildTag, (int(build_match.group(1)), build_match.group(2)))
     else:
         build = ()
@@ -140,10 +128,7 @@ def parse_sdist_filename(filename: str) -> tuple[NormalizedName, Version]:
     elif filename.endswith(".zip"):
         file_stem = filename[: -len(".zip")]
     else:
-        raise InvalidSdistFilename(
-            f"Invalid sdist filename (extension must be '.tar.gz' or '.zip'):"
-            f" {filename!r}"
-        )
+        raise InvalidSdistFilename(f"Invalid sdist filename (extension must be '.tar.gz' or '.zip'):" f" {filename!r}")
 
     # We are requiring a PEP 440 version, which cannot contain dashes,
     # so we split on the last dash.
@@ -156,8 +141,6 @@ def parse_sdist_filename(filename: str) -> tuple[NormalizedName, Version]:
     try:
         version = Version(version_part)
     except InvalidVersion as e:
-        raise InvalidSdistFilename(
-            f"Invalid sdist filename (invalid version): {filename!r}"
-        ) from e
+        raise InvalidSdistFilename(f"Invalid sdist filename (invalid version): {filename!r}") from e
 
     return (name, version)

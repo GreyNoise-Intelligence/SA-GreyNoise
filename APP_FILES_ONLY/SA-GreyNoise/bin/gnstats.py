@@ -6,7 +6,7 @@ import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
 import validator
 from base_command_handler import BaseCommandHandler
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise_constants import INTEGRATION_NAME
 from splunklib.searchcommands import Configuration, Option, dispatch
 
@@ -74,9 +74,11 @@ class GNStatsCommand(BaseCommandHandler):
         logger.info("Fetching aggregate statistics for query: {}, count: {}".format(str(query), count))
         # Opting timeout 120 seconds for the requests
         if "http" in proxy:
-            api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_config = APIConfig(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_client = GreyNoise(api_config)
         else:
-            api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
+            api_config = APIConfig(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
+            api_client = GreyNoise(api_config)
         # If count is not passed explicitly to the command by the user, then it will have the value None
         stats_data = api_client.stats(query, count)
         logger.info(

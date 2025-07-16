@@ -14,7 +14,7 @@ Sorted set implementations:
 """
 
 from itertools import chain
-from operator import eq, ne, gt, ge, lt, le
+from operator import eq, ge, gt, le, lt, ne
 from textwrap import dedent
 
 from .sortedlist import SortedList, recursive_repr
@@ -105,6 +105,7 @@ class SortedSet(MutableSet, Sequence):
     proper superset of the second sorted set (is a superset, but is not equal).
 
     """
+
     def __init__(self, iterable=None, key=None):
         """Initialize sorted set instance.
 
@@ -135,7 +136,7 @@ class SortedSet(MutableSet, Sequence):
         # _set attribute. So only create a new set if the _set attribute is not
         # already present.
 
-        if not hasattr(self, '_set'):
+        if not hasattr(self, "_set"):
             self._set = set()
 
         self._list = SortedList(self._set, key=key)
@@ -167,7 +168,6 @@ class SortedSet(MutableSet, Sequence):
         if iterable is not None:
             self._update(iterable)
 
-
     @classmethod
     def _fromset(cls, values, key=None):
         """Initialize sorted set from existing set.
@@ -180,7 +180,6 @@ class SortedSet(MutableSet, Sequence):
         sorted_set.__init__(key=key)
         return sorted_set
 
-
     @property
     def key(self):
         """Function used to extract comparison key from values.
@@ -189,7 +188,6 @@ class SortedSet(MutableSet, Sequence):
 
         """
         return self._key
-
 
     def __contains__(self, value):
         """Return true if `value` is an element of the sorted set.
@@ -207,7 +205,6 @@ class SortedSet(MutableSet, Sequence):
 
         """
         return value in self._set
-
 
     def __getitem__(self, index):
         """Lookup value at `index` in sorted set.
@@ -232,7 +229,6 @@ class SortedSet(MutableSet, Sequence):
 
         """
         return self._list[index]
-
 
     def __delitem__(self, index):
         """Remove value at `index` from sorted set.
@@ -265,9 +261,9 @@ class SortedSet(MutableSet, Sequence):
             _set.remove(value)
         del _list[index]
 
-
     def __make_cmp(set_op, symbol, doc):
         "Make comparator method."
+
         def comparer(self, other):
             "Compare method for sorted set and set."
             if isinstance(other, SortedSet):
@@ -277,7 +273,7 @@ class SortedSet(MutableSet, Sequence):
             return NotImplemented
 
         set_op_name = set_op.__name__
-        comparer.__name__ = '__{0}__'.format(set_op_name)
+        comparer.__name__ = "__{0}__".format(set_op_name)
         doc_str = """Return true if and only if sorted set is {0} `other`.
 
         ``ss.__{1}__(other)`` <==> ``ss {2} other``
@@ -293,15 +289,13 @@ class SortedSet(MutableSet, Sequence):
         comparer.__doc__ = dedent(doc_str.format(doc, set_op_name, symbol))
         return comparer
 
-
-    __eq__ = __make_cmp(eq, '==', 'equal to')
-    __ne__ = __make_cmp(ne, '!=', 'not equal to')
-    __lt__ = __make_cmp(lt, '<', 'a proper subset of')
-    __gt__ = __make_cmp(gt, '>', 'a proper superset of')
-    __le__ = __make_cmp(le, '<=', 'a subset of')
-    __ge__ = __make_cmp(ge, '>=', 'a superset of')
+    __eq__ = __make_cmp(eq, "==", "equal to")
+    __ne__ = __make_cmp(ne, "!=", "not equal to")
+    __lt__ = __make_cmp(lt, "<", "a proper subset of")
+    __gt__ = __make_cmp(gt, ">", "a proper superset of")
+    __le__ = __make_cmp(le, "<=", "a subset of")
+    __ge__ = __make_cmp(ge, ">=", "a superset of")
     __make_cmp = staticmethod(__make_cmp)
-
 
     def __len__(self):
         """Return the size of the sorted set.
@@ -312,7 +306,6 @@ class SortedSet(MutableSet, Sequence):
 
         """
         return len(self._set)
-
 
     def __iter__(self):
         """Return an iterator over the sorted set.
@@ -325,7 +318,6 @@ class SortedSet(MutableSet, Sequence):
         """
         return iter(self._list)
 
-
     def __reversed__(self):
         """Return a reverse iterator over the sorted set.
 
@@ -336,7 +328,6 @@ class SortedSet(MutableSet, Sequence):
 
         """
         return reversed(self._list)
-
 
     def add(self, value):
         """Add `value` to sorted set.
@@ -360,7 +351,6 @@ class SortedSet(MutableSet, Sequence):
 
     _add = add
 
-
     def clear(self):
         """Remove all values from sorted set.
 
@@ -369,7 +359,6 @@ class SortedSet(MutableSet, Sequence):
         """
         self._set.clear()
         self._list.clear()
-
 
     def copy(self):
         """Return a shallow copy of the sorted set.
@@ -382,7 +371,6 @@ class SortedSet(MutableSet, Sequence):
         return self._fromset(set(self._set), key=self._key)
 
     __copy__ = copy
-
 
     def count(self, value):
         """Return number of occurrences of `value` in the sorted set.
@@ -398,7 +386,6 @@ class SortedSet(MutableSet, Sequence):
 
         """
         return 1 if value in self._set else 0
-
 
     def discard(self, value):
         """Remove `value` from sorted set if it is a member.
@@ -422,7 +409,6 @@ class SortedSet(MutableSet, Sequence):
             self._list.remove(value)
 
     _discard = discard
-
 
     def pop(self, index=-1):
         """Remove and return value at `index` in sorted set.
@@ -452,7 +438,6 @@ class SortedSet(MutableSet, Sequence):
         self._set.remove(value)
         return value
 
-
     def remove(self, value):
         """Remove `value` from sorted set; `value` must be a member.
 
@@ -476,7 +461,6 @@ class SortedSet(MutableSet, Sequence):
         self._set.remove(value)
         self._list.remove(value)
 
-
     def difference(self, *iterables):
         """Return the difference of two or more sets as a new sorted set.
 
@@ -499,7 +483,6 @@ class SortedSet(MutableSet, Sequence):
         return self._fromset(diff, key=self._key)
 
     __sub__ = difference
-
 
     def difference_update(self, *iterables):
         """Remove all values of `iterables` from this sorted set.
@@ -532,7 +515,6 @@ class SortedSet(MutableSet, Sequence):
 
     __isub__ = difference_update
 
-
     def intersection(self, *iterables):
         """Return the intersection of two or more sets as a new sorted set.
 
@@ -556,7 +538,6 @@ class SortedSet(MutableSet, Sequence):
 
     __and__ = intersection
     __rand__ = __and__
-
 
     def intersection_update(self, *iterables):
         """Update the sorted set with the intersection of `iterables`.
@@ -585,7 +566,6 @@ class SortedSet(MutableSet, Sequence):
 
     __iand__ = intersection_update
 
-
     def symmetric_difference(self, other):
         """Return the symmetric difference with `other` as a new sorted set.
 
@@ -609,7 +589,6 @@ class SortedSet(MutableSet, Sequence):
 
     __xor__ = symmetric_difference
     __rxor__ = __xor__
-
 
     def symmetric_difference_update(self, other):
         """Update the sorted set with the symmetric difference with `other`.
@@ -639,7 +618,6 @@ class SortedSet(MutableSet, Sequence):
 
     __ixor__ = symmetric_difference_update
 
-
     def union(self, *iterables):
         """Return new sorted set with values from itself and all `iterables`.
 
@@ -659,7 +637,6 @@ class SortedSet(MutableSet, Sequence):
 
     __or__ = union
     __ror__ = __or__
-
 
     def update(self, *iterables):
         """Update the sorted set adding values from all `iterables`.
@@ -694,7 +671,6 @@ class SortedSet(MutableSet, Sequence):
     __ior__ = update
     _update = update
 
-
     def __reduce__(self):
         """Support for pickle.
 
@@ -703,7 +679,6 @@ class SortedSet(MutableSet, Sequence):
 
         """
         return (type(self), (self._set, self._key))
-
 
     @recursive_repr()
     def __repr__(self):
@@ -715,10 +690,9 @@ class SortedSet(MutableSet, Sequence):
 
         """
         _key = self._key
-        key = '' if _key is None else ', key={0!r}'.format(_key)
+        key = "" if _key is None else ", key={0!r}".format(_key)
         type_name = type(self).__name__
-        return '{0}({1!r}{2})'.format(type_name, list(self), key)
-
+        return "{0}({1!r}{2})".format(type_name, list(self), key)
 
     def _check(self):
         """Check invariants of sorted set.

@@ -4,7 +4,7 @@ import traceback  # noqa # pylint: disable=unused-import
 import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
 from base_command_handler import BaseCommandHandler
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise_constants import INTEGRATION_NAME
 from splunklib.searchcommands import Configuration, Option, dispatch
 from utility import get_response_for_generating
@@ -53,9 +53,11 @@ class IPContextCommand(BaseCommandHandler):
             # TODO make proxy aware
             # Opting default timeout 60 seconds for the request
             if "http" in proxy:
-                api_client = GreyNoise(api_key=api_key, timeout=60, integration_name=INTEGRATION_NAME, proxy=proxy)
+                api_config = APIConfig(api_key=api_key, timeout=60, integration_name=INTEGRATION_NAME, proxy=proxy)
+                api_client = GreyNoise(api_config)
             else:
-                api_client = GreyNoise(api_key=api_key, timeout=60, integration_name=INTEGRATION_NAME)
+                api_config = APIConfig(api_key=api_key, timeout=60, integration_name=INTEGRATION_NAME)
+                api_client = GreyNoise(api_config)
             session_key = self._metadata.searchinfo.session_key
             context_info = get_response_for_generating(session_key, api_client, ip_address, "ip", logger)
             logger.info("Successfully retrieved the context information for ip={}".format(str(ip_address)))

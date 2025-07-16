@@ -28,7 +28,6 @@ import splunktalib.common.util as utils
 import splunktalib.file_monitor as fm
 import splunktalib.modinput as modinput
 import splunktalib.orphan_process_monitor as opm
-
 import splunktaucclib.common.log as stulog
 from splunktaucclib.common import load_schema_file as ld
 from splunktaucclib.data_collection import ta_checkpoint_manager as cpmgr

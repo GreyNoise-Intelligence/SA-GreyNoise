@@ -90,9 +90,7 @@ class TimerQueueStruct:
         self._timers = sc.SortedSet()
         self._cancelling_timers = {}
 
-    def add_timer(
-        self, callback: Callable, when: int, interval: int, ident: int
-    ) -> Timer:
+    def add_timer(self, callback: Callable, when: int, interval: int, ident: int) -> Timer:
         """Add timer to the data structure.
 
         Arguments:
@@ -121,9 +119,7 @@ class TimerQueueStruct:
         try:
             self._timers.remove(timer)
         except ValueError:
-            logging.info(
-                "Timer=%s is not in queue, move it to cancelling " "list", timer.ident
-            )
+            logging.info("Timer=%s is not in queue, move it to cancelling " "list", timer.ident)
         else:
             self._cancelling_timers[timer.ident] = timer
 
@@ -243,9 +239,7 @@ class TimerQueue:
         self._wakeup(TEARDOWN_SENTINEL)
         self._thr.join()
 
-    def add_timer(
-        self, callback: Callable, when: int, interval: int, ident: int = None
-    ) -> Timer:
+    def add_timer(self, callback: Callable, when: int, interval: int, ident: int = None) -> Timer:
         """Add timer to the queue.
 
         Arguments:

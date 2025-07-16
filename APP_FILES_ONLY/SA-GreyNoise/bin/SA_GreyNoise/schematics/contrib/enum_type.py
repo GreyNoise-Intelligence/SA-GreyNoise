@@ -1,16 +1,16 @@
-"""Type supporting native Python3 enum. It depends either on Py3.4+ or e.g. enum34.
-"""
-from __future__ import unicode_literals, absolute_import
+"""Type supporting native Python3 enum. It depends either on Py3.4+ or e.g. enum34."""
+
+from __future__ import absolute_import, unicode_literals
 
 try:
     from enum import Enum
 except ImportError:
     pass
 
+from ..compat import string_type
 from ..exceptions import ConversionError
 from ..translator import _
 from ..types import BaseType
-from ..compat import string_type
 
 
 class EnumType(BaseType):
@@ -29,8 +29,9 @@ class EnumType(BaseType):
     >>> a.foo = E.A
     >>> a.foo.value == 1
     """
+
     MESSAGES = {
-        'convert': _("Couldn't interpret '{0}' as member of {1}."),
+        "convert": _("Couldn't interpret '{0}' as member of {1}."),
     }
 
     def __init__(self, enum, use_values=False, **kwargs):
@@ -53,7 +54,7 @@ class EnumType(BaseType):
             by_value = self._find_by_value(value)
             if by_value:
                 return by_value
-        raise ConversionError(self.messages['convert'].format(value, self._enum_class))
+        raise ConversionError(self.messages["convert"].format(value, self._enum_class))
 
     def _find_by_name(self, value):
         if isinstance(value, string_type):

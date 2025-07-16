@@ -1,11 +1,9 @@
 import sys
 import typing as t
-from types import CodeType
-from types import TracebackType
+from types import CodeType, TracebackType
 
 from .exceptions import TemplateSyntaxError
-from .utils import internal_code
-from .utils import missing
+from .utils import internal_code, missing
 
 if t.TYPE_CHECKING:
     from .runtime import Context
@@ -34,9 +32,7 @@ def rewrite_traceback_stack(source: t.Optional[str] = None) -> BaseException:
         exc_value.with_traceback(None)
         # Outside of runtime, so the frame isn't executing template
         # code, but it still needs to point at the template.
-        tb = fake_traceback(
-            exc_value, None, exc_value.filename or "<unknown>", exc_value.lineno
-        )
+        tb = fake_traceback(exc_value, None, exc_value.filename or "<unknown>", exc_value.lineno)
     else:
         # Skip the frame for the render function.
         tb = tb.tb_next
@@ -102,9 +98,7 @@ def fake_traceback(  # type: ignore
         "__jinja_exception__": exc_value,
     }
     # Raise an exception at the correct line number.
-    code: CodeType = compile(
-        "\n" * (lineno - 1) + "raise __jinja_exception__", filename, "exec"
-    )
+    code: CodeType = compile("\n" * (lineno - 1) + "raise __jinja_exception__", filename, "exec")
 
     # Build a new code object that points to the template file and
     # replaces the location with a block name.
@@ -152,7 +146,7 @@ def get_template_locals(real_locals: t.Mapping[str, t.Any]) -> t.Dict[str, t.Any
     available at that point in the template.
     """
     # Start with the current template context.
-    ctx: "t.Optional[Context]" = real_locals.get("context")
+    ctx: t.Optional[Context] = real_locals.get("context")
 
     if ctx is not None:
         data: t.Dict[str, t.Any] = ctx.get_all().copy()

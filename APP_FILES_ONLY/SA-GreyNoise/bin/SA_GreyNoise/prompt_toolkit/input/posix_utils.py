@@ -35,9 +35,7 @@ class PosixStdinReader:
     # of junk.  One occurrence of this that I had was when using iTerm2 on OS X,
     # with "Option as Meta" checked (You should choose "Option as +Esc".)
 
-    def __init__(
-        self, stdin_fd: int, errors: str = "surrogateescape", encoding: str = "utf-8"
-    ) -> None:
+    def __init__(self, stdin_fd: int, errors: str = "surrogateescape", encoding: str = "utf-8") -> None:
         self.stdin_fd = stdin_fd
         self.errors = errors
 

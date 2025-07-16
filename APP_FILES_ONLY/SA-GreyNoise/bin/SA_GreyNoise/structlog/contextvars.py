@@ -19,13 +19,11 @@ from __future__ import annotations
 
 import contextlib
 import contextvars
-
 from typing import Any, Generator, Mapping
 
 import structlog
 
 from .typing import BindableLogger, EventDict, WrappedLogger
-
 
 STRUCTLOG_KEY_PREFIX = "structlog_"
 STRUCTLOG_KEY_PREFIX_LEN = len(STRUCTLOG_KEY_PREFIX)
@@ -65,9 +63,7 @@ def get_merged_contextvars(bound_logger: BindableLogger) -> dict[str, Any]:
     return ctx
 
 
-def merge_contextvars(
-    logger: WrappedLogger, method_name: str, event_dict: EventDict
-) -> EventDict:
+def merge_contextvars(logger: WrappedLogger, method_name: str, event_dict: EventDict) -> EventDict:
     """
     A processor that merges in a global (context-local) context.
 

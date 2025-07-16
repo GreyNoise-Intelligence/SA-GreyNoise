@@ -132,10 +132,7 @@ def scroll_one_line_up(event: E) -> None:
                 first_line_height = info.get_height_for_line(info.first_visible_line())
 
                 cursor_up = info.cursor_position.y - (
-                    info.window_height
-                    - 1
-                    - first_line_height
-                    - info.configured_scroll_offsets.bottom
+                    info.window_height - 1 - first_line_height - info.configured_scroll_offsets.bottom
                 )
 
                 # Move cursor up, as many steps as the height of the first line.
@@ -160,9 +157,7 @@ def scroll_page_down(event: E) -> None:
         w.vertical_scroll = line_index
 
         b.cursor_position = b.document.translate_row_col_to_index(line_index, 0)
-        b.cursor_position += b.document.get_start_of_line_position(
-            after_whitespace=True
-        )
+        b.cursor_position += b.document.get_start_of_line_position(after_whitespace=True)
 
 
 def scroll_page_up(event: E) -> None:
@@ -181,9 +176,7 @@ def scroll_page_up(event: E) -> None:
         )
 
         b.cursor_position = b.document.translate_row_col_to_index(line_index, 0)
-        b.cursor_position += b.document.get_start_of_line_position(
-            after_whitespace=True
-        )
+        b.cursor_position += b.document.get_start_of_line_position(after_whitespace=True)
 
         # Set the scroll offset. We can safely set it to zero; the Window will
         # make sure that it scrolls at least until the cursor becomes visible.

@@ -203,9 +203,7 @@ def load_mouse_bindings() -> KeyBindings:
             mouse_event, x, y = map(ord, event.data[3:])
 
             # TODO: Is it possible to add modifiers here?
-            mouse_button, mouse_event_type, mouse_modifiers = typical_mouse_events[
-                mouse_event
-            ]
+            mouse_button, mouse_event_type, mouse_modifiers = typical_mouse_events[mouse_event]
 
             # Handle situations where `PosixStdinReader` used surrogateescapes.
             if x >= 0xDC00:
@@ -247,9 +245,7 @@ def load_mouse_bindings() -> KeyBindings:
                     mouse_button,
                     mouse_event_type,
                     mouse_modifiers,
-                ) = urxvt_mouse_events.get(
-                    mouse_event, (UNKNOWN_BUTTON, MOUSE_MOVE, UNKNOWN_MODIFIER)
-                )
+                ) = urxvt_mouse_events.get(mouse_event, (UNKNOWN_BUTTON, MOUSE_MOVE, UNKNOWN_MODIFIER))
 
         x -= 1
         y -= 1
@@ -322,10 +318,7 @@ def load_mouse_bindings() -> KeyBindings:
 
             if isinstance(output, (Win32Output, Windows10_Output)):
                 screen_buffer_info = output.get_win32_screen_buffer_info()
-                rows_above_cursor = (
-                    screen_buffer_info.dwCursorPosition.Y
-                    - event.app.renderer._cursor_pos.y
-                )
+                rows_above_cursor = screen_buffer_info.dwCursorPosition.Y - event.app.renderer._cursor_pos.y
                 y -= rows_above_cursor
 
                 # Call the mouse event handler.

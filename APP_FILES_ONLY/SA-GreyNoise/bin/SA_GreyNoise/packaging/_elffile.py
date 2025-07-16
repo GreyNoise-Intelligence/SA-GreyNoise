@@ -68,10 +68,7 @@ class ELFFile:
                 (2, 2): (">HHIQQQIHHH", ">IIQQQQQQ", (0, 2, 5)),  # 64-bit MSB.
             }[(self.capacity, self.encoding)]
         except KeyError as e:
-            raise ELFInvalid(
-                f"unrecognized capacity ({self.capacity}) or "
-                f"encoding ({self.encoding})"
-            ) from e
+            raise ELFInvalid(f"unrecognized capacity ({self.capacity}) or " f"encoding ({self.encoding})") from e
 
         try:
             (

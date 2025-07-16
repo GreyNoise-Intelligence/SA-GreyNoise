@@ -45,30 +45,24 @@ testing has 100% coverage with unit tests and hours of stress.
 
 """
 
-
-from .sortedlist import SortedList, SortedKeyList, SortedListWithKey
+from .sorteddict import SortedDict, SortedItemsView, SortedKeysView, SortedValuesView
+from .sortedlist import SortedKeyList, SortedList, SortedListWithKey
 from .sortedset import SortedSet
-from .sorteddict import (
-    SortedDict,
-    SortedKeysView,
-    SortedItemsView,
-    SortedValuesView,
-)
 
 __all__ = [
-    'SortedList',
-    'SortedKeyList',
-    'SortedListWithKey',
-    'SortedDict',
-    'SortedKeysView',
-    'SortedItemsView',
-    'SortedValuesView',
-    'SortedSet',
+    "SortedList",
+    "SortedKeyList",
+    "SortedListWithKey",
+    "SortedDict",
+    "SortedKeysView",
+    "SortedItemsView",
+    "SortedValuesView",
+    "SortedSet",
 ]
 
-__title__ = 'sortedcontainers'
-__version__ = '2.4.0'
+__title__ = "sortedcontainers"
+__version__ = "2.4.0"
 __build__ = 0x020400
-__author__ = 'Grant Jenks'
-__license__ = 'Apache 2.0'
-__copyright__ = '2014-2019, Grant Jenks'
+__author__ = "Grant Jenks"
+__license__ = "Apache 2.0"
+__copyright__ = "2014-2019, Grant Jenks"

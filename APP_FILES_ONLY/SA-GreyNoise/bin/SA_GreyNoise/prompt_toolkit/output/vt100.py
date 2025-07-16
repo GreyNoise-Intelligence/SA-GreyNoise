@@ -153,9 +153,7 @@ class _16ColorCache:
         self.bg = bg
         self._cache: dict[Hashable, _ColorCodeAndName] = {}
 
-    def get_code(
-        self, value: tuple[int, int, int], exclude: Sequence[str] = ()
-    ) -> _ColorCodeAndName:
+    def get_code(self, value: tuple[int, int, int], exclude: Sequence[str] = ()) -> _ColorCodeAndName:
         """
         Return a (ansi_code, ansi_name) tuple. (E.g. ``(44, 'ansiblue')``.) for
         a given (r,g,b) value.
@@ -168,9 +166,7 @@ class _16ColorCache:
 
         return cache[key]
 
-    def _get(
-        self, value: tuple[int, int, int], exclude: Sequence[str] = ()
-    ) -> _ColorCodeAndName:
+    def _get(self, value: tuple[int, int, int], exclude: Sequence[str] = ()) -> _ColorCodeAndName:
         r, g, b = value
         match = _get_closest_ansi_color(r, g, b, exclude=exclude)
 
@@ -436,6 +432,11 @@ class Vt100_Output(Output):
         # default, we don't change them.)
         self._cursor_shape_changed = False
 
+        # Don't hide/show the cursor when this was already done.
+        # (`None` means that we don't know whether the cursor is visible or
+        # not.)
+        self._cursor_visible: bool | None = None
+
     @classmethod
     def from_pty(
         cls,
@@ -521,9 +522,7 @@ class Vt100_Output(Output):
             "linux",
             "eterm-color",
         ):  # Not supported by the Linux console.
-            self.write_raw(
-                "\x1b]2;{}\x07".format(title.replace("\x1b", "").replace("\x07", ""))
-            )
+            self.write_raw("\x1b]2;{}\x07".format(title.replace("\x1b", "").replace("\x07", "")))
 
     def clear_title(self) -> None:
         self.set_title("")
@@ -651,10 +650,14 @@ class Vt100_Output(Output):
             self.write_raw("\x1b[%iD" % amount)
 
     def hide_cursor(self) -> None:
-        self.write_raw("\x1b[?25l")
+        if self._cursor_visible in (True, None):
+            self._cursor_visible = False
+            self.write_raw("\x1b[?25l")
 
     def show_cursor(self) -> None:
-        self.write_raw("\x1b[?12l\x1b[?25h")  # Stop blinking cursor and show.
+        if self._cursor_visible in (False, None):
+            self._cursor_visible = True
+            self.write_raw("\x1b[?12l\x1b[?25h")  # Stop blinking cursor and show.
 
     def set_cursor_shape(self, cursor_shape: CursorShape) -> None:
         if cursor_shape == CursorShape._NEVER_CHANGE:

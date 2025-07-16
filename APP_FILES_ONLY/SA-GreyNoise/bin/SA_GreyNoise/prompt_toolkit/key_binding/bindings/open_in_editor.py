@@ -34,9 +34,7 @@ def load_emacs_open_in_editor_bindings() -> KeyBindings:
     """
     key_bindings = KeyBindings()
 
-    key_bindings.add("c-x", "c-e", filter=emacs_mode & ~has_selection)(
-        get_by_name("edit-and-execute-command")
-    )
+    key_bindings.add("c-x", "c-e", filter=emacs_mode & ~has_selection)(get_by_name("edit-and-execute-command"))
 
     return key_bindings
 
@@ -46,7 +44,5 @@ def load_vi_open_in_editor_bindings() -> KeyBindings:
     Pressing 'v' in navigation mode will open the buffer in an external editor.
     """
     key_bindings = KeyBindings()
-    key_bindings.add("v", filter=vi_navigation_mode)(
-        get_by_name("edit-and-execute-command")
-    )
+    key_bindings.add("v", filter=vi_navigation_mode)(get_by_name("edit-and-execute-command"))
     return key_bindings

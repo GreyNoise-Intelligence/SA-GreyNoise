@@ -301,11 +301,7 @@ class Specifier(BaseSpecifier):
         >>> Specifier('>=1.0.0', prereleases=True)
         <Specifier('>=1.0.0', prereleases=True)>
         """
-        pre = (
-            f", prereleases={self.prereleases!r}"
-            if self._prereleases is not None
-            else ""
-        )
+        pre = f", prereleases={self.prereleases!r}" if self._prereleases is not None else ""
 
         return f"<{self.__class__.__name__}({str(self)!r}{pre})>"
 
@@ -360,9 +356,7 @@ class Specifier(BaseSpecifier):
         return self._canonical_spec == other._canonical_spec
 
     def _get_operator(self, op: str) -> CallableOperator:
-        operator_callable: CallableOperator = getattr(
-            self, f"_compare_{self._operators[op]}"
-        )
+        operator_callable: CallableOperator = getattr(self, f"_compare_{self._operators[op]}")
         return operator_callable
 
     def _compare_compatible(self, prospective: Version, spec: str) -> bool:
@@ -374,24 +368,18 @@ class Specifier(BaseSpecifier):
 
         # We want everything but the last item in the version, but we want to
         # ignore suffix segments.
-        prefix = _version_join(
-            list(itertools.takewhile(_is_not_suffix, _version_split(spec)))[:-1]
-        )
+        prefix = _version_join(list(itertools.takewhile(_is_not_suffix, _version_split(spec)))[:-1])
 
         # Add the prefix notation to the end of our string
         prefix += ".*"
 
-        return self._get_operator(">=")(prospective, spec) and self._get_operator("==")(
-            prospective, prefix
-        )
+        return self._get_operator(">=")(prospective, spec) and self._get_operator("==")(prospective, prefix)
 
     def _compare_equal(self, prospective: Version, spec: str) -> bool:
         # We need special logic to handle prefix matching
         if spec.endswith(".*"):
             # In the case of prefix matching we want to ignore local segment.
-            normalized_prospective = canonicalize_version(
-                prospective.public, strip_trailing_zero=False
-            )
+            normalized_prospective = canonicalize_version(prospective.public, strip_trailing_zero=False)
             # Get the normalized version string ignoring the trailing .*
             normalized_spec = canonicalize_version(spec[:-2], strip_trailing_zero=False)
             # Split the spec out by bangs and dots, and pretend that there is
@@ -606,9 +594,7 @@ class Specifier(BaseSpecifier):
                 # If our version is a prerelease, and we were not set to allow
                 # prereleases, then we'll store it for later in case nothing
                 # else matches this specifier.
-                if parsed_version.is_prerelease and not (
-                    prereleases or self.prereleases
-                ):
+                if parsed_version.is_prerelease and not (prereleases or self.prereleases):
                     found_prereleases.append(version)
                 # Either this is not a prerelease, or we should have been
                 # accepting prereleases from the beginning.
@@ -661,9 +647,7 @@ def _version_join(components: list[str]) -> str:
 
 
 def _is_not_suffix(segment: str) -> bool:
-    return not any(
-        segment.startswith(prefix) for prefix in ("dev", "a", "b", "rc", "post")
-    )
+    return not any(segment.startswith(prefix) for prefix in ("dev", "a", "b", "rc", "post"))
 
 
 def _pad_version(left: list[str], right: list[str]) -> tuple[list[str], list[str]]:
@@ -766,11 +750,7 @@ class SpecifierSet(BaseSpecifier):
         >>> SpecifierSet('>=1.0.0,!=2.0.0', prereleases=True)
         <SpecifierSet('!=2.0.0,>=1.0.0', prereleases=True)>
         """
-        pre = (
-            f", prereleases={self.prereleases!r}"
-            if self._prereleases is not None
-            else ""
-        )
+        pre = f", prereleases={self.prereleases!r}" if self._prereleases is not None else ""
 
         return f"<SpecifierSet({str(self)!r}{pre})>"
 
@@ -815,10 +795,7 @@ class SpecifierSet(BaseSpecifier):
         elif self._prereleases == other._prereleases:
             specifier._prereleases = self._prereleases
         else:
-            raise ValueError(
-                "Cannot combine SpecifierSets with True and False prerelease "
-                "overrides."
-            )
+            raise ValueError("Cannot combine SpecifierSets with True and False prerelease " "overrides.")
 
         return specifier
 

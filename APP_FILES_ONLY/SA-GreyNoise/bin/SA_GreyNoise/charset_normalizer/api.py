@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 from os import PathLike
-from typing import BinaryIO, List, Optional, Set, Union
+from typing import BinaryIO
 
 from .cd import (
     coherence_ratio,
@@ -21,22 +23,18 @@ from .utils import (
     should_strip_sig_or_bom,
 )
 
-# Will most likely be controversial
-# logging.addLevelName(TRACE, "TRACE")
 logger = logging.getLogger("charset_normalizer")
 explain_handler = logging.StreamHandler()
-explain_handler.setFormatter(
-    logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
-)
+explain_handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
 
 
 def from_bytes(
-    sequences: Union[bytes, bytearray],
+    sequences: bytes | bytearray,
     steps: int = 5,
     chunk_size: int = 512,
     threshold: float = 0.2,
-    cp_isolation: Optional[List[str]] = None,
-    cp_exclusion: Optional[List[str]] = None,
+    cp_isolation: list[str] | None = None,
+    cp_exclusion: list[str] | None = None,
     preemptive_behaviour: bool = True,
     explain: bool = False,
     language_threshold: float = 0.1,
@@ -61,11 +59,7 @@ def from_bytes(
     """
 
     if not isinstance(sequences, (bytearray, bytes)):
-        raise TypeError(
-            "Expected object of type bytes or bytearray, got: {0}".format(
-                type(sequences)
-            )
-        )
+        raise TypeError("Expected object of type bytes or bytearray, got: {}".format(type(sequences)))
 
     if explain:
         previous_logger_level: int = logger.level
@@ -76,7 +70,7 @@ def from_bytes(
 
     if length == 0:
         logger.debug("Encoding detection on empty bytes, assuming utf_8 intention.")
-        if explain:
+        if explain:  # Defensive: ensure exit path clean handler
             logger.removeHandler(explain_handler)
             logger.setLevel(previous_logger_level or logging.WARNING)
         return CharsetMatches([CharsetMatch(sequences, "utf_8", 0.0, False, [], "")])
@@ -84,8 +78,7 @@ def from_bytes(
     if cp_isolation is not None:
         logger.log(
             TRACE,
-            "cp_isolation is set. use this flag for debugging purpose. "
-            "limited list of encoding allowed : %s.",
+            "cp_isolation is set. use this flag for debugging purpose. " "limited list of encoding allowed : %s.",
             ", ".join(cp_isolation),
         )
         cp_isolation = [iana_name(cp, False) for cp in cp_isolation]
@@ -95,8 +88,7 @@ def from_bytes(
     if cp_exclusion is not None:
         logger.log(
             TRACE,
-            "cp_exclusion is set. use this flag for debugging purpose. "
-            "limited list of encoding excluded : %s.",
+            "cp_exclusion is set. use this flag for debugging purpose. " "limited list of encoding excluded : %s.",
             ", ".join(cp_exclusion),
         )
         cp_exclusion = [iana_name(cp, False) for cp in cp_exclusion]
@@ -123,23 +115,17 @@ def from_bytes(
     if is_too_small_sequence:
         logger.log(
             TRACE,
-            "Trying to detect encoding from a tiny portion of ({}) byte(s).".format(
-                length
-            ),
+            "Trying to detect encoding from a tiny portion of ({}) byte(s).".format(length),
         )
     elif is_too_large_sequence:
         logger.log(
             TRACE,
-            "Using lazy str decoding because the payload is quite large, ({}) byte(s).".format(
-                length
-            ),
+            "Using lazy str decoding because the payload is quite large, ({}) byte(s).".format(length),
         )
 
-    prioritized_encodings: List[str] = []
+    prioritized_encodings: list[str] = []
 
-    specified_encoding: Optional[str] = (
-        any_specified_encoding(sequences) if preemptive_behaviour else None
-    )
+    specified_encoding: str | None = any_specified_encoding(sequences) if preemptive_behaviour else None
 
     if specified_encoding is not None:
         prioritized_encodings.append(specified_encoding)
@@ -149,15 +135,17 @@ def from_bytes(
             specified_encoding,
         )
 
-    tested: Set[str] = set()
-    tested_but_hard_failure: List[str] = []
-    tested_but_soft_failure: List[str] = []
+    tested: set[str] = set()
+    tested_but_hard_failure: list[str] = []
+    tested_but_soft_failure: list[str] = []
 
-    fallback_ascii: Optional[CharsetMatch] = None
-    fallback_u8: Optional[CharsetMatch] = None
-    fallback_specified: Optional[CharsetMatch] = None
+    fallback_ascii: CharsetMatch | None = None
+    fallback_u8: CharsetMatch | None = None
+    fallback_specified: CharsetMatch | None = None
 
     results: CharsetMatches = CharsetMatches()
+
+    early_stop_results: CharsetMatches = CharsetMatches()
 
     sig_encoding, sig_payload = identify_sig_or_bom(sequences)
 
@@ -187,11 +175,9 @@ def from_bytes(
 
         tested.add(encoding_iana)
 
-        decoded_payload: Optional[str] = None
+        decoded_payload: str | None = None
         bom_or_sig_available: bool = sig_encoding == encoding_iana
-        strip_sig_or_bom: bool = bom_or_sig_available and should_strip_sig_or_bom(
-            encoding_iana
-        )
+        strip_sig_or_bom: bool = bom_or_sig_available and should_strip_sig_or_bom(encoding_iana)
 
         if encoding_iana in {"utf_16", "utf_32"} and not bom_or_sig_available:
             logger.log(
@@ -221,16 +207,12 @@ def from_bytes(
         try:
             if is_too_large_sequence and is_multi_byte_decoder is False:
                 str(
-                    sequences[: int(50e4)]
-                    if strip_sig_or_bom is False
-                    else sequences[len(sig_payload) : int(50e4)],
+                    (sequences[: int(50e4)] if strip_sig_or_bom is False else sequences[len(sig_payload) : int(50e4)]),
                     encoding=encoding_iana,
                 )
             else:
                 decoded_payload = str(
-                    sequences
-                    if strip_sig_or_bom is False
-                    else sequences[len(sig_payload) :],
+                    (sequences if strip_sig_or_bom is False else sequences[len(sig_payload) :]),
                     encoding=encoding_iana,
                 )
         except (UnicodeDecodeError, LookupError) as e:
@@ -266,11 +248,7 @@ def from_bytes(
             int(length / steps),
         )
 
-        multi_byte_bonus: bool = (
-            is_multi_byte_decoder
-            and decoded_payload is not None
-            and len(decoded_payload) < length
-        )
+        multi_byte_bonus: bool = is_multi_byte_decoder and decoded_payload is not None and len(decoded_payload) < length
 
         if multi_byte_bonus:
             logger.log(
@@ -286,7 +264,7 @@ def from_bytes(
         early_stop_count: int = 0
         lazy_str_hard_failure = False
 
-        md_chunks: List[str] = []
+        md_chunks: list[str] = []
         md_ratios = []
 
         try:
@@ -314,13 +292,9 @@ def from_bytes(
                 if md_ratios[-1] >= threshold:
                     early_stop_count += 1
 
-                if (early_stop_count >= max_chunk_gave_up) or (
-                    bom_or_sig_available and strip_sig_or_bom is False
-                ):
+                if (early_stop_count >= max_chunk_gave_up) or (bom_or_sig_available and strip_sig_or_bom is False):
                     break
-        except (
-            UnicodeDecodeError
-        ) as e:  # Lazy str loading may have missed something there
+        except UnicodeDecodeError as e:  # Lazy str loading may have missed something there
             logger.log(
                 TRACE,
                 "LazyStr Loading: After MD chunk decode, code page %s does not fit given bytes sequence at ALL. %s",
@@ -332,11 +306,7 @@ def from_bytes(
 
         # We might want to check the sequence again with the whole content
         # Only if initial MD tests passes
-        if (
-            not lazy_str_hard_failure
-            and is_too_large_sequence
-            and not is_multi_byte_decoder
-        ):
+        if not lazy_str_hard_failure and is_too_large_sequence and not is_multi_byte_decoder:
             try:
                 sequences[int(50e3) :].decode(encoding_iana, errors="strict")
             except UnicodeDecodeError as e:
@@ -367,7 +337,13 @@ def from_bytes(
                 and not lazy_str_hard_failure
             ):
                 fallback_entry = CharsetMatch(
-                    sequences, encoding_iana, threshold, False, [], decoded_payload
+                    sequences,
+                    encoding_iana,
+                    threshold,
+                    False,
+                    [],
+                    decoded_payload,
+                    preemptive_declaration=specified_encoding,
                 )
                 if encoding_iana == specified_encoding:
                     fallback_specified = fallback_entry
@@ -385,16 +361,14 @@ def from_bytes(
         )
 
         if not is_multi_byte_decoder:
-            target_languages: List[str] = encoding_languages(encoding_iana)
+            target_languages: list[str] = encoding_languages(encoding_iana)
         else:
             target_languages = mb_encoding_languages(encoding_iana)
 
         if target_languages:
             logger.log(
                 TRACE,
-                "{} should target any language(s) of {}".format(
-                    encoding_iana, str(target_languages)
-                ),
+                "{} should target any language(s) of {}".format(encoding_iana, str(target_languages)),
             )
 
         cd_ratios = []
@@ -416,33 +390,55 @@ def from_bytes(
         if cd_ratios_merged:
             logger.log(
                 TRACE,
-                "We detected language {} using {}".format(
-                    cd_ratios_merged, encoding_iana
-                ),
+                "We detected language {} using {}".format(cd_ratios_merged, encoding_iana),
             )
 
-        results.append(
-            CharsetMatch(
-                sequences,
-                encoding_iana,
-                mean_mess_ratio,
-                bom_or_sig_available,
-                cd_ratios_merged,
-                decoded_payload,
-            )
+        current_match = CharsetMatch(
+            sequences,
+            encoding_iana,
+            mean_mess_ratio,
+            bom_or_sig_available,
+            cd_ratios_merged,
+            (
+                decoded_payload
+                if (is_too_large_sequence is False or encoding_iana in [specified_encoding, "ascii", "utf_8"])
+                else None
+            ),
+            preemptive_declaration=specified_encoding,
         )
 
+        results.append(current_match)
+
+        if encoding_iana in [specified_encoding, "ascii", "utf_8"] and mean_mess_ratio < 0.1:
+            # If md says nothing to worry about, then... stop immediately!
+            if mean_mess_ratio == 0.0:
+                logger.debug(
+                    "Encoding detection: %s is most likely the one.",
+                    current_match.encoding,
+                )
+                if explain:  # Defensive: ensure exit path clean handler
+                    logger.removeHandler(explain_handler)
+                    logger.setLevel(previous_logger_level)
+                return CharsetMatches([current_match])
+
+            early_stop_results.append(current_match)
+
         if (
-            encoding_iana in [specified_encoding, "ascii", "utf_8"]
-            and mean_mess_ratio < 0.1
+            len(early_stop_results)
+            and (specified_encoding is None or specified_encoding in tested)
+            and "ascii" in tested
+            and "utf_8" in tested
         ):
+            probable_result: CharsetMatch = early_stop_results.best()  # type: ignore[assignment]
             logger.debug(
-                "Encoding detection: %s is most likely the one.", encoding_iana
+                "Encoding detection: %s is most likely the one.",
+                probable_result.encoding,
             )
-            if explain:
+            if explain:  # Defensive: ensure exit path clean handler
                 logger.removeHandler(explain_handler)
                 logger.setLevel(previous_logger_level)
-            return CharsetMatches([results[encoding_iana]])
+
+            return CharsetMatches([probable_result])
 
         if encoding_iana == sig_encoding:
             logger.debug(
@@ -450,7 +446,7 @@ def from_bytes(
                 "the beginning of the sequence.",
                 encoding_iana,
             )
-            if explain:
+            if explain:  # Defensive: ensure exit path clean handler
                 logger.removeHandler(explain_handler)
                 logger.setLevel(previous_logger_level)
             return CharsetMatches([results[encoding_iana]])
@@ -470,11 +466,7 @@ def from_bytes(
             results.append(fallback_specified)
         elif (
             (fallback_u8 and fallback_ascii is None)
-            or (
-                fallback_u8
-                and fallback_ascii
-                and fallback_u8.fingerprint != fallback_ascii.fingerprint
-            )
+            or (fallback_u8 and fallback_ascii and fallback_u8.fingerprint != fallback_ascii.fingerprint)
             or (fallback_u8 is not None)
         ):
             logger.debug("Encoding detection: utf_8 will be used as a fallback match")
@@ -504,8 +496,8 @@ def from_fp(
     steps: int = 5,
     chunk_size: int = 512,
     threshold: float = 0.20,
-    cp_isolation: Optional[List[str]] = None,
-    cp_exclusion: Optional[List[str]] = None,
+    cp_isolation: list[str] | None = None,
+    cp_exclusion: list[str] | None = None,
     preemptive_behaviour: bool = True,
     explain: bool = False,
     language_threshold: float = 0.1,
@@ -530,12 +522,12 @@ def from_fp(
 
 
 def from_path(
-    path: Union[str, bytes, PathLike],  # type: ignore[type-arg]
+    path: str | bytes | PathLike,  # type: ignore[type-arg]
     steps: int = 5,
     chunk_size: int = 512,
     threshold: float = 0.20,
-    cp_isolation: Optional[List[str]] = None,
-    cp_exclusion: Optional[List[str]] = None,
+    cp_isolation: list[str] | None = None,
+    cp_exclusion: list[str] | None = None,
     preemptive_behaviour: bool = True,
     explain: bool = False,
     language_threshold: float = 0.1,
@@ -561,12 +553,12 @@ def from_path(
 
 
 def is_binary(
-    fp_or_path_or_payload: Union[PathLike, str, BinaryIO, bytes],  # type: ignore[type-arg]
+    fp_or_path_or_payload: PathLike | str | BinaryIO | bytes,  # type: ignore[type-arg]
     steps: int = 5,
     chunk_size: int = 512,
     threshold: float = 0.20,
-    cp_isolation: Optional[List[str]] = None,
-    cp_exclusion: Optional[List[str]] = None,
+    cp_isolation: list[str] | None = None,
+    cp_exclusion: list[str] | None = None,
     preemptive_behaviour: bool = True,
     explain: bool = False,
     language_threshold: float = 0.1,

@@ -5,9 +5,8 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable, List, Tuple, Union, c
 from prompt_toolkit.mouse_events import MouseEvent
 
 if TYPE_CHECKING:
-    from typing_extensions import Protocol
-
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from typing_extensions import Protocol
 
 __all__ = [
     "OneStyleAndTextTuple",
@@ -21,9 +20,7 @@ __all__ = [
     "FormattedText",
 ]
 
-OneStyleAndTextTuple = Union[
-    Tuple[str, str], Tuple[str, str, Callable[[MouseEvent], "NotImplementedOrNone"]]
-]
+OneStyleAndTextTuple = Union[Tuple[str, str], Tuple[str, str, Callable[[MouseEvent], "NotImplementedOrNone"]]]
 
 # List of (style, text) tuples.
 StyleAndTextTuples = List[OneStyleAndTextTuple]
@@ -51,9 +48,7 @@ AnyFormattedText = Union[
 ]
 
 
-def to_formatted_text(
-    value: AnyFormattedText, style: str = "", auto_convert: bool = False
-) -> FormattedText:
+def to_formatted_text(value: AnyFormattedText, style: str = "", auto_convert: bool = False) -> FormattedText:
     """
     Convert the given value (which can be formatted text) into a list of text
     fragments. (Which is the canonical form of formatted text.) The outcome is
@@ -84,8 +79,7 @@ def to_formatted_text(
         result = [("", f"{value}")]
     else:
         raise ValueError(
-            "No formatted text. Expecting a unicode object, "
-            f"HTML, ANSI or a FormattedText instance. Got {value!r}"
+            "No formatted text. Expecting a unicode object, " f"HTML, ANSI or a FormattedText instance. Got {value!r}"
         )
 
     # Apply extra style.

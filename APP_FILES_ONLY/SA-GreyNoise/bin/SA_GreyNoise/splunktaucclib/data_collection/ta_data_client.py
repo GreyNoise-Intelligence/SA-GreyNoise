@@ -32,9 +32,7 @@ def build_event(
 ):
     if is_unbroken is False and is_done is True:
         raise Exception("is_unbroken=False is_done=True is invalid")
-    return tdc.event_tuple._make(
-        [host, source, sourcetype, time, index, raw_data, is_unbroken, is_done]
-    )
+    return tdc.event_tuple._make([host, source, sourcetype, time, index, raw_data, is_unbroken, is_done])
 
 
 class TaDataClient:
@@ -63,9 +61,7 @@ class TaDataClient:
         raise StopIteration
 
 
-def create_data_collector(
-    dataloader, tconfig, meta_configs, task_config, data_client_cls, checkpoint_cls=None
-):
+def create_data_collector(dataloader, tconfig, meta_configs, task_config, data_client_cls, checkpoint_cls=None):
     checkpoint_manager_cls = checkpoint_cls or cp.TACheckPointMgr
     return tdc.TADataCollector(
         tconfig,

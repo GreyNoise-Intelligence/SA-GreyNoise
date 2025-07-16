@@ -44,12 +44,7 @@ def _is_linux_armhf(executable: str) -> bool:
 
 def _is_linux_i686(executable: str) -> bool:
     with _parse_elf(executable) as f:
-        return (
-            f is not None
-            and f.capacity == EIClass.C32
-            and f.encoding == EIData.Lsb
-            and f.machine == EMachine.I386
-        )
+        return f is not None and f.capacity == EIClass.C32 and f.encoding == EIData.Lsb and f.machine == EMachine.I386
 
 
 def _have_compatible_abi(executable: str, archs: Sequence[str]) -> bool:
@@ -161,8 +156,7 @@ def _parse_glibc_version(version_str: str) -> tuple[int, int]:
     m = re.match(r"(?P<major>[0-9]+)\.(?P<minor>[0-9]+)", version_str)
     if not m:
         warnings.warn(
-            f"Expected glibc version with 2 components major.minor,"
-            f" got: {version_str}",
+            f"Expected glibc version with 2 components major.minor," f" got: {version_str}",
             RuntimeWarning,
             stacklevel=2,
         )

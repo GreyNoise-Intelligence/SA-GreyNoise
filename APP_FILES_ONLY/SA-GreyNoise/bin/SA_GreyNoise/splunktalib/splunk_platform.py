@@ -25,8 +25,7 @@ def make_splunkhome_path(parts):
     create a path string by the several parts of the path
     """
     warnings.warn(
-        "This function is deprecated. "
-        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -38,17 +37,14 @@ def make_splunkhome_path(parts):
 
     # Check that we haven't escaped from intended parent directories.
     if os.path.relpath(fullpath, basepath)[0:2] == "..":
-        raise ValueError(
-            'Illegal escape from parent directory "{}": {}'.format(basepath, fullpath)
-        )
+        raise ValueError('Illegal escape from parent directory "{}": {}'.format(basepath, fullpath))
 
     return fullpath
 
 
 def get_splunk_bin():
     warnings.warn(
-        "This function is deprecated. "
-        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )

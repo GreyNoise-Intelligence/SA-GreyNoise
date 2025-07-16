@@ -234,9 +234,7 @@ def parse_regex(regex_tokens: list[str]) -> Node:
                     raise Exception("Nothing to repeat." + repr(tokens))
                 else:
                     greedy = t == "?"
-                    result[-1] = Repeat(
-                        result[-1], min_repeat=0, max_repeat=1, greedy=greedy
-                    )
+                    result[-1] = Repeat(result[-1], min_repeat=0, max_repeat=1, greedy=greedy)
 
             elif t == "|":
                 or_list.append(result)

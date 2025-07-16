@@ -27,9 +27,8 @@ import warnings
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Iterable, Optional
 
-from splunklib import binding
-
 from solnlib import _utils, utils
+from splunklib import binding
 
 __all__ = ["CheckpointerException", "KVStoreCheckpointer", "FileCheckpointer"]
 

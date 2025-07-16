@@ -3,19 +3,20 @@ import re
 import sys
 import typing as t
 from functools import update_wrapper
-from types import ModuleType
-from types import TracebackType
+from types import ModuleType, TracebackType
 
-from ._compat import _default_text_stderr
-from ._compat import _default_text_stdout
-from ._compat import _find_binary_writer
-from ._compat import auto_wrap_for_ansi
-from ._compat import binary_streams
-from ._compat import open_stream
-from ._compat import should_strip_ansi
-from ._compat import strip_ansi
-from ._compat import text_streams
-from ._compat import WIN
+from ._compat import (
+    WIN,
+    _default_text_stderr,
+    _default_text_stdout,
+    _find_binary_writer,
+    auto_wrap_for_ansi,
+    binary_streams,
+    open_stream,
+    should_strip_ansi,
+    strip_ansi,
+    text_streams,
+)
 from .globals import resolve_color_default
 
 if t.TYPE_CHECKING:
@@ -153,10 +154,8 @@ class LazyFile:
         if self._f is not None:
             return self._f
         try:
-            rv, self.should_close = open_stream(
-                self.name, self.mode, self.encoding, self.errors, atomic=self.atomic
-            )
-        except OSError as e:  # noqa: E402
+            rv, self.should_close = open_stream(self.name, self.mode, self.encoding, self.errors, atomic=self.atomic)
+        except OSError as e:
             from .exceptions import FileError
 
             raise FileError(self.name, hint=e.strerror) from e
@@ -311,7 +310,7 @@ def echo(
             out = strip_ansi(out)
         elif WIN:
             if auto_wrap_for_ansi is not None:
-                file = auto_wrap_for_ansi(file)  # type: ignore
+                file = auto_wrap_for_ansi(file, color)  # type: ignore
             elif not color:
                 out = strip_ansi(out)
 
@@ -353,7 +352,7 @@ def get_text_stream(
 
 
 def open_file(
-    filename: str,
+    filename: t.Union[str, "os.PathLike[str]"],
     mode: str = "r",
     encoding: t.Optional[str] = None,
     errors: t.Optional[str] = "strict",
@@ -374,7 +373,7 @@ def open_file(
         with open_file(filename) as f:
             ...
 
-    :param filename: The name of the file to open, or ``'-'`` for
+    :param filename: The name or Path of the file to open, or ``'-'`` for
         ``stdin``/``stdout``.
     :param mode: The mode in which to open the file.
     :param encoding: The encoding to decode or encode a file opened in
@@ -389,9 +388,7 @@ def open_file(
     .. versionadded:: 3.0
     """
     if lazy:
-        return t.cast(
-            t.IO[t.Any], LazyFile(filename, mode, encoding, errors, atomic=atomic)
-        )
+        return t.cast(t.IO[t.Any], LazyFile(filename, mode, encoding, errors, atomic=atomic))
 
     f, should_close = open_stream(filename, mode, encoding, errors, atomic=atomic)
 
@@ -410,7 +407,7 @@ def format_filename(
     with the replacement character ``�``.
 
     Invalid bytes or surrogate escapes will raise an error when written to a
-    stream with ``errors="strict". This will typically happen with ``stdout``
+    stream with ``errors="strict"``. This will typically happen with ``stdout``
     when the locale is something like ``en_GB.UTF-8``.
 
     Many scenarios *are* safe to write surrogates though, due to PEP 538 and
@@ -436,9 +433,7 @@ def format_filename(
     if isinstance(filename, bytes):
         filename = filename.decode(sys.getfilesystemencoding(), "replace")
     else:
-        filename = filename.encode("utf-8", "surrogateescape").decode(
-            "utf-8", "replace"
-        )
+        filename = filename.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
 
     return filename
 
@@ -483,9 +478,7 @@ def get_app_dir(app_name: str, roaming: bool = True, force_posix: bool = False) 
     if force_posix:
         return os.path.join(os.path.expanduser(f"~/.{_posixify(app_name)}"))
     if sys.platform == "darwin":
-        return os.path.join(
-            os.path.expanduser("~/Library/Application Support"), app_name
-        )
+        return os.path.join(os.path.expanduser("~/Library/Application Support"), app_name)
     return os.path.join(
         os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
         _posixify(app_name),
@@ -517,9 +510,7 @@ class PacifyFlushWrapper:
         return getattr(self.wrapped, attr)
 
 
-def _detect_program_name(
-    path: t.Optional[str] = None, _main: t.Optional[ModuleType] = None
-) -> str:
+def _detect_program_name(path: t.Optional[str] = None, _main: t.Optional[ModuleType] = None) -> str:
     """Determine the command used to run the program, for use in help
     text. If a file or entry point was executed, the file name is
     returned. If ``python -m`` was used to execute a module or package,
@@ -551,10 +542,7 @@ def _detect_program_name(
     # set incorrectly for entry points created with pip on Windows.
     # It is set to "" inside a Shiv or PEX zipapp.
     if getattr(_main, "__package__", None) in {None, ""} or (
-        os.name == "nt"
-        and _main.__package__ == ""
-        and not os.path.exists(path)
-        and os.path.exists(f"{path}.exe")
+        os.name == "nt" and _main.__package__ == "" and not os.path.exists(path) and os.path.exists(f"{path}.exe")
     ):
         # Executed a file, like "python app.py".
         return os.path.basename(path)

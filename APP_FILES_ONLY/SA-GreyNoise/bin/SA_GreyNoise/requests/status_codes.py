@@ -118,11 +118,7 @@ def _init():
         return "* %d: %s" % (code, names)
 
     global __doc__
-    __doc__ = (
-        __doc__ + "\n" + "\n".join(doc(code) for code in sorted(_codes))
-        if __doc__ is not None
-        else None
-    )
+    __doc__ = __doc__ + "\n" + "\n".join(doc(code) for code in sorted(_codes)) if __doc__ is not None else None
 
 
 _init()

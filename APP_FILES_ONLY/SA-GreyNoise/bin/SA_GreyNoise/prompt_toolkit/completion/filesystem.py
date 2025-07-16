@@ -38,9 +38,7 @@ class PathCompleter(Completer):
         self.min_input_len = min_input_len
         self.expanduser = expanduser
 
-    def get_completions(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         text = document.text_before_cursor
 
         # Complete only when we have at least the minimal input length,
@@ -57,9 +55,7 @@ class PathCompleter(Completer):
             # Directories where to look.
             dirname = os.path.dirname(text)
             if dirname:
-                directories = [
-                    os.path.dirname(os.path.join(p, text)) for p in self.get_paths()
-                ]
+                directories = [os.path.dirname(os.path.join(p, text)) for p in self.get_paths()]
             else:
                 directories = self.get_paths()
 

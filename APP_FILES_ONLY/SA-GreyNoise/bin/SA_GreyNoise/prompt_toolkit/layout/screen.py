@@ -141,9 +141,7 @@ class Char:
         return f"{self.__class__.__name__}({self.char!r}, {self.style!r})"
 
 
-_CHAR_CACHE: FastDictCache[tuple[str, str], Char] = FastDictCache(
-    Char, size=1000 * 1000
-)
+_CHAR_CACHE: FastDictCache[tuple[str, str], Char] = FastDictCache(Char, size=1000 * 1000)
 Transparent = "[transparent]"
 
 
@@ -168,14 +166,10 @@ class Screen:
         )
 
         #: Escape sequences to be injected.
-        self.zero_width_escapes: defaultdict[int, defaultdict[int, str]] = defaultdict(
-            lambda: defaultdict(str)
-        )
+        self.zero_width_escapes: defaultdict[int, defaultdict[int, str]] = defaultdict(lambda: defaultdict(str))
 
         #: Position of the cursor.
-        self.cursor_positions: dict[
-            Window, Point
-        ] = {}  # Map `Window` objects to `Point` objects.
+        self.cursor_positions: dict[Window, Point] = {}  # Map `Window` objects to `Point` objects.
 
         #: Visibility of the cursor.
         self.show_cursor = True
@@ -184,9 +178,7 @@ class Screen:
         #: (We can't use the cursor position, because we don't want the
         #: completion menu to change its position when we browse through all the
         #: completions.)
-        self.menu_positions: dict[
-            Window, Point
-        ] = {}  # Map `Window` objects to `Point` objects.
+        self.menu_positions: dict[Window, Point] = {}  # Map `Window` objects to `Point` objects.
 
         #: Currently used width/height of the screen. This will increase when
         #: data is written to the screen.
@@ -275,9 +267,7 @@ class Screen:
             for x, char in row.items():
                 row[x] = char_cache[char.char, char.style + append_style]
 
-    def fill_area(
-        self, write_position: WritePosition, style: str = "", after: bool = False
-    ) -> None:
+    def fill_area(self, write_position: WritePosition, style: str = "", after: bool = False) -> None:
         """
         Fill the content of this area, using the given `style`.
         The style is prepended before whatever was here before.
@@ -297,15 +287,11 @@ class Screen:
             append_style = ""
             prepend_style = style + " "
 
-        for y in range(
-            write_position.ypos, write_position.ypos + write_position.height
-        ):
+        for y in range(write_position.ypos, write_position.ypos + write_position.height):
             row = data_buffer[y]
             for x in range(xmin, xmax):
                 cell = row[x]
-                row[x] = char_cache[
-                    cell.char, prepend_style + cell.style + append_style
-                ]
+                row[x] = char_cache[cell.char, prepend_style + cell.style + append_style]
 
 
 class WritePosition:
@@ -320,4 +306,6 @@ class WritePosition:
         self.height = height
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(x={self.xpos!r}, y={self.ypos!r}, width={self.width!r}, height={self.height!r})"
+        return (
+            f"{self.__class__.__name__}(x={self.xpos!r}, y={self.ypos!r}, width={self.width!r}, height={self.height!r})"
+        )

@@ -170,15 +170,11 @@ class ProgressBar:
 
         bottom_toolbar = ConditionalContainer(
             Window(
-                FormattedTextControl(
-                    lambda: self.bottom_toolbar, style="class:bottom-toolbar.text"
-                ),
+                FormattedTextControl(lambda: self.bottom_toolbar, style="class:bottom-toolbar.text"),
                 style="class:bottom-toolbar",
                 height=1,
             ),
-            filter=~is_done
-            & renderer_height_is_known
-            & Condition(lambda: self.bottom_toolbar is not None),
+            filter=~is_done & renderer_height_is_known & Condition(lambda: self.bottom_toolbar is not None),
         )
 
         def width_for_formatter(formatter: Formatter) -> AnyDimension:
@@ -202,9 +198,7 @@ class ProgressBar:
                         title_toolbar,
                         VSplit(
                             progress_controls,
-                            height=lambda: D(
-                                preferred=len(self.counters), max=len(self.counters)
-                            ),
+                            height=lambda: D(preferred=len(self.counters), max=len(self.counters)),
                         ),
                         Window(),
                         bottom_toolbar,
@@ -263,9 +257,7 @@ class ProgressBar:
         :param total: Specify the maximum value if it can't be calculated by
             calling ``len``.
         """
-        counter = ProgressBarCounter(
-            self, data, label=label, remove_when_done=remove_when_done, total=total
-        )
+        counter = ProgressBarCounter(self, data, label=label, remove_when_done=remove_when_done, total=total)
         self.counters.append(counter)
         return counter
 

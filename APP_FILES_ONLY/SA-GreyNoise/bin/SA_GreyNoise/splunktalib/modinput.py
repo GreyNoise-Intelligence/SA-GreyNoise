@@ -79,11 +79,7 @@ def _parse_modinput_configs(root, outer_block, inner_block):
         params = stanza.getElementsByTagName("param")
         for param in params:
             name = param.getAttribute("name")
-            if (
-                name
-                and param.firstChild
-                and param.firstChild.nodeType == param.firstChild.TEXT_NODE
-            ):
+            if name and param.firstChild and param.firstChild.nodeType == param.firstChild.TEXT_NODE:
                 config[name] = param.firstChild.data
         configs.append(config)
     return configs
@@ -137,9 +133,7 @@ def get_modinput_configs_from_cli(modinput, modinput_stanza=None):
     if modinput_stanza:
         cli.append(modinput_stanza)
 
-    out, err = subprocess.Popen(
-        cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    ).communicate()
+    out, err = subprocess.Popen(cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     if err:
         log.logger.error("Failed to get modinput configs with error: %s", err)
         return None, None

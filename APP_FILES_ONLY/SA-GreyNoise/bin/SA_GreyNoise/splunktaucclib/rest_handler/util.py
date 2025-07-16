@@ -118,9 +118,7 @@ def get_proxy_uri(proxy: Dict[str, Any]) -> Optional[str]:
         uri = proxy["proxy_url"]
         # socks5 causes the DNS resolution to happen on the client
         # socks5h causes the DNS resolution to happen on the proxy server
-        if proxy.get("proxy_type") == "socks5" and utils.is_true(
-            proxy.get("proxy_rdns")
-        ):
+        if proxy.get("proxy_type") == "socks5" and utils.is_true(proxy.get("proxy_rdns")):
             proxy["proxy_type"] = "socks5h"
         # setting default value of proxy_type to "http" if
         # its value is not from ["http", "socks4", "socks5"]

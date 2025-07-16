@@ -135,9 +135,7 @@ class CompleteEvent:
     `complete_while_typing`.)
     """
 
-    def __init__(
-        self, text_inserted: bool = False, completion_requested: bool = False
-    ) -> None:
+    def __init__(self, text_inserted: bool = False, completion_requested: bool = False) -> None:
         assert not (text_inserted and completion_requested)
 
         #: Automatic completion while typing.
@@ -156,9 +154,7 @@ class Completer(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def get_completions(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         """
         This should be a generator that yields :class:`.Completion` instances.
 
@@ -201,9 +197,7 @@ class ThreadedCompleter(Completer):
     def __init__(self, completer: Completer) -> None:
         self.completer = completer
 
-    def get_completions(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         return self.completer.get_completions(document, complete_event)
 
     async def get_completions_async(
@@ -261,9 +255,7 @@ class ThreadedCompleter(Completer):
         #   yield completion
 
         async with aclosing(
-            generator_to_async_generator(
-                lambda: self.completer.get_completions(document, complete_event)
-            )
+            generator_to_async_generator(lambda: self.completer.get_completions(document, complete_event))
         ) as async_generator:
             async for completion in async_generator:
                 yield completion
@@ -277,9 +269,7 @@ class DummyCompleter(Completer):
     A completer that doesn't return any completion.
     """
 
-    def get_completions(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         return []
 
     def __repr__(self) -> str:
@@ -296,9 +286,7 @@ class DynamicCompleter(Completer):
     def __init__(self, get_completer: Callable[[], Completer | None]) -> None:
         self.get_completer = get_completer
 
-    def get_completions(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         completer = self.get_completer() or DummyCompleter()
         return completer.get_completions(document, complete_event)
 
@@ -307,9 +295,7 @@ class DynamicCompleter(Completer):
     ) -> AsyncGenerator[Completion, None]:
         completer = self.get_completer() or DummyCompleter()
 
-        async for completion in completer.get_completions_async(
-            document, complete_event
-        ):
+        async for completion in completer.get_completions_async(document, complete_event):
             yield completion
 
     def __repr__(self) -> str:
@@ -332,9 +318,7 @@ class ConditionalCompleter(Completer):
     def __repr__(self) -> str:
         return f"ConditionalCompleter({self.completer!r}, filter={self.filter!r})"
 
-    def get_completions(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         # Get all completions in a blocking way.
         if self.filter():
             yield from self.completer.get_completions(document, complete_event)
@@ -344,9 +328,7 @@ class ConditionalCompleter(Completer):
     ) -> AsyncGenerator[Completion, None]:
         # Get all completions in a non-blocking way.
         if self.filter():
-            async with aclosing(
-                self.completer.get_completions_async(document, complete_event)
-            ) as async_generator:
+            async with aclosing(self.completer.get_completions_async(document, complete_event)) as async_generator:
                 async for item in async_generator:
                     yield item
 
@@ -359,9 +341,7 @@ class _MergedCompleter(Completer):
     def __init__(self, completers: Sequence[Completer]) -> None:
         self.completers = completers
 
-    def get_completions(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         # Get all completions from the other completers in a blocking way.
         for completer in self.completers:
             yield from completer.get_completions(document, complete_event)
@@ -371,16 +351,12 @@ class _MergedCompleter(Completer):
     ) -> AsyncGenerator[Completion, None]:
         # Get all completions from the other completers in a non-blocking way.
         for completer in self.completers:
-            async with aclosing(
-                completer.get_completions_async(document, complete_event)
-            ) as async_generator:
+            async with aclosing(completer.get_completions_async(document, complete_event)) as async_generator:
                 async for item in async_generator:
                     yield item
 
 
-def merge_completers(
-    completers: Sequence[Completer], deduplicate: bool = False
-) -> Completer:
+def merge_completers(completers: Sequence[Completer], deduplicate: bool = False) -> Completer:
     """
     Combine several completers into one.
 
@@ -396,9 +372,7 @@ def merge_completers(
     return _MergedCompleter(completers)
 
 
-def get_common_complete_suffix(
-    document: Document, completions: Sequence[Completion]
-) -> str:
+def get_common_complete_suffix(document: Document, completions: Sequence[Completion]) -> str:
     """
     Return the common prefix for all completions.
     """

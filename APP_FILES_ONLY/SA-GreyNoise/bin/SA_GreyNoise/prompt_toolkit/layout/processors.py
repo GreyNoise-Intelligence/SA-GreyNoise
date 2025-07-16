@@ -62,9 +62,7 @@ class Processor(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def apply_transformation(
-        self, transformation_input: TransformationInput
-    ) -> Transformation:
+    def apply_transformation(self, transformation_input: TransformationInput) -> Transformation:
         """
         Apply transformation. Returns a :class:`.Transformation` instance.
 
@@ -86,6 +84,9 @@ class TransformationInput:
         previous processors into account.)
     :param fragments: List of fragments that we can transform. (Received from the
         previous processor.)
+    :param get_line: Optional ; a callable that returns the fragments of another
+        line in the  current buffer; This can be used to create processors capable
+        of affecting transforms across multiple lines.
     """
 
     def __init__(
@@ -97,6 +98,7 @@ class TransformationInput:
         fragments: StyleAndTextTuples,
         width: int,
         height: int,
+        get_line: Callable[[int], StyleAndTextTuples] | None = None,
     ) -> None:
         self.buffer_control = buffer_control
         self.document = document
@@ -105,12 +107,11 @@ class TransformationInput:
         self.fragments = fragments
         self.width = width
         self.height = height
+        self.get_line = get_line
 
     def unpack(
         self,
-    ) -> tuple[
-        BufferControl, Document, int, SourceToDisplay, StyleAndTextTuples, int, int
-    ]:
+    ) -> tuple[BufferControl, Document, int, SourceToDisplay, StyleAndTextTuples, int, int]:
         return (
             self.buffer_control,
             self.document,
@@ -153,9 +154,7 @@ class DummyProcessor(Processor):
     A `Processor` that doesn't do anything.
     """
 
-    def apply_transformation(
-        self, transformation_input: TransformationInput
-    ) -> Transformation:
+    def apply_transformation(self, transformation_input: TransformationInput) -> Transformation:
         return Transformation(transformation_input.fragments)
 
 
@@ -177,9 +176,7 @@ class HighlightSearchProcessor(Processor):
         """
         return buffer_control.search_state.text
 
-    def apply_transformation(
-        self, transformation_input: TransformationInput
-    ) -> Transformation:
+    def apply_transformation(self, transformation_input: TransformationInput) -> Transformation:
         (
             buffer_control,
             document,
@@ -262,9 +259,7 @@ class HighlightSelectionProcessor(Processor):
     Processor that highlights the selection in the document.
     """
 
-    def apply_transformation(
-        self, transformation_input: TransformationInput
-    ) -> Transformation:
+    def apply_transformation(self, transformation_input: TransformationInput) -> Transformation:
         (
             buffer_control,
             document,
@@ -315,10 +310,7 @@ class PasswordProcessor(Processor):
     def apply_transformation(self, ti: TransformationInput) -> Transformation:
         fragments: StyleAndTextTuples = cast(
             StyleAndTextTuples,
-            [
-                (style, self.char * len(text), *handler)
-                for style, text, *handler in ti.fragments
-            ],
+            [(style, self.char * len(text), *handler) for style, text, *handler in ti.fragments],
         )
 
         return Transformation(fragments)
@@ -338,15 +330,11 @@ class HighlightMatchingBracketProcessor(Processor):
 
     _closing_braces = "])}>"
 
-    def __init__(
-        self, chars: str = "[](){}<>", max_cursor_distance: int = 1000
-    ) -> None:
+    def __init__(self, chars: str = "[](){}<>", max_cursor_distance: int = 1000) -> None:
         self.chars = chars
         self.max_cursor_distance = max_cursor_distance
 
-        self._positions_cache: SimpleCache[Hashable, list[tuple[int, int]]] = (
-            SimpleCache(maxsize=8)
-        )
+        self._positions_cache: SimpleCache[Hashable, list[tuple[int, int]]] = SimpleCache(maxsize=8)
 
     def _get_positions_to_highlight(self, document: Document) -> list[tuple[int, int]]:
         """
@@ -387,9 +375,7 @@ class HighlightMatchingBracketProcessor(Processor):
         else:
             return []
 
-    def apply_transformation(
-        self, transformation_input: TransformationInput
-    ) -> Transformation:
+    def apply_transformation(self, transformation_input: TransformationInput) -> Transformation:
         (
             buffer_control,
             document,
@@ -406,9 +392,7 @@ class HighlightMatchingBracketProcessor(Processor):
 
         # Get the highlight positions.
         key = (get_app().render_counter, document.text, document.cursor_position)
-        positions = self._positions_cache.get(
-            key, lambda: self._get_positions_to_highlight(document)
-        )
+        positions = self._positions_cache.get(key, lambda: self._get_positions_to_highlight(document))
 
         # Apply if positions were found at this line.
         if positions:
@@ -433,9 +417,7 @@ class DisplayMultipleCursors(Processor):
     When we're in Vi block insert mode, display all the cursors.
     """
 
-    def apply_transformation(
-        self, transformation_input: TransformationInput
-    ) -> Transformation:
+    def apply_transformation(self, transformation_input: TransformationInput) -> Transformation:
         (
             buffer_control,
             document,
@@ -775,16 +757,11 @@ class ReverseSearchProcessor(Processor):
         from prompt_toolkit.layout.controls import BufferControl
 
         prev_control = get_app().layout.search_target_buffer_control
-        if (
-            isinstance(prev_control, BufferControl)
-            and prev_control.search_buffer_control == buffer_control
-        ):
+        if isinstance(prev_control, BufferControl) and prev_control.search_buffer_control == buffer_control:
             return prev_control
         return None
 
-    def _content(
-        self, main_control: BufferControl, ti: TransformationInput
-    ) -> UIContent:
+    def _content(self, main_control: BufferControl, ti: TransformationInput) -> UIContent:
         from prompt_toolkit.layout.controls import BufferControl
 
         # Emulate the BufferControl through which we are searching.
@@ -797,9 +774,7 @@ class ReverseSearchProcessor(Processor):
             # For a `_MergedProcessor`, check each individual processor, recursively.
             if isinstance(item, _MergedProcessor):
                 accepted_processors = [filter_processor(p) for p in item.processors]
-                return merge_processors(
-                    [p for p in accepted_processors if p is not None]
-                )
+                return merge_processors([p for p in accepted_processors if p is not None])
 
             # For a `ConditionalProcessor`, check the body.
             elif isinstance(item, ConditionalProcessor):
@@ -814,9 +789,7 @@ class ReverseSearchProcessor(Processor):
 
             return None
 
-        filtered_processor = filter_processor(
-            merge_processors(main_control.input_processors or [])
-        )
+        filtered_processor = filter_processor(merge_processors(main_control.input_processors or []))
         highlight_processor = HighlightIncrementalSearchProcessor()
 
         if filtered_processor:
@@ -915,9 +888,7 @@ class ConditionalProcessor(Processor):
         self.processor = processor
         self.filter = to_filter(filter)
 
-    def apply_transformation(
-        self, transformation_input: TransformationInput
-    ) -> Transformation:
+    def apply_transformation(self, transformation_input: TransformationInput) -> Transformation:
         # Run processor when enabled.
         if self.filter():
             return self.processor.apply_transformation(transformation_input)
@@ -987,6 +958,7 @@ class _MergedProcessor(Processor):
                     fragments,
                     ti.width,
                     ti.height,
+                    ti.get_line,
                 )
             )
             fragments = transformation.fragments

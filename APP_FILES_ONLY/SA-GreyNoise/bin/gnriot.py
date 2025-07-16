@@ -6,7 +6,7 @@ import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
 import utility
 import validator
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise_constants import INTEGRATION_NAME
 from greynoise_exceptions import APIKeyNotFoundError
@@ -54,15 +54,52 @@ class GNRiotCommand(EventingCommand):
 
     api_validation_flag = False
 
+    def __init__(self):
+        """Initialize custom command class."""
+        super(GNRiotCommand, self).__init__()
+        self.api_key = None
+        self.proxy = None
+        self.api_client = None
+
+    def initialize_api(self, session_key, logger):
+        """Initialize API key, proxy and validate API key."""
+        try:
+            message = ""
+            self.proxy = utility.get_proxy(session_key, logger=logger)
+            self.api_key = utility.get_api_key(session_key, logger=logger)
+        except APIKeyNotFoundError as e:
+            message = str(e)
+        except HTTPError as e:
+            message = str(e)
+
+        if message:
+            logger.error("Error occurred while retrieving Proxy and/or API key details, Error: {}".format(message))
+            raise Exception(message)
+
+        # API key validation
+        if not self.api_validation_flag:
+            api_key_validation, message = utility.validate_api_key(self.api_key, logger, self.proxy)
+            logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
+            self.api_validation_flag = True
+            if not api_key_validation:
+                logger.info(message)
+                raise Exception(message)
+
+        # Initialize API client
+        if "http" in self.proxy:
+            api_config = APIConfig(
+                api_key=self.api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=self.proxy
+            )
+        else:
+            api_config = APIConfig(api_key=self.api_key, timeout=120, integration_name=INTEGRATION_NAME)
+        self.api_client = GreyNoise(api_config)
+
     def transform(self, records):
         """Method that processes and yield event records to the Splunk events pipeline."""
         ip_address = self.ip
         ip_field = self.ip_field
-        api_key = ""
-        proxy = ""
         EVENTS_PER_CHUNK = 1
         THREADS = 3
-        USE_CACHE = False
         logger = utility.setup_logger(
             session_key=self._metadata.searchinfo.session_key, log_context=self._metadata.searchinfo.command
         )
@@ -78,19 +115,13 @@ class GNRiotCommand(EventingCommand):
             )
             exit(1)
 
-        try:
-            message = ""
-            api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
-            proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
-        except APIKeyNotFoundError as e:
-            message = str(e)
-        except HTTPError as e:
-            message = str(e)
-
-        if message:
-            self.write_error(message)
-            logger.error("Error occurred while retrieving API key, Error: {}".format(message))
-            exit(1)
+        # Initialize API if not already done
+        if not self.api_client:
+            try:
+                self.initialize_api(self._metadata.searchinfo.session_key, logger)
+            except Exception as e:
+                self.write_error(str(e))
+                exit(1)
 
         if ip_address and not ip_field:
             # This piece of code will work as generating command and will not use the Splunk events.
@@ -100,14 +131,10 @@ class GNRiotCommand(EventingCommand):
             logger.info("Started retrieving results")
             try:
                 logger.debug("Initiating to fetch RIOT information for IP address: {}".format(str(ip_address)))
-                if "http" in proxy:
-                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
-                else:
-                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
                 # Opting timeout 120 seconds for the requests
                 session_key = self._metadata.searchinfo.session_key
                 riot_information = utility.get_response_for_generating(
-                    session_key, api_client, ip_address, "greynoise_riot", logger
+                    session_key, self.api_client, ip_address, "greynoise_riot", logger
                 )
                 logger.info("Retrieved results successfully")
 
@@ -182,16 +209,6 @@ class GNRiotCommand(EventingCommand):
                         self.write_error(str(e))
                         exit(1)
 
-                    # API key validation
-                    if not self.api_validation_flag:
-                        api_key_validation, message = utility.validate_api_key(api_key, logger, proxy)
-                        logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
-                        self.api_validation_flag = True
-                        if not api_key_validation:
-                            logger.info(message)
-                            self.write_error(message)
-                            exit(1)
-
                     # This piece of code will work as transforming command and will use
                     # the Splunk ingested events and field which is specified in ip_field.
                     # divide the records in the form of dict of tuples having chunk_index as key
@@ -199,36 +216,13 @@ class GNRiotCommand(EventingCommand):
                     chunk_dict = event_generator.batch(
                         records, ip_field, EVENTS_PER_CHUNK, logger, optimize_requests=False
                     )
-                    logger.debug("Successfully divided events into chunks")
-
-                    # This means there are only 1000 or below IPs to call in the entire bunch of records
-                    # Use one thread with single thread with caching mechanism enabled for the chunk
-                    if len(chunk_dict) == 1:
-                        logger.debug(
-                            "Less then 1000 distinct IPs are present, "
-                            "optimizing the IP requests call to GreyNoise API..."
-                        )
-                        THREADS = 1
-                        USE_CACHE = True
-
-                    if "http" in proxy:
-                        api_client = GreyNoise(
-                            api_key=api_key,
-                            timeout=120,
-                            use_cache=USE_CACHE,
-                            integration_name=INTEGRATION_NAME,
-                            proxy=proxy,
-                        )
-                    else:
-                        api_client = GreyNoise(
-                            api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name=INTEGRATION_NAME
-                        )
+                    logger.debug(f"Successfully divided events into {len(chunk_dict)} chunk(s)")
 
                     # When no records found, batch will return {0:([],[])}
                     if len(chunk_dict) > 0:
                         for event in event_generator.get_all_events(
                             self._metadata.searchinfo.session_key,
-                            api_client,
+                            self.api_client,
                             "greynoise_riot",
                             ip_field,
                             chunk_dict,
@@ -254,10 +248,6 @@ class GNRiotCommand(EventingCommand):
         else:
             logger.error("Please specify exactly one parameter from ip and ip_field with some value.")
             self.write_error("Please specify exactly one parameter from ip and ip_field with some value.")
-
-    def __init__(self):
-        """Initialize custom command class."""
-        super(GNRiotCommand, self).__init__()
 
 
 dispatch(GNRiotCommand, sys.argv, sys.stdin, sys.stdout, __name__)

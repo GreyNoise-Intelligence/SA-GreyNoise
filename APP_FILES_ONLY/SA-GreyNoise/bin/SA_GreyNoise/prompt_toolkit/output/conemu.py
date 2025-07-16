@@ -34,13 +34,9 @@ class ConEmuOutput:
     http://gooseberrycreative.com/cmder/
     """
 
-    def __init__(
-        self, stdout: TextIO, default_color_depth: ColorDepth | None = None
-    ) -> None:
+    def __init__(self, stdout: TextIO, default_color_depth: ColorDepth | None = None) -> None:
         self.win32_output = Win32Output(stdout, default_color_depth=default_color_depth)
-        self.vt100_output = Vt100_Output(
-            stdout, lambda: Size(0, 0), default_color_depth=default_color_depth
-        )
+        self.vt100_output = Vt100_Output(stdout, lambda: Size(0, 0), default_color_depth=default_color_depth)
 
     @property
     def responds_to_cpr(self) -> bool:

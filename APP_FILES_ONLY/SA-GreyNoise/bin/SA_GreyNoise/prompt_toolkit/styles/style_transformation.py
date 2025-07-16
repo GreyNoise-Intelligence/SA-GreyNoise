@@ -107,9 +107,7 @@ class SetDefaultColorStyleTransformation(StyleTransformation):
     :param bg: Like `fg`, but for the background.
     """
 
-    def __init__(
-        self, fg: str | Callable[[], str], bg: str | Callable[[], str]
-    ) -> None:
+    def __init__(self, fg: str | Callable[[], str], bg: str | Callable[[], str]) -> None:
         self.fg = fg
         self.bg = bg
 
@@ -154,9 +152,7 @@ class AdjustBrightnessStyleTransformation(StyleTransformation):
         a float.
     """
 
-    def __init__(
-        self, min_brightness: AnyFloat = 0.0, max_brightness: AnyFloat = 1.0
-    ) -> None:
+    def __init__(self, min_brightness: AnyFloat = 0.0, max_brightness: AnyFloat = 1.0) -> None:
         self.min_brightness = min_brightness
         self.max_brightness = max_brightness
 
@@ -179,9 +175,7 @@ class AdjustBrightnessStyleTransformation(StyleTransformation):
             # Calculate new RGB values.
             r, g, b = self._color_to_rgb(attrs.color or "")
             hue, brightness, saturation = rgb_to_hls(r, g, b)
-            brightness = self._interpolate_brightness(
-                brightness, min_brightness, max_brightness
-            )
+            brightness = self._interpolate_brightness(brightness, min_brightness, max_brightness)
             r, g, b = hls_to_rgb(hue, brightness, saturation)
             new_color = f"{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
 
@@ -212,9 +206,7 @@ class AdjustBrightnessStyleTransformation(StyleTransformation):
         # NOTE: we don't have to support named colors here. They are already
         #       transformed into RGB values in `style.parse_color`.
 
-    def _interpolate_brightness(
-        self, value: float, min_brightness: float, max_brightness: float
-    ) -> float:
+    def _interpolate_brightness(self, value: float, min_brightness: float, max_brightness: float) -> float:
         """
         Map the brightness to the (min_brightness..max_brightness) range.
         """
@@ -250,21 +242,15 @@ class DynamicStyleTransformation(StyleTransformation):
         :class:`.StyleTransformation` instance.
     """
 
-    def __init__(
-        self, get_style_transformation: Callable[[], StyleTransformation | None]
-    ) -> None:
+    def __init__(self, get_style_transformation: Callable[[], StyleTransformation | None]) -> None:
         self.get_style_transformation = get_style_transformation
 
     def transform_attrs(self, attrs: Attrs) -> Attrs:
-        style_transformation = (
-            self.get_style_transformation() or DummyStyleTransformation()
-        )
+        style_transformation = self.get_style_transformation() or DummyStyleTransformation()
         return style_transformation.transform_attrs(attrs)
 
     def invalidation_hash(self) -> Hashable:
-        style_transformation = (
-            self.get_style_transformation() or DummyStyleTransformation()
-        )
+        style_transformation = self.get_style_transformation() or DummyStyleTransformation()
         return style_transformation.invalidation_hash()
 
 
@@ -273,9 +259,7 @@ class ConditionalStyleTransformation(StyleTransformation):
     Apply the style transformation depending on a condition.
     """
 
-    def __init__(
-        self, style_transformation: StyleTransformation, filter: FilterOrBool
-    ) -> None:
+    def __init__(self, style_transformation: StyleTransformation, filter: FilterOrBool) -> None:
         self.style_transformation = style_transformation
         self.filter = to_filter(filter)
 

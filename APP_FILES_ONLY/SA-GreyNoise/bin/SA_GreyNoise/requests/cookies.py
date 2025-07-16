@@ -77,9 +77,7 @@ class MockRequest:
 
     def add_header(self, key, val):
         """cookiejar has no legitimate use for this method; add it back if you find one."""
-        raise NotImplementedError(
-            "Cookie headers should be added with add_unredirected_header()"
-        )
+        raise NotImplementedError("Cookie headers should be added with add_unredirected_header()")
 
     def add_unredirected_header(self, name, value):
         self._new_headers[name] = value
@@ -210,9 +208,7 @@ class RequestsCookieJar(cookielib.CookieJar, MutableMapping):
         """
         # support client code that unsets cookies by assignment of a None value:
         if value is None:
-            remove_cookie_by_name(
-                self, name, domain=kwargs.get("domain"), path=kwargs.get("path")
-            )
+            remove_cookie_by_name(self, name, domain=kwargs.get("domain"), path=kwargs.get("path"))
             return
 
         if isinstance(value, Morsel):
@@ -312,9 +308,7 @@ class RequestsCookieJar(cookielib.CookieJar, MutableMapping):
         """
         dictionary = {}
         for cookie in iter(self):
-            if (domain is None or cookie.domain == domain) and (
-                path is None or cookie.path == path
-            ):
+            if (domain is None or cookie.domain == domain) and (path is None or cookie.path == path):
                 dictionary[cookie.name] = cookie.value
         return dictionary
 
@@ -347,11 +341,7 @@ class RequestsCookieJar(cookielib.CookieJar, MutableMapping):
         remove_cookie_by_name(self, name)
 
     def set_cookie(self, cookie, *args, **kwargs):
-        if (
-            hasattr(cookie.value, "startswith")
-            and cookie.value.startswith('"')
-            and cookie.value.endswith('"')
-        ):
+        if hasattr(cookie.value, "startswith") and cookie.value.startswith('"') and cookie.value.endswith('"'):
             cookie.value = cookie.value.replace('\\"', "")
         return super().set_cookie(cookie, *args, **kwargs)
 
@@ -402,9 +392,7 @@ class RequestsCookieJar(cookielib.CookieJar, MutableMapping):
                     if path is None or cookie.path == path:
                         if toReturn is not None:
                             # if there are multiple cookies that meet passed in criteria
-                            raise CookieConflictError(
-                                f"There are multiple cookies with name, {name!r}"
-                            )
+                            raise CookieConflictError(f"There are multiple cookies with name, {name!r}")
                         # we will eventually return this as long as no cookie conflict
                         toReturn = cookie.value
 
@@ -476,9 +464,7 @@ def create_cookie(name, value, **kwargs):
 
     badargs = set(kwargs) - set(result)
     if badargs:
-        raise TypeError(
-            f"create_cookie() got unexpected keyword arguments: {list(badargs)}"
-        )
+        raise TypeError(f"create_cookie() got unexpected keyword arguments: {list(badargs)}")
 
     result.update(kwargs)
     result["port_specified"] = bool(result["port"])

@@ -1,8 +1,8 @@
 <form isDashboard="true" version="1.1" theme="dark">
-  <label>Noise IP Addresses</label>
+  <label>Queried IP Addresses</label>
   <fieldset submitButton="false">
     <input type="text" token="tkn_ip_address" searchWhenChanged="true">
-      <label>IP Addresses</label>
+      <label>IP Address</label>
       <default>*</default>
       <!-- Reset token tkn_ip_for_request on any change in inputs
       to disable the existing IP noise drilldown panel -->
@@ -12,8 +12,8 @@
       <prefix>"</prefix>
       <suffix>"</suffix>
     </input>
-    <input type="dropdown" token="tkn_noise" searchWhenChanged="true">
-      <label>Noise status</label>
+    <input type="dropdown" token="tkn_scanner" searchWhenChanged="true">
+      <label>Internet Scanner</label>
       <choice value="*">All</choice>
       <choice value="1">True</choice>
       <choice value="0">False</choice>
@@ -23,22 +23,23 @@
       <change>
         <unset token="tkn_ip_for_request"></unset>
       </change>
+      <initialValue>*</initialValue>
     </input>
-    <input type="dropdown" token="tkn_riot" searchWhenChanged="true">
-      <label>RIOT status</label>
+    <input type="dropdown" token="tkn_bizserv" searchWhenChanged="true">
+      <label>Business Service</label>
       <choice value="*">All</choice>
       <choice value="1">True</choice>
       <choice value="0">False</choice>
       <default>*</default>
       <change>
         <condition label="All">
-          <set token="tkn_riot">(RIOT=* OR NOT RIOT="*")</set>
+          <set token="tkn_bizserv">(RIOT=* OR NOT RIOT="*")</set>
         </condition>
         <condition label="True">
-          <set token="tkn_riot">RIOT=1</set>
+          <set token="tkn_bizserv">RIOT=1</set>
         </condition>
         <condition label="False">
-          <set token="tkn_riot">RIOT=0</set>
+          <set token="tkn_bizserv">RIOT=0</set>
         </condition>
       </change>
       <!-- Reset token tkn_ip_for_request on any change in inputs
@@ -52,22 +53,22 @@
     <panel>
       <table>
         <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup where (_key=$tkn_ip_address$)
-            | search noise=$tkn_noise$ AND $tkn_riot$
+          <query>| inputlookup gn_scan_deployment_ip_lookup where (_key=$tkn_ip_address$)
+            | search noise=$tkn_scanner$ AND $tkn_bizserv$
             | eval noise = if(noise=="1", "True", if(noise=="0", "False", "NA"))
             | eval RIOT = if(RIOT=="1", "True", if(RIOT=="0", "False", ""))
-            | rename _key as IP, noise as Noise, last_checked as "Last Checked"
+            | rename _key as IP, noise as "Internet Scanner", RIOT as "Business Service", last_checked as "Last Checked", classification as Classification, trust_level as "Trust Level"
             | eval "Check Live Status" = "Check Live Status"
-            | lookup gn_code_mapping local=true code OUTPUT code_message as "Code Message"
-            | table IP, Noise, RIOT, "Code Message", "Last Checked", "Check Live Status"
-          </query>
+            | table IP, "Internet Scanner", "Business Service", Classification, "Trust Level", "Last Checked", "Check Live Status"
+            | sort -last_checked</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
         <option name="count">25</option>
+        <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
-        <option name="rowNumbers">true</option>
+        <option name="refresh.display">preview</option>
+        <option name="rowNumbers">false</option>
         <drilldown>
           <condition field="IP">
             <unset token="tkn_ip_for_request"></unset>
@@ -107,18 +108,14 @@
   <row>
     <panel depends="$tkn_ip_for_request$">
       <single>
-        <title>Current Noise status of IP: $tkn_ip_for_request$</title>
+        <title>Current Internet Scanner status of IP: $tkn_ip_for_request$</title>
         <search>
-          <query>
-            | gnquick ip="$tkn_ip_for_request$"
-            | eval last_checked=strftime(time(), "%Y-%m-%d %T")
-            | eval _key = ip
-            | eval noise = if(noise=1, 1, if(noise=0, 0, "Could not retrieve noise status"))
-            | eval RIOT = if(riot=1, 1, if(riot=0, 0, "Could not retrieve RIOT status"))
-            | outputlookup gn_scan_deployment_ip_lookup append=true
-            | eval noise = if(noise=1, "True", if(noise=0, "False", "Could not retrieve noise status"))
-            | table noise
-          </query>
+          <query>| gnquick ip="$tkn_ip_for_request$"
+    | spath output=noise path=results.internet_scanner_intelligence.found
+    | eval last_checked=strftime(time(), "%Y-%m-%d %T")
+    | eval _key = ip
+    | eval "Internet Scanner" = if(noise="true", "True", if(noise="false", "False", "Could not retrieve noise status"))
+    | table "Internet Scanner"</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
@@ -128,13 +125,14 @@
     </panel>
     <panel depends="$tkn_ip_for_request$">
       <single>
-        <title>Current RIOT status of IP: $tkn_ip_for_request$</title>
+        <title>Current Business Services status of IP: $tkn_ip_for_request$</title>
         <search>
-          <query>
-            | gnquick ip="$tkn_ip_for_request$"
-            | eval RIOT = if(riot=1, "True", if(riot=0, "False", "Could not retrieve RIOT status"))
-            | table RIOT
-          </query>
+          <query>| gnquick ip="$tkn_ip_for_request$"
+    | spath output=riot path=results.business_service_intelligence.found
+    | eval last_checked=strftime(time(), "%Y-%m-%d %T")
+    | eval _key = ip
+    | eval "Business Service" = if(riot="true", "True", if(riot="false", "False", "Could not retrieve RIOT status"))
+    | table "Business Service"</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>

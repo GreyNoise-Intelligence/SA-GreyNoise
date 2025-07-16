@@ -31,8 +31,7 @@ import warnings
 
 def handle_tear_down_signals(callback):
     warnings.warn(
-        "This function is deprecated. "
-        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -47,8 +46,7 @@ def handle_tear_down_signals(callback):
 
 def datetime_to_seconds(dt):
     warnings.warn(
-        "This function is deprecated. "
-        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -58,8 +56,7 @@ def datetime_to_seconds(dt):
 
 def is_true(val):
     warnings.warn(
-        "This function is deprecated. "
-        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -71,8 +68,7 @@ def is_true(val):
 
 def is_false(val):
     warnings.warn(
-        "This function is deprecated. "
-        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -84,8 +80,7 @@ def is_false(val):
 
 def remove_http_proxy_env_vars():
     warnings.warn(
-        "This function is deprecated. "
-        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )

@@ -14,8 +14,7 @@
 # limitations under the License.
 #
 
-"""Error control
-"""
+"""Error control"""
 
 
 import logging
@@ -23,9 +22,8 @@ import re
 import sys
 import traceback
 
-from splunk import RESTException
-
 import splunktaucclib.common.log as stulog
+from splunk import RESTException
 
 __all__ = ["RestHandlerError", "ERROR_MAPPING"]
 

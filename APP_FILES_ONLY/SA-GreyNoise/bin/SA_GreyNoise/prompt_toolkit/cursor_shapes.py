@@ -69,25 +69,34 @@ class ModalCursorShapeConfig(CursorShapeConfig):
 
     def get_cursor_shape(self, application: Application[Any]) -> CursorShape:
         if application.editing_mode == EditingMode.VI:
-            if application.vi_state.input_mode == InputMode.INSERT:
+            if application.vi_state.input_mode in {
+                InputMode.NAVIGATION,
+            }:
+                return CursorShape.BLOCK
+            if application.vi_state.input_mode in {
+                InputMode.INSERT,
+                InputMode.INSERT_MULTIPLE,
+            }:
                 return CursorShape.BEAM
-            if application.vi_state.input_mode == InputMode.REPLACE:
+            if application.vi_state.input_mode in {
+                InputMode.REPLACE,
+                InputMode.REPLACE_SINGLE,
+            }:
                 return CursorShape.UNDERLINE
+        elif application.editing_mode == EditingMode.EMACS:
+            # like vi's INSERT
+            return CursorShape.BEAM
 
         # Default
         return CursorShape.BLOCK
 
 
 class DynamicCursorShapeConfig(CursorShapeConfig):
-    def __init__(
-        self, get_cursor_shape_config: Callable[[], AnyCursorShapeConfig]
-    ) -> None:
+    def __init__(self, get_cursor_shape_config: Callable[[], AnyCursorShapeConfig]) -> None:
         self.get_cursor_shape_config = get_cursor_shape_config
 
     def get_cursor_shape(self, application: Application[Any]) -> CursorShape:
-        return to_cursor_shape_config(self.get_cursor_shape_config()).get_cursor_shape(
-            application
-        )
+        return to_cursor_shape_config(self.get_cursor_shape_config()).get_cursor_shape(application)
 
 
 def to_cursor_shape_config(value: AnyCursorShapeConfig) -> CursorShapeConfig:

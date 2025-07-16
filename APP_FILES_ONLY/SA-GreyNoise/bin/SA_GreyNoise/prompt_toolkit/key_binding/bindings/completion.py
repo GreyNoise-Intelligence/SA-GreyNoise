@@ -82,9 +82,7 @@ def display_completions_like_readline(event: E) -> None:
         _display_completions_like_readline(event.app, completions)
 
 
-def _display_completions_like_readline(
-    app: Application[object], completions: list[Completion]
-) -> asyncio.Task[None]:
+def _display_completions_like_readline(app: Application[object], completions: list[Completion]) -> asyncio.Task[None]:
     """
     Display the list of completions in columns above the prompt.
     This will ask for a confirmation if there are too many completions to fit
@@ -101,9 +99,7 @@ def _display_completions_like_readline(
     # Calculate amount of required columns/rows for displaying the
     # completions. (Keep in mind that completions are displayed
     # alphabetically column-wise.)
-    max_compl_width = min(
-        term_width, max(get_cwidth(c.display_text) for c in completions) + 1
-    )
+    max_compl_width = min(term_width, max(get_cwidth(c.display_text) for c in completions) + 1)
     column_count = max(1, term_width // max_compl_width)
     completions_per_page = column_count * (term_height - 1)
     page_count = int(math.ceil(len(completions) / float(completions_per_page)))
@@ -111,15 +107,10 @@ def _display_completions_like_readline(
 
     def display(page: int) -> None:
         # Display completions.
-        page_completions = completions[
-            page * completions_per_page : (page + 1) * completions_per_page
-        ]
+        page_completions = completions[page * completions_per_page : (page + 1) * completions_per_page]
 
         page_row_count = int(math.ceil(len(page_completions) / float(column_count)))
-        page_columns = [
-            page_completions[i * page_row_count : (i + 1) * page_row_count]
-            for i in range(column_count)
-        ]
+        page_columns = [page_completions[i * page_row_count : (i + 1) * page_row_count] for i in range(column_count)]
 
         result: StyleAndTextTuples = []
 
@@ -127,9 +118,7 @@ def _display_completions_like_readline(
             for c in range(column_count):
                 try:
                     completion = page_columns[c][r]
-                    style = "class:readline-like-completions.completion " + (
-                        completion.style or ""
-                    )
+                    style = "class:readline-like-completions.completion " + (completion.style or "")
 
                     result.extend(to_formatted_text(completion.display, style=style))
 
@@ -159,9 +148,7 @@ def _display_completions_like_readline(
 
                         if page != page_count - 1:
                             # Display --MORE-- and go to the next page.
-                            show_more = await _create_more_session(
-                                "--MORE--"
-                            ).prompt_async()
+                            show_more = await _create_more_session("--MORE--").prompt_async()
 
                             if not show_more:
                                 return

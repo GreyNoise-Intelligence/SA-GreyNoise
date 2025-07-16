@@ -14,8 +14,7 @@
 # limitations under the License.
 #
 
-"""Normalisers
-"""
+"""Normalisers"""
 
 
 __all__ = ["Normaliser", "Boolean", "StringLower", "StringUpper"]

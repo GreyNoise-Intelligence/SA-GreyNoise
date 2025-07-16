@@ -14,8 +14,7 @@
 # limitations under the License.
 #
 
-"""Base Handler Class of REST Manager.
-"""
+"""Base Handler Class of REST Manager."""
 
 import copy
 import itertools
@@ -24,11 +23,10 @@ import logging
 from inspect import ismethod
 from os import path as op
 
+import splunktaucclib.common.log as stulog
 from splunk import ResourceNotFound, RESTException, admin, entity, rest
 from splunktalib.common import util as sc_util
 from splunktalib.rest import splunkd_request
-
-import splunktaucclib.common.log as stulog
 from splunktaucclib.rest_handler.cred_mgmt import CredMgmt
 from splunktaucclib.rest_handler.error_ctl import RestHandlerError as RH_Err
 from splunktaucclib.rest_handler.util import makeConfItem
@@ -67,9 +65,7 @@ def user_caps(mgmt_uri, session_key):
     """
     url = mgmt_uri + "/services/authentication/current-context"
 
-    resp = splunkd_request(
-        url, session_key, method="GET", data={"output_mode": "json"}, retry=3
-    )
+    resp = splunkd_request(url, session_key, method="GET", data={"output_mode": "json"}, retry=3)
     if resp is None:
         RH_Err.ctl(500, logging.ERROR, "Fail to get capabilities of sessioned user")
     elif resp.status_code != 200:
@@ -93,15 +89,10 @@ class BaseRestHandler(admin.MConfigHandler):
         self._log_request()
 
         # not allow to create object with name starting with '_'
-        if (
-            self.requestedAction == admin.ACTION_CREATE
-            and self.callerArgs.id
-            and self.callerArgs.id.startswith("_")
-        ):
+        if self.requestedAction == admin.ACTION_CREATE and self.callerArgs.id and self.callerArgs.id.startswith("_"):
             RH_Err.ctl(
                 400,
-                msgx="It is not allowed to create object with "
-                'name starting with "_"',
+                msgx="It is not allowed to create object with " 'name starting with "_"',
                 logLevel=logging.INFO,
             )
 
@@ -147,20 +138,10 @@ class BaseRestHandler(admin.MConfigHandler):
                 optArgsIter=itertools.chain(self.optionalArgs, self.transientArgs),
             )
         elif action in [admin.ACTION_EDIT]:
-            self._addArgs(
-                optArgsIter=itertools.chain(
-                    self.requiredArgs, self.optionalArgs, self.transientArgs
-                )
-            )
+            self._addArgs(optArgsIter=itertools.chain(self.requiredArgs, self.optionalArgs, self.transientArgs))
         if self.allowExtra:
-            arguments = set(
-                itertools.chain(
-                    self.requiredArgs, self.optionalArgs, self.transientArgs
-                )
-            )
-            extra_args = (
-                arg for arg in list(self.callerArgs.data.keys()) if arg not in arguments
-            )
+            arguments = set(itertools.chain(self.requiredArgs, self.optionalArgs, self.transientArgs))
+            extra_args = (arg for arg in list(self.callerArgs.data.keys()) if arg not in arguments)
             self._addArgs(optArgsIter=extra_args)
 
     def _addArgs(self, reqArgsIter=(), optArgsIter=()):
@@ -172,29 +153,19 @@ class BaseRestHandler(admin.MConfigHandler):
     def check_caps(self):
         current_caps = user_caps(rest.makeSplunkdUri(), self.getSessionKey())
 
-        cap4endpoint = (
-            self.rest_prefix + "_" + self.cap4endpoint if self.cap4endpoint else ""
-        )
+        cap4endpoint = self.rest_prefix + "_" + self.cap4endpoint if self.cap4endpoint else ""
         if cap4endpoint and cap4endpoint not in current_caps:
             RH_Err.ctl(403, msgx="capability=" + cap4endpoint, logLevel=logging.INFO)
         if 0 < len(self.customAction):
             self.customActionCap = cap4endpoint
 
-        cap4get_cred = (
-            self.rest_prefix + "_" + self.cap4get_cred if self.cap4get_cred else ""
-        )
-        if (
-            "--get-clear-credential--" in self.callerArgs.data
-            and cap4get_cred
-            and cap4get_cred not in current_caps
-        ):
+        cap4get_cred = self.rest_prefix + "_" + self.cap4get_cred if self.cap4get_cred else ""
+        if "--get-clear-credential--" in self.callerArgs.data and cap4get_cred and cap4get_cred not in current_caps:
             RH_Err.ctl(403, msgx="capability=" + cap4get_cred, logLevel=logging.INFO)
 
     def get_cred_mgmt(self, endpoint):
         # credential fields
-        self.encryptedArgs = {
-            (self.keyMap.get(arg) or arg) for arg in self.encryptedArgs
-        }
+        self.encryptedArgs = {(self.keyMap.get(arg) or arg) for arg in self.encryptedArgs}
         user, app = self.user_app()
         return CredMgmt(
             sessionKey=self.getSessionKey(),
@@ -244,10 +215,7 @@ class BaseRestHandler(admin.MConfigHandler):
 
         if self.requestedAction != admin.ACTION_LIST:
 
-            if (
-                self.requestedAction in [admin.ACTION_CREATE, admin.ACTION_EDIT]
-                and len(self.callerArgs.data) > 0
-            ):
+            if self.requestedAction in [admin.ACTION_CREATE, admin.ACTION_EDIT] and len(self.callerArgs.data) > 0:
                 ent.properties = dict()
 
                 ent["sharing"] = meta["sharing"]
@@ -257,11 +225,7 @@ class BaseRestHandler(admin.MConfigHandler):
             hasReadPerms = "perms.read" in self.callerArgs
             isPermsPost = hasWritePerms or hasReadPerms
 
-            if (
-                "sharing" in self.callerArgs
-                and "user" in self.callerArgs["sharing"]
-                and isPermsPost
-            ):
+            if "sharing" in self.callerArgs and "user" in self.callerArgs["sharing"] and isPermsPost:
                 msg = "ACL cannot be set for user-level sharing"
                 stulog.logger.error(msg)
                 raise Exception(msg)
@@ -290,9 +254,7 @@ class BaseRestHandler(admin.MConfigHandler):
         except Exception:
             pass
         else:
-            RH_Err.ctl(
-                409, msgx=("object=%s" % self.callerArgs.id), logLevel=logging.INFO
-            )
+            RH_Err.ctl(409, msgx=("object=%s" % self.callerArgs.id), logLevel=logging.INFO)
 
         try:
             args = self.encode(self.callerArgs.data)
@@ -339,11 +301,7 @@ class BaseRestHandler(admin.MConfigHandler):
         if setDefault:
             needed_args_iter = itertools.chain(self.requiredArgs, self.optionalArgs)
             args.update(
-                {
-                    k: [self.defaultVals[k]]
-                    for k in needed_args_iter
-                    if k in self.defaultVals and not args.get(k)
-                }
+                {k: [self.defaultVals[k]] for k in needed_args_iter if k in self.defaultVals and not args.get(k)}
             )
 
         # validate
@@ -355,20 +313,14 @@ class BaseRestHandler(admin.MConfigHandler):
         # Value Mapping
         args = {
             k: (
-                [
-                    (self.valMap[k].get(v) or v)
-                    for v in (vs if isinstance(vs, list) else [vs])
-                ]
+                [(self.valMap[k].get(v) or v) for v in (vs if isinstance(vs, list) else [vs])]
                 if k in self.valMap
                 else vs
             )
             for k, vs in list(args.items())
         }
         # Key Mapping
-        args = {
-            (k in self.keyMap and self.keyMap[k] or k): vs
-            for k, vs in list(args.items())
-        }
+        args = {(k in self.keyMap and self.keyMap[k] or k): vs for k, vs in list(args.items())}
 
         # encrypt
         tanzaName = self._makeStanzaName(self.callerArgs.id)
@@ -398,9 +350,7 @@ class BaseRestHandler(admin.MConfigHandler):
                     shouldRaise=False,
                 )
         else:
-            ent = {
-                key: val for key, val in ent.items() if key not in self.encryptedArgs
-            }
+            ent = {key: val for key, val in ent.items() if key not in self.encryptedArgs}
 
         # Adverse Key Mapping
         ent = {k: v for k, v in ent.items()}
@@ -409,16 +359,10 @@ class BaseRestHandler(admin.MConfigHandler):
         ent.update(ent_new)
 
         # Adverse Value Mapping
-        valMapAdv = {
-            k: {y: x for x, y in list(m.items())} for k, m in list(self.valMap.items())
-        }
+        valMapAdv = {k: {y: x for x, y in list(m.items())} for k, m in list(self.valMap.items())}
         ent = {
             k: (
-                (
-                    [(valMapAdv[k].get(v) or v) for v in vs]
-                    if isinstance(vs, list)
-                    else (valMapAdv[k].get(vs) or vs)
-                )
+                ([(valMapAdv[k].get(v) or v) for v in vs] if isinstance(vs, list) else (valMapAdv[k].get(vs) or vs))
                 if k in valMapAdv
                 else vs
             )
@@ -430,19 +374,10 @@ class BaseRestHandler(admin.MConfigHandler):
 
         # filter undesired arguments & handle none value
         return {
-            k: (
-                (str(v).lower() if isinstance(v, bool) else v)
-                if (v is not None and str(v).strip())
-                else ""
-            )
+            k: ((str(v).lower() if isinstance(v, bool) else v) if (v is not None and str(v).strip()) else "")
             for k, v in ent.items()
             if k not in self.transientArgs
-            and (
-                self.allowExtra
-                or k in self.requiredArgs
-                or k in self.optionalArgs
-                or k in self.outputExtraFields
-            )
+            and (self.allowExtra or k in self.requiredArgs or k in self.optionalArgs or k in self.outputExtraFields)
         }
 
     def _autoEncrypt(self, name, ent):
@@ -468,9 +403,7 @@ class BaseRestHandler(admin.MConfigHandler):
 
     def _reload(self, confInfo):
         path = "%s/_reload" % self.endpoint
-        response, _ = rest.simpleRequest(
-            path, sessionKey=self.getSessionKey(), method="POST"
-        )
+        response, _ = rest.simpleRequest(path, sessionKey=self.getSessionKey(), method="POST")
         if response.status != 200:
             exc = RESTException(response.status, response.messages)
             RH_Err.ctl(-1, exc, logLevel=logging.INFO)
@@ -578,14 +511,10 @@ class BaseRestHandler(admin.MConfigHandler):
             args = self.encode(args)
 
         postArgs = {"app": args["app"], "user": args["user"]}
-        path = entity.buildEndpoint(
-            self.endpoint, entityName=self.callerArgs.id, namespace=app, owner=user
-        )
+        path = entity.buildEndpoint(self.endpoint, entityName=self.callerArgs.id, namespace=app, owner=user)
         path += "/move"
 
-        response, _ = rest.simpleRequest(
-            path, sessionKey=self.getSessionKey(), method="POST", postargs=postArgs
-        )
+        response, _ = rest.simpleRequest(path, sessionKey=self.getSessionKey(), method="POST", postargs=postArgs)
         if response.status != 200:
             exc = RESTException(response.status, response.messages)
             RH_Err.ctl(-1, exc, logLevel=logging.INFO)
@@ -702,10 +631,7 @@ class BaseModel:
             if k not in self.normalisers or not vs:
                 continue
             if isinstance(vs, list) or isinstance(vs, dict) or isinstance(vs, tuple):
-                data[k] = [
-                    self.normalisers[k].normalize(v) if isinstance(v, str) else v
-                    for v in vs
-                ]
+                data[k] = [self.normalisers[k].normalize(v) if isinstance(v, str) else v for v in vs]
             else:
                 data[k] = self.normalisers[k].normalize(vs)
         return data

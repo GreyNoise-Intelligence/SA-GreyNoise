@@ -135,9 +135,7 @@ class ScrollablePane(Container):
             virtual_width = write_position.width
 
         # Compute preferred height again.
-        virtual_height = self.content.preferred_height(
-            virtual_width, self.max_available_height
-        ).preferred
+        virtual_height = self.content.preferred_height(virtual_width, self.max_available_height).preferred
 
         # Ensure virtual height is at least the available height.
         virtual_height = max(virtual_height, write_position.height)
@@ -147,9 +145,7 @@ class ScrollablePane(Container):
         # visible part to the real screen.
         temp_screen = Screen(default_char=Char(char=" ", style=parent_style))
         temp_screen.show_cursor = screen.show_cursor
-        temp_write_position = WritePosition(
-            xpos=0, ypos=0, width=virtual_width, height=virtual_height
-        )
+        temp_write_position = WritePosition(xpos=0, ypos=0, width=virtual_width, height=virtual_height)
 
         temp_mouse_handlers = MouseHandlers()
 
@@ -169,9 +165,7 @@ class ScrollablePane(Container):
         focused_window = get_app().layout.current_window
 
         try:
-            visible_win_write_pos = temp_screen.visible_windows_to_write_positions[
-                focused_window
-            ]
+            visible_win_write_pos = temp_screen.visible_windows_to_write_positions[focused_window]
         except KeyError:
             pass  # No window focused here. Don't scroll.
         else:
@@ -187,9 +181,7 @@ class ScrollablePane(Container):
         self._copy_over_screen(screen, temp_screen, write_position, virtual_width)
 
         # Copy over mouse handlers.
-        self._copy_over_mouse_handlers(
-            mouse_handlers, temp_mouse_handlers, write_position, virtual_width
-        )
+        self._copy_over_mouse_handlers(mouse_handlers, temp_mouse_handlers, write_position, virtual_width)
 
         # Set screen.width/height.
         ypos = write_position.ypos
@@ -208,13 +200,9 @@ class ScrollablePane(Container):
         for window, point in temp_screen.cursor_positions.items():
             if (
                 0 <= point.x < write_position.width
-                and self.vertical_scroll
-                <= point.y
-                < write_position.height + self.vertical_scroll
+                and self.vertical_scroll <= point.y < write_position.height + self.vertical_scroll
             ):
-                screen.cursor_positions[window] = Point(
-                    x=point.x + xpos, y=point.y + ypos - self.vertical_scroll
-                )
+                screen.cursor_positions[window] = Point(x=point.x + xpos, y=point.y + ypos - self.vertical_scroll)
 
         # Copy over menu positions, but clip them to the visible area.
         for window, point in temp_screen.menu_positions.items():
@@ -231,9 +219,7 @@ class ScrollablePane(Container):
                 screen,
             )
 
-    def _clip_point_to_visible_area(
-        self, point: Point, write_position: WritePosition
-    ) -> Point:
+    def _clip_point_to_visible_area(self, point: Point, write_position: WritePosition) -> Point:
         """
         Ensure that the cursor and menu positions always are always reported
         """
@@ -264,9 +250,7 @@ class ScrollablePane(Container):
         for y in range(write_position.height):
             temp_row = temp_screen.data_buffer[y + self.vertical_scroll]
             row = screen.data_buffer[y + ypos]
-            temp_zero_width_escapes = temp_screen.zero_width_escapes[
-                y + self.vertical_scroll
-            ]
+            temp_zero_width_escapes = temp_screen.zero_width_escapes[y + self.vertical_scroll]
             zero_width_escapes = screen.zero_width_escapes[y + ypos]
 
             for x in range(virtual_width):
@@ -326,9 +310,7 @@ class ScrollablePane(Container):
                     if x in temp_mouse_row:
                         mouse_row[x + xpos] = wrap_mouse_handler(temp_mouse_row[x])
 
-    def _copy_over_write_positions(
-        self, screen: Screen, temp_screen: Screen, write_position: WritePosition
-    ) -> None:
+    def _copy_over_write_positions(self, screen: Screen, temp_screen: Screen, write_position: WritePosition) -> None:
         """
         Copy over window write positions.
         """
@@ -380,9 +362,7 @@ class ScrollablePane(Container):
             # Reduce min/max scroll according to the cursor in the focused window.
             if cursor_position is not None:
                 offsets = self.scroll_offsets
-                cpos_min_scroll = (
-                    cursor_position.y - visible_height + 1 + offsets.bottom
-                )
+                cpos_min_scroll = cursor_position.y - visible_height + 1 + offsets.bottom
                 cpos_max_scroll = cursor_position.y - offsets.top
                 min_scroll = max(min_scroll, cpos_min_scroll)
                 max_scroll = max(0, min(max_scroll, cpos_max_scroll))
@@ -392,21 +372,13 @@ class ScrollablePane(Container):
             # If the window is small enough, bot the top and bottom of the window
             # should be visible.
             if visible_win_write_pos.height <= visible_height:
-                window_min_scroll = (
-                    visible_win_write_pos.ypos
-                    + visible_win_write_pos.height
-                    - visible_height
-                )
+                window_min_scroll = visible_win_write_pos.ypos + visible_win_write_pos.height - visible_height
                 window_max_scroll = visible_win_write_pos.ypos
             else:
                 # Window does not fit on the screen. Make sure at least the whole
                 # screen is occupied with this window, and nothing else is shown.
                 window_min_scroll = visible_win_write_pos.ypos
-                window_max_scroll = (
-                    visible_win_write_pos.ypos
-                    + visible_win_write_pos.height
-                    - visible_height
-                )
+                window_max_scroll = visible_win_write_pos.ypos + visible_win_write_pos.height - visible_height
 
             min_scroll = max(min_scroll, window_min_scroll)
             max_scroll = min(max_scroll, window_max_scroll)
@@ -420,9 +392,7 @@ class ScrollablePane(Container):
         if self.vertical_scroll < min_scroll:
             self.vertical_scroll = min_scroll
 
-    def _draw_scrollbar(
-        self, write_position: WritePosition, content_height: int, screen: Screen
-    ) -> None:
+    def _draw_scrollbar(self, write_position: WritePosition, content_height: int, screen: Screen) -> None:
         """
         Draw the scrollbar on the screen.
 
@@ -440,9 +410,7 @@ class ScrollablePane(Container):
             fraction_visible = write_position.height / float(content_height)
             fraction_above = self.vertical_scroll / float(content_height)
 
-            scrollbar_height = int(
-                min(window_height, max(1, window_height * fraction_visible))
-            )
+            scrollbar_height = int(min(window_height, max(1, window_height * fraction_visible)))
             scrollbar_top = int(window_height * fraction_above)
         except ZeroDivisionError:
             return
@@ -458,9 +426,7 @@ class ScrollablePane(Container):
 
             # Up arrow.
             if display_arrows:
-                data_buffer[ypos][xpos] = Char(
-                    self.up_arrow_symbol, "class:scrollbar.arrow"
-                )
+                data_buffer[ypos][xpos] = Char(self.up_arrow_symbol, "class:scrollbar.arrow")
                 ypos += 1
 
             # Scrollbar body.
@@ -489,6 +455,4 @@ class ScrollablePane(Container):
 
             # Down arrow
             if display_arrows:
-                data_buffer[ypos][xpos] = Char(
-                    self.down_arrow_symbol, "class:scrollbar.arrow"
-                )
+                data_buffer[ypos][xpos] = Char(self.down_arrow_symbol, "class:scrollbar.arrow")

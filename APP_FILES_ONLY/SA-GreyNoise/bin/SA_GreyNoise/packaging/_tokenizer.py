@@ -101,9 +101,7 @@ class Tokenizer:
         rules: dict[str, str | re.Pattern[str]],
     ) -> None:
         self.source = source
-        self.rules: dict[str, re.Pattern[str]] = {
-            name: re.compile(pattern) for name, pattern in rules.items()
-        }
+        self.rules: dict[str, re.Pattern[str]] = {name: re.compile(pattern) for name, pattern in rules.items()}
         self.next_token: Token | None = None
         self.position = 0
 
@@ -119,9 +117,7 @@ class Tokenizer:
         another check. If `peek` is set to `True`, the token is not loaded and
         would need to be checked again.
         """
-        assert (
-            self.next_token is None
-        ), f"Cannot check for {name!r}, already have {self.next_token!r}"
+        assert self.next_token is None, f"Cannot check for {name!r}, already have {self.next_token!r}"
         assert name in self.rules, f"Unknown token name: {name!r}"
 
         expression = self.rules[name]
@@ -171,9 +167,7 @@ class Tokenizer:
         )
 
     @contextlib.contextmanager
-    def enclosing_tokens(
-        self, open_token: str, close_token: str, *, around: str
-    ) -> Iterator[None]:
+    def enclosing_tokens(self, open_token: str, close_token: str, *, around: str) -> Iterator[None]:
         if self.check(open_token):
             open_position = self.position
             self.read()

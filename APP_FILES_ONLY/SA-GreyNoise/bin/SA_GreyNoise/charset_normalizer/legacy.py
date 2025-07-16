@@ -1,13 +1,22 @@
-from typing import Any, Dict, Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 from warnings import warn
 
 from .api import from_bytes
 from .constant import CHARDET_CORRESPONDENCE
 
+# TODO: remove this check when dropping Python 3.7 support
+if TYPE_CHECKING:
+    from typing_extensions import TypedDict
 
-def detect(
-    byte_str: bytes, should_rename_legacy: bool = False, **kwargs: Any
-) -> Dict[str, Optional[Union[str, float]]]:
+    class ResultDict(TypedDict):
+        encoding: str | None
+        language: str
+        confidence: float | None
+
+
+def detect(byte_str: bytes, should_rename_legacy: bool = False, **kwargs: Any) -> ResultDict:
     """
     chardet legacy method
     Detect the encoding of the given byte string. It should be mostly backward-compatible.
@@ -20,15 +29,10 @@ def detect(
                                   to their more modern equivalents?
     """
     if len(kwargs):
-        warn(
-            f"charset-normalizer disregard arguments '{','.join(list(kwargs.keys()))}' in legacy function detect()"
-        )
+        warn(f"charset-normalizer disregard arguments '{','.join(list(kwargs.keys()))}' in legacy function detect()")
 
     if not isinstance(byte_str, (bytearray, bytes)):
-        raise TypeError(  # pragma: nocover
-            "Expected object of type bytes or bytearray, got: "
-            "{0}".format(type(byte_str))
-        )
+        raise TypeError(f"Expected object of type bytes or bytearray, got: {type(byte_str)}")  # pragma: nocover
 
     if isinstance(byte_str, bytearray):
         byte_str = bytes(byte_str)

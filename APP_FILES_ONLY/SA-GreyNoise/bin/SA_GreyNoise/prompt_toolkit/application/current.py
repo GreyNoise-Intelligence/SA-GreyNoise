@@ -38,9 +38,7 @@ class AppSession:
     :param output: Use this as a default output.
     """
 
-    def __init__(
-        self, input: Input | None = None, output: Output | None = None
-    ) -> None:
+    def __init__(self, input: Input | None = None, output: Output | None = None) -> None:
         self._input = input
         self._output = output
 
@@ -68,9 +66,7 @@ class AppSession:
         return self._output
 
 
-_current_app_session: ContextVar[AppSession] = ContextVar(
-    "_current_app_session", default=AppSession()
-)
+_current_app_session: ContextVar[AppSession] = ContextVar("_current_app_session", default=AppSession())
 
 
 def get_app_session() -> AppSession:
@@ -137,14 +133,12 @@ def set_app(app: Application[Any]) -> Generator[None, None, None]:
 
 
 @contextmanager
-def create_app_session(
-    input: Input | None = None, output: Output | None = None
-) -> Generator[AppSession, None, None]:
+def create_app_session(input: Input | None = None, output: Output | None = None) -> Generator[AppSession, None, None]:
     """
     Create a separate AppSession.
 
-    This is useful if there can be multiple individual `AppSession`s going on.
-    Like in the case of an Telnet/SSH server.
+    This is useful if there can be multiple individual ``AppSession``'s going
+    on. Like in the case of a Telnet/SSH server.
     """
     # If no input/output is specified, fall back to the current input/output,
     # if there was one that was set/created for the current session.

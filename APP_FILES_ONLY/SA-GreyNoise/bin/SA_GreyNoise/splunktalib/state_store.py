@@ -73,9 +73,7 @@ class StateStore(BaseStateStore):
         self._states_cache = {}
         self._kv_client = None
         self._collection = collection_name
-        self._kv_client = kvc.KVClient(
-            meta_configs["server_uri"], meta_configs["session_key"]
-        )
+        self._kv_client = kvc.KVClient(meta_configs["server_uri"], meta_configs["session_key"])
         kvc.create_collection(self._kv_client, self._collection, self._appname)
         self._load_states_cache()
 
@@ -92,9 +90,7 @@ class StateStore(BaseStateStore):
                 self._appname,
             )
         else:
-            self._kv_client.update_collection_data(
-                self._collection, key, {"value": json.dumps(states)}, self._appname
-            )
+            self._kv_client.update_collection_data(self._collection, key, {"value": json.dumps(states)}, self._appname)
         self._states_cache[key] = states
 
     def get_state(self, key=None):
@@ -116,9 +112,7 @@ class StateStore(BaseStateStore):
         del self._states_cache[key]
 
     def _load_states_cache(self):
-        states = self._kv_client.get_collection_data(
-            self._collection, None, self._appname
-        )
+        states = self._kv_client.get_collection_data(self._collection, None, self._appname)
         if not states:
             return
 
@@ -267,9 +261,7 @@ class CachedFileStateStore(BaseStateStore):
                         self._states_cache.clear()
                         self._states_cache_lmd.clear()
                     elif key in self._states_cache:
-                        self.update_state_flush(
-                            self._states_cache[key][0], key, self._states_cache[key][1]
-                        )
+                        self.update_state_flush(self._states_cache[key][0], key, self._states_cache[key][1])
                         del self._states_cache[key]
                         del self._states_cache_lmd[key]
             except Exception:

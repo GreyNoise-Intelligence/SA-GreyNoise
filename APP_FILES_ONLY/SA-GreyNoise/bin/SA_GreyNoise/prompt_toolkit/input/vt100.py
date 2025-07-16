@@ -41,9 +41,7 @@ class Vt100Input(Input):
             stdin.fileno()
         except io.UnsupportedOperation as e:
             if "idlelib.run" in sys.modules:
-                raise io.UnsupportedOperation(
-                    "Stdin is not a terminal. Running from Idle is not supported."
-                ) from e
+                raise io.UnsupportedOperation("Stdin is not a terminal. Running from Idle is not supported.") from e
             else:
                 raise io.UnsupportedOperation("Stdin is not a terminal.") from e
 
@@ -70,9 +68,7 @@ class Vt100Input(Input):
 
         self._buffer: list[KeyPress] = []  # Buffer to collect the Key objects.
         self.stdin_reader = PosixStdinReader(self._fileno, encoding=stdin.encoding)
-        self.vt100_parser = Vt100Parser(
-            lambda key_press: self._buffer.append(key_press)
-        )
+        self.vt100_parser = Vt100Parser(lambda key_press: self._buffer.append(key_press))
 
     def attach(self, input_ready_callback: Callable[[], None]) -> ContextManager[None]:
         """
@@ -132,15 +128,13 @@ class Vt100Input(Input):
         return f"fd-{self._fileno}"
 
 
-_current_callbacks: dict[
-    tuple[AbstractEventLoop, int], Callable[[], None] | None
-] = {}  # (loop, fd) -> current callback
+_current_callbacks: dict[tuple[AbstractEventLoop, int], Callable[[], None] | None] = (
+    {}
+)  # (loop, fd) -> current callback
 
 
 @contextlib.contextmanager
-def _attached_input(
-    input: Vt100Input, callback: Callable[[], None]
-) -> Generator[None, None, None]:
+def _attached_input(input: Vt100Input, callback: Callable[[], None]) -> Generator[None, None, None]:
     """
     Context manager that makes this input active in the current event loop.
 

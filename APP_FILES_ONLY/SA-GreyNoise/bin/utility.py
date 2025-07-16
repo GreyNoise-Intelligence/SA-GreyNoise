@@ -3,6 +3,7 @@ utility.py .
 
 Helper file containing useful methods
 """
+
 import collections
 import logging
 import traceback
@@ -11,7 +12,7 @@ import app_greynoise_declare
 import fields
 import splunk.rest
 from caching import Caching
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise_constants import INTEGRATION_NAME
 from greynoise_exceptions import APIKeyNotFoundError, CachingException
@@ -248,9 +249,11 @@ def validate_api_key(api_key, logger=None, proxy=None):
 
     try:
         if proxy and "http" in proxy:
-            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_config = APIConfig(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_client = GreyNoise(api_config)
         else:
-            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+            api_config = APIConfig(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+            api_client = GreyNoise(api_config)
 
         api_client.test_connection()
 
@@ -389,7 +392,7 @@ def get_ips_not_in_cache(cache, ips, logger):
     """
     try:
         ips_not_in_cache = []
-        for ipz in list(chunkgen(ips)):
+        for ipz in list(chunkgen(ips, chunk_size=10000)):
             cached = cache.query_kv_store(ipz, fetch_ips_only=True)
             ips_from_cache = []
             if cached is not None and len(cached) >= 1:

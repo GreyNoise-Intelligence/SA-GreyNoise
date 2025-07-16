@@ -222,9 +222,7 @@ class TextArea:
             multiline=multiline,
             read_only=Condition(lambda: is_true(self.read_only)),
             completer=DynamicCompleter(lambda: self.completer),
-            complete_while_typing=Condition(
-                lambda: is_true(self.complete_while_typing)
-            ),
+            complete_while_typing=Condition(lambda: is_true(self.complete_while_typing)),
             validator=DynamicValidator(lambda: self.validator),
             auto_suggest=DynamicAutoSuggest(lambda: self.auto_suggest),
             accept_handler=accept_handler,
@@ -236,12 +234,8 @@ class TextArea:
             buffer=self.buffer,
             lexer=DynamicLexer(lambda: self.lexer),
             input_processors=[
-                ConditionalProcessor(
-                    AppendAutoSuggestion(), has_focus(self.buffer) & ~is_done
-                ),
-                ConditionalProcessor(
-                    processor=PasswordProcessor(), filter=to_filter(password)
-                ),
+                ConditionalProcessor(AppendAutoSuggestion(), has_focus(self.buffer) & ~is_done),
+                ConditionalProcessor(processor=PasswordProcessor(), filter=to_filter(password)),
                 BeforeInput(prompt, style="class:text-area.prompt"),
             ]
             + input_processors,
@@ -436,16 +430,11 @@ class Button:
         )
 
     def _get_text_fragments(self) -> StyleAndTextTuples:
-        width = self.width - (
-            get_cwidth(self.left_symbol) + get_cwidth(self.right_symbol)
-        )
+        width = self.width - (get_cwidth(self.left_symbol) + get_cwidth(self.right_symbol))
         text = (f"{{:^{width}}}").format(self.text)
 
         def handler(mouse_event: MouseEvent) -> None:
-            if (
-                self.handler is not None
-                and mouse_event.event_type == MouseEventType.MOUSE_UP
-            ):
+            if self.handler is not None and mouse_event.event_type == MouseEventType.MOUSE_UP:
                 self.handler()
 
         return [
@@ -715,13 +704,9 @@ class _DialogList(Generic[_T]):
         # current_values will be used in multiple_selection,
         # current_value will be used otherwise.
         keys: list[_T] = [value for (value, _) in values]
-        self.current_values: list[_T] = [
-            value for value in default_values if value in keys
-        ]
+        self.current_values: list[_T] = [value for value in default_values if value in keys]
         self.current_value: _T = (
-            default_values[0]
-            if len(default_values) and default_values[0] in keys
-            else values[0][0]
+            default_values[0] if len(default_values) and default_values[0] in keys else values[0][0]
         )
 
         # Cursor index: take first selected item or first item otherwise.
@@ -745,9 +730,7 @@ class _DialogList(Generic[_T]):
         def _pageup(event: E) -> None:
             w = event.app.layout.current_window
             if w.render_info:
-                self._selected_index = max(
-                    0, self._selected_index - len(w.render_info.displayed_lines)
-                )
+                self._selected_index = max(0, self._selected_index - len(w.render_info.displayed_lines))
 
         @kb.add("pagedown")
         def _pagedown(event: E) -> None:
@@ -775,9 +758,7 @@ class _DialogList(Generic[_T]):
                     return
 
         # Control and window.
-        self.control = FormattedTextControl(
-            self._get_text_fragments, key_bindings=kb, focusable=True
-        )
+        self.control = FormattedTextControl(self._get_text_fragments, key_bindings=kb, focusable=True)
 
         self.window = Window(
             content=self.control,
@@ -926,9 +907,7 @@ class VerticalLine:
     """
 
     def __init__(self) -> None:
-        self.window = Window(
-            char=Border.VERTICAL, style="class:line,vertical-line", width=1
-        )
+        self.window = Window(char=Border.VERTICAL, style="class:line,vertical-line", width=1)
 
     def __pt_container__(self) -> Container:
         return self.window
@@ -940,9 +919,7 @@ class HorizontalLine:
     """
 
     def __init__(self) -> None:
-        self.window = Window(
-            char=Border.HORIZONTAL, style="class:line,horizontal-line", height=1
-        )
+        self.window = Window(char=Border.HORIZONTAL, style="class:line,horizontal-line", height=1)
 
     def __pt_container__(self) -> Container:
         return self.window

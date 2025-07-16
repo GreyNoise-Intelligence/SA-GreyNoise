@@ -133,10 +133,7 @@ class ModularInput(metaclass=ABCMeta):
 
     def _validate_properties(self):
         if not all([self.app, self.name, self.title, self.description]):
-            raise ModularInputException(
-                'Attributes: "app", "name", "title", "description" must '
-                "be overriden."
-            )
+            raise ModularInputException('Attributes: "app", "name", "title", "description" must ' "be overriden.")
 
         if self.use_kvstore_checkpointer:
             if self.kvstore_checkpointer_collection_name is None:
@@ -145,21 +142,15 @@ class ModularInput(metaclass=ABCMeta):
                     'be overriden if "use_kvstore_checkpointer" is True".'
                 )
             elif self.kvstore_checkpointer_collection_name.strip() == "":
-                raise ModularInputException(
-                    'Attribute: "kvstore_checkpointer_collection_name" can'
-                    " not be empty."
-                )
+                raise ModularInputException('Attribute: "kvstore_checkpointer_collection_name" can' " not be empty.")
 
         if self.use_hec_event_writer:
             if self.hec_input_name is None:
                 raise ModularInputException(
-                    'Attribute: "hec_input_name" must be overriden '
-                    'if "use_hec_event_writer" is True.'
+                    'Attribute: "hec_input_name" must be overriden ' 'if "use_hec_event_writer" is True.'
                 )
             elif self.hec_input_name.strip() == "":
-                raise ModularInputException(
-                    'Attribute: "hec_input_name" can not be empty.'
-                )
+                raise ModularInputException('Attribute: "hec_input_name" can not be empty.')
 
     @property
     def checkpointer(self) -> checkpointer.Checkpointer:
@@ -181,9 +172,7 @@ class ModularInput(metaclass=ABCMeta):
 
     def _create_checkpointer(self):
         if self.use_kvstore_checkpointer:
-            checkpointer_name = ":".join(
-                [self.app, self.config_name, self.kvstore_checkpointer_collection_name]
-            )
+            checkpointer_name = ":".join([self.app, self.config_name, self.kvstore_checkpointer_collection_name])
             try:
                 return checkpointer.KVStoreCheckpointer(
                     checkpointer_name,
@@ -195,9 +184,7 @@ class ModularInput(metaclass=ABCMeta):
                     port=self.server_port,
                 )
             except binding.HTTPError:
-                logging.error(
-                    "Failed to init kvstore checkpointer: %s.", traceback.format_exc()
-                )
+                logging.error("Failed to init kvstore checkpointer: %s.", traceback.format_exc())
                 raise
         else:
             return checkpointer.FileCheckpointer(self._checkpoint_dir)
@@ -232,9 +219,7 @@ class ModularInput(metaclass=ABCMeta):
                     port=self.server_port,
                 )
             except binding.HTTPError:
-                logging.error(
-                    "Failed to init HECEventWriter: %s.", traceback.format_exc()
-                )
+                logging.error("Failed to init HECEventWriter: %s.", traceback.format_exc())
                 raise
         else:
             return event_writer.ClassicEventWriter()

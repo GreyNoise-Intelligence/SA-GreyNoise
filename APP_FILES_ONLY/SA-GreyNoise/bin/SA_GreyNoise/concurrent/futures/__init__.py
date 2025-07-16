@@ -3,49 +3,53 @@
 
 """Execute computations asynchronously using threads or processes."""
 
-__author__ = 'Brian Quinlan (brian@sweetapp.com)'
+__author__ = "Brian Quinlan (brian@sweetapp.com)"
 
-from concurrent.futures._base import (FIRST_COMPLETED,
-                                      FIRST_EXCEPTION,
-                                      ALL_COMPLETED,
-                                      CancelledError,
-                                      TimeoutError,
-                                      BrokenExecutor,
-                                      Future,
-                                      Executor,
-                                      wait,
-                                      as_completed)
+from concurrent.futures._base import (
+    ALL_COMPLETED,
+    FIRST_COMPLETED,
+    FIRST_EXCEPTION,
+    BrokenExecutor,
+    CancelledError,
+    Executor,
+    Future,
+    TimeoutError,
+    as_completed,
+    wait,
+)
 
 __all__ = (
-    'FIRST_COMPLETED',
-    'FIRST_EXCEPTION',
-    'ALL_COMPLETED',
-    'CancelledError',
-    'TimeoutError',
-    'BrokenExecutor',
-    'Future',
-    'Executor',
-    'wait',
-    'as_completed',
-    'ProcessPoolExecutor',
-    'ThreadPoolExecutor',
+    "FIRST_COMPLETED",
+    "FIRST_EXCEPTION",
+    "ALL_COMPLETED",
+    "CancelledError",
+    "TimeoutError",
+    "BrokenExecutor",
+    "Future",
+    "Executor",
+    "wait",
+    "as_completed",
+    "ProcessPoolExecutor",
+    "ThreadPoolExecutor",
 )
 
 
 def __dir__():
-    return __all__ + ('__author__', '__doc__')
+    return __all__ + ("__author__", "__doc__")
 
 
 def __getattr__(name):
     global ProcessPoolExecutor, ThreadPoolExecutor
 
-    if name == 'ProcessPoolExecutor':
+    if name == "ProcessPoolExecutor":
         from .process import ProcessPoolExecutor as pe
+
         ProcessPoolExecutor = pe
         return pe
 
-    if name == 'ThreadPoolExecutor':
+    if name == "ThreadPoolExecutor":
         from .thread import ThreadPoolExecutor as te
+
         ThreadPoolExecutor = te
         return te
 

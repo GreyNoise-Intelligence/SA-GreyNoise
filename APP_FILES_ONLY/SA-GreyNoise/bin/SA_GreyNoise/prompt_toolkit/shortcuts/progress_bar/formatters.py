@@ -150,9 +150,7 @@ class Bar(Formatter):
     Display the progress bar itself.
     """
 
-    template = HTML(
-        "<bar>{start}<bar-a>{bar_a}</bar-a><bar-b>{bar_b}</bar-b><bar-c>{bar_c}</bar-c>{end}</bar>"
-    )
+    template = HTML("<bar>{start}<bar-a>{bar_a}</bar-a><bar-b>{bar_b}</bar-b><bar-c>{bar_c}</bar-c>{end}</bar>")
 
     def __init__(
         self,
@@ -205,9 +203,7 @@ class Bar(Formatter):
         bar_b = sym_b
         bar_c = sym_c * (width - pb_a)
 
-        return self.template.format(
-            start=self.start, end=self.end, bar_a=bar_a, bar_b=bar_b, bar_c=bar_c
-        )
+        return self.template.format(start=self.start, end=self.end, bar_a=bar_a, bar_b=bar_b, bar_c=bar_c)
 
     def get_width(self, progress_bar: ProgressBar) -> AnyDimension:
         return D(min=9)
@@ -226,14 +222,10 @@ class Progress(Formatter):
         progress: ProgressBarCounter[object],
         width: int,
     ) -> AnyFormattedText:
-        return self.template.format(
-            current=progress.items_completed, total=progress.total or "?"
-        )
+        return self.template.format(current=progress.items_completed, total=progress.total or "?")
 
     def get_width(self, progress_bar: ProgressBar) -> AnyDimension:
-        all_lengths = [
-            len("{:>3}".format(c.total or "?")) for c in progress_bar.counters
-        ]
+        all_lengths = [len("{:>3}".format(c.total or "?")) for c in progress_bar.counters]
         all_lengths.append(1)
         return D.exact(max(all_lengths) * 2 + 1)
 
@@ -265,9 +257,7 @@ class TimeElapsed(Formatter):
         return self.template.format(time_elapsed=text)
 
     def get_width(self, progress_bar: ProgressBar) -> AnyDimension:
-        all_values = [
-            len(_format_timedelta(c.time_elapsed)) for c in progress_bar.counters
-        ]
+        all_values = [len(_format_timedelta(c.time_elapsed)) for c in progress_bar.counters]
         if all_values:
             return max(all_values)
         return 0
@@ -297,8 +287,7 @@ class TimeLeft(Formatter):
 
     def get_width(self, progress_bar: ProgressBar) -> AnyDimension:
         all_values = [
-            len(_format_timedelta(c.time_left)) if c.time_left is not None else 7
-            for c in progress_bar.counters
+            len(_format_timedelta(c.time_left)) if c.time_left is not None else 7 for c in progress_bar.counters
         ]
         if all_values:
             return max(all_values)
@@ -310,9 +299,7 @@ class IterationsPerSecond(Formatter):
     Display the iterations per second.
     """
 
-    template = HTML(
-        "<iterations-per-second>{iterations_per_second:.2f}</iterations-per-second>"
-    )
+    template = HTML("<iterations-per-second>{iterations_per_second:.2f}</iterations-per-second>")
 
     def format(
         self,
@@ -324,10 +311,7 @@ class IterationsPerSecond(Formatter):
         return self.template.format(iterations_per_second=value)
 
     def get_width(self, progress_bar: ProgressBar) -> AnyDimension:
-        all_values = [
-            len(f"{c.items_completed / c.time_elapsed.total_seconds():.2f}")
-            for c in progress_bar.counters
-        ]
+        all_values = [len(f"{c.items_completed / c.time_elapsed.total_seconds():.2f}") for c in progress_bar.counters]
         if all_values:
             return max(all_values)
         return 0
@@ -402,9 +386,7 @@ class Rainbow(Formatter):
         shift = int(time.time() * 3) % len(self.colors)
 
         for i, (style, text, *_) in enumerate(result):
-            result2.append(
-                (style + " " + self.colors[(i + shift) % len(self.colors)], text)
-            )
+            result2.append((style + " " + self.colors[(i + shift) % len(self.colors)], text))
         return result2
 
     def get_width(self, progress_bar: ProgressBar) -> AnyDimension:

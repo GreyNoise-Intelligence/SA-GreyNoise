@@ -173,11 +173,7 @@ class RestHandler:
     def all(self, decrypt=False, **query):
         if self._endpoint.need_reload:
             self.reload()
-        response = self._client.get(
-            self.path_segment(self._endpoint.internal_endpoint),
-            output_mode="json",
-            **query
-        )
+        response = self._client.get(self.path_segment(self._endpoint.internal_endpoint), output_mode="json", **query)
         return self._format_all_response(response, decrypt)
 
     def get_encrypted_field_names(self, name):
@@ -353,9 +349,7 @@ class RestHandler:
             yield name, data, acl
 
     def _load_credentials(self, name, data):
-        rest_credentials = RestCredentials(
-            self._splunkd_uri, self._session_key, self._endpoint
-        )
+        rest_credentials = RestCredentials(self._splunkd_uri, self._session_key, self._endpoint)
         masked = rest_credentials.decrypt(name, data)
         if masked:
             # passwords.conf changed
@@ -368,9 +362,7 @@ class RestHandler:
             )
 
     def _encrypt_raw_credentials(self, data):
-        rest_credentials = RestCredentials(
-            self._splunkd_uri, self._session_key, self._endpoint
-        )
+        rest_credentials = RestCredentials(self._splunkd_uri, self._session_key, self._endpoint)
         # get clear passwords for response data and get the password change list
         change_list = rest_credentials.decrypt_all(data)
 
@@ -427,8 +419,5 @@ class RestHandler:
         encrypted_field_names = self.get_encrypted_field_names(None)
         for model in data:
             for field_name in encrypted_field_names:
-                if (
-                    field_name in model["content"]
-                    and model["content"][field_name] != ""
-                ):
+                if field_name in model["content"] and model["content"][field_name] != "":
                     model["content"][field_name] = self.PASSWORD

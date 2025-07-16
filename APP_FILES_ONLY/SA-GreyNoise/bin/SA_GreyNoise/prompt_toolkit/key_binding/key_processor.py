@@ -139,9 +139,7 @@ class KeyProcessor:
         # Note that we transform it into a `set`, because we don't care about
         # the actual bindings and executing it more than once doesn't make
         # sense. (Many key bindings share the same filter.)
-        filters = {
-            b.filter for b in self._bindings.get_bindings_starting_with_keys(keys)
-        }
+        filters = {b.filter for b in self._bindings.get_bindings_starting_with_keys(keys)}
 
         # When any key binding is active, return True.
         return any(f() for f in filters)
@@ -357,11 +355,7 @@ class KeyProcessor:
         buff = app.current_buffer
         preferred_column = buff.preferred_column
 
-        if (
-            vi_navigation_mode()
-            and buff.document.is_cursor_at_the_end_of_line
-            and len(buff.document.current_line) > 0
-        ):
+        if vi_navigation_mode() and buff.document.is_cursor_at_the_end_of_line and len(buff.document.current_line) > 0:
             buff.cursor_position -= 1
 
             # Set the preferred_column for arrow up/down again.

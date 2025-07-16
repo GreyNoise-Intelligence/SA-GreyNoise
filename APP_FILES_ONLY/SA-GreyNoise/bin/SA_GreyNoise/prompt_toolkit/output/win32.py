@@ -164,14 +164,8 @@ class Win32Output(Output):
 
         if _DEBUG_RENDER_OUTPUT:
             self.LOG.write((f"{func.__name__!r}").encode() + b"\n")
-            self.LOG.write(
-                b"     " + ", ".join([f"{i!r}" for i in a]).encode("utf-8") + b"\n"
-            )
-            self.LOG.write(
-                b"     "
-                + ", ".join([f"{type(i)!r}" for i in a]).encode("utf-8")
-                + b"\n"
-            )
+            self.LOG.write(b"     " + ", ".join([f"{i!r}" for i in a]).encode("utf-8") + b"\n")
+            self.LOG.write(b"     " + ", ".join([f"{type(i)!r}" for i in a]).encode("utf-8") + b"\n")
             self.LOG.flush()
 
         try:
@@ -206,9 +200,7 @@ class Win32Output(Output):
 
         self.flush()
         sbinfo = CONSOLE_SCREEN_BUFFER_INFO()
-        success = windll.kernel32.GetConsoleScreenBufferInfo(
-            self.hconsole, byref(sbinfo)
-        )
+        success = windll.kernel32.GetConsoleScreenBufferInfo(self.hconsole, byref(sbinfo))
 
         # success = self._winapi(windll.kernel32.GetConsoleScreenBufferInfo,
         #                        self.hconsole, byref(sbinfo))
@@ -277,9 +269,7 @@ class Win32Output(Output):
 
     def reset_attributes(self) -> None:
         "Reset the console foreground/background color."
-        self._winapi(
-            windll.kernel32.SetConsoleTextAttribute, self.hconsole, self.default_attrs
-        )
+        self._winapi(windll.kernel32.SetConsoleTextAttribute, self.hconsole, self.default_attrs)
         self._hidden = False
 
     def set_attributes(self, attrs: Attrs, color_depth: ColorDepth) -> None:
@@ -312,11 +302,7 @@ class Win32Output(Output):
 
         # Reverse: swap these four bits groups.
         if reverse:
-            win_attrs = (
-                (win_attrs & ~0xFF)
-                | ((win_attrs & 0xF) << 4)
-                | ((win_attrs & 0xF0) >> 4)
-            )
+            win_attrs = (win_attrs & ~0xFF) | ((win_attrs & 0xF) << 4) | ((win_attrs & 0xF0) >> 4)
 
         self._winapi(windll.kernel32.SetConsoleTextAttribute, self.hconsole, win_attrs)
 
@@ -330,16 +316,12 @@ class Win32Output(Output):
 
     def cursor_goto(self, row: int = 0, column: int = 0) -> None:
         pos = COORD(X=column, Y=row)
-        self._winapi(
-            windll.kernel32.SetConsoleCursorPosition, self.hconsole, _coord_byval(pos)
-        )
+        self._winapi(windll.kernel32.SetConsoleCursorPosition, self.hconsole, _coord_byval(pos))
 
     def cursor_up(self, amount: int) -> None:
         sr = self.get_win32_screen_buffer_info().dwCursorPosition
         pos = COORD(X=sr.X, Y=sr.Y - amount)
-        self._winapi(
-            windll.kernel32.SetConsoleCursorPosition, self.hconsole, _coord_byval(pos)
-        )
+        self._winapi(windll.kernel32.SetConsoleCursorPosition, self.hconsole, _coord_byval(pos))
 
     def cursor_down(self, amount: int) -> None:
         self.cursor_up(-amount)
@@ -349,9 +331,7 @@ class Win32Output(Output):
         #        assert sr.X + amount >= 0, 'Negative cursor position: x=%r amount=%r' % (sr.X, amount)
 
         pos = COORD(X=max(0, sr.X + amount), Y=sr.Y)
-        self._winapi(
-            windll.kernel32.SetConsoleCursorPosition, self.hconsole, _coord_byval(pos)
-        )
+        self._winapi(windll.kernel32.SetConsoleCursorPosition, self.hconsole, _coord_byval(pos))
 
     def cursor_backward(self, amount: int) -> None:
         self.cursor_forward(-amount)
@@ -379,9 +359,7 @@ class Win32Output(Output):
         for b in data:
             written = DWORD()
 
-            retval = windll.kernel32.WriteConsoleW(
-                self.hconsole, b, 1, byref(written), None
-            )
+            retval = windll.kernel32.WriteConsoleW(self.hconsole, b, 1, byref(written), None)
             assert retval != 0
 
         self._buffer = []
@@ -416,9 +394,7 @@ class Win32Output(Output):
         result.Top = result.Bottom - win_height
 
         # Scroll API
-        self._winapi(
-            windll.kernel32.SetConsoleWindowInfo, self.hconsole, True, byref(result)
-        )
+        self._winapi(windll.kernel32.SetConsoleWindowInfo, self.hconsole, True, byref(result))
 
     def enter_alternate_screen(self) -> None:
         """
@@ -449,9 +425,7 @@ class Win32Output(Output):
         Make stdout again the active buffer.
         """
         if self._in_alternate_screen:
-            stdout = HANDLE(
-                self._winapi(windll.kernel32.GetStdHandle, STD_OUTPUT_HANDLE)
-            )
+            stdout = HANDLE(self._winapi(windll.kernel32.GetStdHandle, STD_OUTPUT_HANDLE))
             self._winapi(windll.kernel32.SetConsoleActiveScreenBuffer, stdout)
             self._winapi(windll.kernel32.CloseHandle, self.hconsole)
             self.hconsole = stdout

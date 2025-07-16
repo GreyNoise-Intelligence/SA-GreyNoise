@@ -26,25 +26,17 @@ class GrammarCompleter(Completer):
                        `Completer` instances to be used for each variable.
     """
 
-    def __init__(
-        self, compiled_grammar: _CompiledGrammar, completers: dict[str, Completer]
-    ) -> None:
+    def __init__(self, compiled_grammar: _CompiledGrammar, completers: dict[str, Completer]) -> None:
         self.compiled_grammar = compiled_grammar
         self.completers = completers
 
-    def get_completions(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         m = self.compiled_grammar.match_prefix(document.text_before_cursor)
 
         if m:
-            yield from self._remove_duplicates(
-                self._get_completions_for_match(m, complete_event)
-            )
+            yield from self._remove_duplicates(self._get_completions_for_match(m, complete_event))
 
-    def _get_completions_for_match(
-        self, match: Match, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def _get_completions_for_match(self, match: Match, complete_event: CompleteEvent) -> Iterable[Completion]:
         """
         Yield all the possible completions for this input string.
         (The completer assumes that the cursor position was at the end of the
@@ -67,10 +59,7 @@ class GrammarCompleter(Completer):
 
                 # Call completer
                 for completion in completer.get_completions(document, complete_event):
-                    new_text = (
-                        unwrapped_text[: len(text) + completion.start_position]
-                        + completion.text
-                    )
+                    new_text = unwrapped_text[: len(text) + completion.start_position] + completion.text
 
                     # Wrap again.
                     yield Completion(

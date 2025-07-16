@@ -133,9 +133,7 @@ class CredentialManager:
             if password["username"] == user and password["realm"] == self._realm:
                 return password["clear_password"]
 
-        raise CredentialNotExistException(
-            f"Failed to get password of realm={self._realm}, user={user}."
-        )
+        raise CredentialNotExistException(f"Failed to get password of realm={self._realm}, user={user}.")
 
     @retry(exceptions=[binding.HTTPError])
     def set_password(self, user: str, password: str):
@@ -155,9 +153,7 @@ class CredentialManager:
         length = 0
         index = 1
         while length < len(password):
-            curr_str = password[
-                length : length + self.SPLUNK_CRED_LEN_LIMIT  # noqa: E203
-            ]
+            curr_str = password[length : length + self.SPLUNK_CRED_LEN_LIMIT]  # noqa: E203
             partial_user = self.SEP.join([user, str(index)])
             self._update_password(partial_user, curr_str)
             length += self.SPLUNK_CRED_LEN_LIMIT
@@ -194,9 +190,7 @@ class CredentialManager:
                     if pwd_stanza.realm == self._realm and pwd_stanza.username == user:
                         pwd_stanza.update(password=password)
                         return
-                raise ValueError(
-                    f"Can not get the password object for realm: {self._realm} user: {user}"
-                )
+                raise ValueError(f"Can not get the password object for realm: {self._realm} user: {user}")
             else:
                 raise ex
 
@@ -222,9 +216,7 @@ class CredentialManager:
         else:
             passwords = self.get_raw_passwords()
         deleted = False
-        ent_pattern = re.compile(
-            r"({}{}\d+)".format(user.replace("\\", "\\\\"), self.SEP)
-        )
+        ent_pattern = re.compile(r"({}{}\d+)".format(user.replace("\\", "\\\\"), self.SEP))
         for password in passwords:
             match = (user == password.username) or ent_pattern.match(password.username)
             if match and password.realm == self._realm:
@@ -232,9 +224,7 @@ class CredentialManager:
                 deleted = True
 
         if not deleted:
-            raise CredentialNotExistException(
-                f"Failed to delete password of realm={self._realm}, user={user}"
-            )
+            raise CredentialNotExistException(f"Failed to delete password of realm={self._realm}, user={user}")
 
     def get_raw_passwords(self) -> List[client.StoragePassword]:
         """Returns all passwords in the "raw" format."""
@@ -268,21 +258,16 @@ class CredentialManager:
 
     def _get_all_passwords_in_realm(self) -> List[client.StoragePassword]:
         warnings.warn(
-            "_get_all_passwords_in_realm is deprecated, "
-            "please use get_raw_passwords_in_realm instead.",
+            "_get_all_passwords_in_realm is deprecated, " "please use get_raw_passwords_in_realm instead.",
             stacklevel=2,
         )
         if self._realm:
-            all_passwords = self._storage_passwords.list(
-                count=-1, search=f"realm={self._realm}"
-            )
+            all_passwords = self._storage_passwords.list(count=-1, search=f"realm={self._realm}")
         else:
             all_passwords = self._storage_passwords.list(count=-1, search="")
         return all_passwords
 
-    def _get_clear_passwords(
-        self, passwords: List[client.StoragePassword]
-    ) -> List[Dict[str, str]]:
+    def _get_clear_passwords(self, passwords: List[client.StoragePassword]) -> List[Dict[str, str]]:
         results = {}
         ptn = re.compile(rf"(.+){self.SEP}(\d+)")
         for password in passwords:
@@ -333,8 +318,7 @@ class CredentialManager:
     @retry(exceptions=[binding.HTTPError])
     def _get_all_passwords(self) -> List[Dict[str, str]]:
         warnings.warn(
-            "_get_all_passwords is deprecated, "
-            "please use get_all_passwords_in_realm instead.",
+            "_get_all_passwords is deprecated, " "please use get_all_passwords_in_realm instead.",
             stacklevel=2,
         )
         passwords = self._storage_passwords.list(count=-1)
@@ -378,13 +362,9 @@ def get_session_key(
     uri = "{scheme}://{host}:{port}/{endpoint}".format(
         scheme=scheme, host=host, port=port, endpoint="services/auth/login"
     )
-    _rest_client = rest_client.SplunkRestClient(
-        None, "-", "nobody", scheme, host, port, **context
-    )
+    _rest_client = rest_client.SplunkRestClient(None, "-", "nobody", scheme, host, port, **context)
     try:
-        response = _rest_client.http.post(
-            uri, username=username, password=password, output_mode="json"
-        )
+        response = _rest_client.http.post(uri, username=username, password=password, output_mode="json")
     except binding.HTTPError as e:
         if e.status != 401:
             raise

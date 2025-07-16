@@ -46,9 +46,7 @@ class FileMonitor:
                     continue
                 self.file_mtimes[k] = op.getmtime(k)
             except OSError:
-                log.logger.error(
-                    "Getmtime for %s, failed: %s", k, traceback.format_exc()
-                )
+                log.logger.error("Getmtime for %s, failed: %s", k, traceback.format_exc())
 
     def __call__(self):
         return self.check_changes()

@@ -55,4 +55,6 @@ class SelectionState:
         self.shift_mode = True
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(original_cursor_position={self.original_cursor_position!r}, type={self.type!r})"
+        return (
+            f"{self.__class__.__name__}(original_cursor_position={self.original_cursor_position!r}, type={self.type!r})"
+        )

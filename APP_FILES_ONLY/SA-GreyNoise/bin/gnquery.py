@@ -6,7 +6,7 @@ import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
 import validator
 from base_command_handler import BaseCommandHandler
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise_constants import INTEGRATION_NAME
 from splunklib.searchcommands import Configuration, Option, dispatch
 
@@ -17,35 +17,36 @@ def response_scroller(api_client, logger, query, result_size, page_size, exclude
     remaining_chunk_size = result_size
     completion_flag = False
     scroll = None
+    total_events = 0
+    size = page_size
+
+    # check query size and see if total results is less than requested result size
+    stats_api_response = api_client.stats(query=query)
+
+    if stats_api_response.get("count", 0) < remaining_chunk_size:
+        remaining_chunk_size = stats_api_response.get("count", 0)
+        logger.debug("Query result count is smaller than result_max, total results: {}".format(remaining_chunk_size))
+
+    # Do not fetch a bunch of results if user does not request so many results
+    # Fetch only required numbers of events to keep away if the requested size is less than 10,000
+    if remaining_chunk_size < size:
+        size = remaining_chunk_size
+        logger.debug("Size for the GNQL query is configured to {}".format(size))
 
     while not completion_flag:
         event_count = 0
-        size = page_size
 
         # Avoid the extra call if expected number of events are already retrieved
-        if remaining_chunk_size == 0:
+        if remaining_chunk_size <= 0:
             logger.debug("No GreyNoise query results remaining to be sent, completing the search...")
             break
 
-        # check query size and see if total results is less than requested result size
-        stats_api_response = api_client.stats(query=query)
-        if stats_api_response.get("count", None) < remaining_chunk_size:
-            remaining_chunk_size = stats_api_response.get("count", None)
-            logger.debug(
-                "Query result count is smaller than result_max, total results: {}".format(remaining_chunk_size)
-            )
-
-        # Do not fetch a bunch of results if user does not request so many results
-        # Fetch only required numbers of events to keep away if the requested size is less than 10,000
-        if remaining_chunk_size < size:
-            size = remaining_chunk_size
-            logger.debug("Size for the GNQL query is configured to {}".format(size))
-
         api_response = api_client.query(query=query, exclude_raw=exclude_raw, size=size, scroll=scroll)
 
-        if api_response.get("count", None):
+        if "request_metadata" in api_response:
             # If this is the last page of API response, the scroll will not be present
-            scroll = api_response.get("scroll", None)
+            scroll = api_response["request_metadata"].get("scroll", None)
+            completion_flag = api_response["request_metadata"].get("complete", True)
             api_data = api_response.get("data", [])
 
             for ip_data in api_data:
@@ -55,18 +56,17 @@ def response_scroller(api_client, logger, query, result_size, page_size, exclude
                     yield event_generator.make_valid_event("query", ip_data, False)
 
                 event_count = event_count + 1
-
-                if event_count == remaining_chunk_size:
-                    completion_flag = True
-                    break
+                total_events = total_events + 1
 
             remaining_chunk_size = remaining_chunk_size - event_count
             logger.debug(
-                "Statistics: Remaining chunk size: {} : Events written:{}".format(remaining_chunk_size, event_count)
+                "Statistics: Remaining chunk size: {} : Events written:{} : Total events:{}".format(
+                    remaining_chunk_size, event_count, total_events
+                )
             )
         else:
-            message = api_response.get("message", "")
-            query = api_response.get("query", "")
+            message = api_response.get("request_metadata", {}).get("message", "")
+            query = api_response.get("request_metadata", {}).get("adjusted_query", "")
             logger.info("No results returned for GreyNoise query: {}, message: {}".format(str(query), str(message)))
             event = {"message": message, "query": query}
             yield event_generator.make_invalid_event("query", event, True)
@@ -157,7 +157,7 @@ class GNQueryCommand(BaseCommandHandler):
         # Validating the given parameters
         try:
             result_size = validator.Integer(option_name="result_size", minimum=1).validate(result_size)
-            page_size = validator.Integer(option_name="page_size", minimum=1).validate(page_size)
+            page_size = validator.Integer(option_name="page_size", minimum=1, maximum=10000).validate(page_size)
             exclude_raw = validator.Boolean(option_name="exclude_raw").validate(exclude_raw)
         except ValueError as e:
             # Validator will throw ValueError with error message when the parameters are not proper
@@ -167,9 +167,11 @@ class GNQueryCommand(BaseCommandHandler):
 
         # Opting timeout of 240 seconds for the request
         if "http" in proxy:
-            api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_config = APIConfig(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_client = GreyNoise(api_config)
         else:
-            api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
+            api_config = APIConfig(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
+            api_client = GreyNoise(api_config)
 
         logger.info(
             "Fetching results for GNQL query: {}, requested number of results: {}, page size: {}".format(

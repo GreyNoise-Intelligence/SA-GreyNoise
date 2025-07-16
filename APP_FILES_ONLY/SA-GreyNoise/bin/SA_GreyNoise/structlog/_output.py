@@ -12,13 +12,11 @@ from __future__ import annotations
 import copy
 import sys
 import threading
-
 from pickle import PicklingError
 from sys import stderr, stdout
 from typing import IO, Any, BinaryIO, TextIO
 
 from structlog._utils import until_not_interrupted
-
 
 WRITE_LOCKS: dict[IO[Any], threading.Lock] = {}
 
@@ -70,9 +68,7 @@ class PrintLogger:
         elif self._file is stderr:
             return "stderr"
 
-        raise PicklingError(
-            "Only PrintLoggers to sys.stdout and sys.stderr can be pickled."
-        )
+        raise PicklingError("Only PrintLoggers to sys.stdout and sys.stderr can be pickled.")
 
     def __setstate__(self, state: Any) -> None:
         """
@@ -90,10 +86,7 @@ class PrintLogger:
         Create a new PrintLogger with the same attributes. Similar to pickling.
         """
         if self._file not in (stdout, stderr):
-            raise copy.error(
-                "Only PrintLoggers to sys.stdout and sys.stderr "
-                "can be deepcopied."
-            )
+            raise copy.error("Only PrintLoggers to sys.stdout and sys.stderr " "can be deepcopied.")
 
         newself = self.__class__(self._file)
 
@@ -174,9 +167,7 @@ class WriteLogger:
         elif self._file is stderr:
             return "stderr"
 
-        raise PicklingError(
-            "Only WriteLoggers to sys.stdout and sys.stderr can be pickled."
-        )
+        raise PicklingError("Only WriteLoggers to sys.stdout and sys.stderr can be pickled.")
 
     def __setstate__(self, state: Any) -> None:
         """
@@ -194,10 +185,7 @@ class WriteLogger:
         Create a new WriteLogger with the same attributes. Similar to pickling.
         """
         if self._file not in (sys.stdout, sys.stderr):
-            raise copy.error(
-                "Only WriteLoggers to sys.stdout and sys.stderr "
-                "can be deepcopied."
-            )
+            raise copy.error("Only WriteLoggers to sys.stdout and sys.stderr " "can be deepcopied.")
 
         newself = self.__class__(self._file)
 
@@ -255,6 +243,7 @@ class BytesLogger:
 
     .. versionadded:: 20.2.0
     """
+
     __slots__ = ("_file", "_write", "_flush", "_lock")
 
     def __init__(self, file: BinaryIO | None = None):
@@ -274,9 +263,7 @@ class BytesLogger:
         elif self._file is sys.stderr.buffer:
             return "stderr"
 
-        raise PicklingError(
-            "Only BytesLoggers to sys.stdout and sys.stderr can be pickled."
-        )
+        raise PicklingError("Only BytesLoggers to sys.stdout and sys.stderr can be pickled.")
 
     def __setstate__(self, state: Any) -> None:
         """
@@ -296,10 +283,7 @@ class BytesLogger:
         Create a new BytesLogger with the same attributes. Similar to pickling.
         """
         if self._file not in (sys.stdout.buffer, sys.stderr.buffer):
-            raise copy.error(
-                "Only BytesLoggers to sys.stdout and sys.stderr "
-                "can be deepcopied."
-            )
+            raise copy.error("Only BytesLoggers to sys.stdout and sys.stderr " "can be deepcopied.")
 
         newself = self.__class__(self._file)
 
@@ -336,6 +320,7 @@ class BytesLoggerFactory:
 
     .. versionadded:: 20.2.0
     """
+
     __slots__ = ("_file",)
 
     def __init__(self, file: BinaryIO | None = None):

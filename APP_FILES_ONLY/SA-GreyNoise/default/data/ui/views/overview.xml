@@ -1,210 +1,125 @@
 <form isDashboard="true" version="1.1" theme="dark">
-  <label>Overview</label>
-  <row>
-      <html>
-        <center><h1>The tiles below represent data about the Scan Deployment and Feed functions of this app and deployment.</h1></center>
-      </html>
-  </row>
+  <label>Queried IP Addresses</label>
+  <fieldset submitButton="false">
+    <input type="text" token="tkn_ip_address" searchWhenChanged="true">
+      <label>IP Address</label>
+      <default>*</default>
+      <!-- Reset token tkn_ip_for_request on any change in inputs
+      to disable the existing IP noise drilldown panel -->
+      <change>
+        <unset token="tkn_ip_for_request"></unset>
+      </change>
+      <prefix>"</prefix>
+      <suffix>"</suffix>
+    </input>
+    <input type="dropdown" token="tkn_scanner" searchWhenChanged="true">
+      <label>Internet Scanner</label>
+      <choice value="*">All</choice>
+      <choice value="1">True</choice>
+      <choice value="0">False</choice>
+      <default>*</default>
+      <!-- Reset token tkn_ip_for_request on any change in inputs
+      to disable the existing IP noise drilldown panel -->
+      <change>
+        <unset token="tkn_ip_for_request"></unset>
+      </change>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="dropdown" token="tkn_bizserv" searchWhenChanged="true">
+      <label>Business Service</label>
+      <choice value="*">All</choice>
+      <choice value="1">True</choice>
+      <choice value="0">False</choice>
+      <default>*</default>
+      <change>
+        <condition label="All">
+          <set token="tkn_bizserv">(RIOT=* OR NOT RIOT="*")</set>
+        </condition>
+        <condition label="True">
+          <set token="tkn_bizserv">RIOT=1</set>
+        </condition>
+        <condition label="False">
+          <set token="tkn_bizserv">RIOT=0</set>
+        </condition>
+      </change>
+      <!-- Reset token tkn_ip_for_request on any change in inputs
+      to disable the existing IP riot drilldown panel -->
+      <change>
+        <unset token="tkn_ip_for_request"></unset>
+      </change>
+    </input>
+  </fieldset>
   <row>
     <panel>
-      <single>
-        <title># of IPs scanned in the deployment</title>
+      <table>
         <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup
-            | stats count
-          </query>
+          <query>| inputlookup gn_scan_deployment_ip_lookup where (_key=$tkn_ip_address$)
+            | search noise=$tkn_scanner$ AND $tkn_bizserv$
+            | eval noise = if(noise=="1", "True", if(noise=="0", "False", "NA"))
+            | eval RIOT = if(RIOT=="1", "True", if(RIOT=="0", "False", ""))
+            | rename _key as IP, noise as "Internet Scanner", RIOT as "Business Service", last_checked as "Last Checked", classification as Classification, trust_level as "Trust Level"
+            | eval "Check Live Status" = "Check Live Status"
+            | table IP, "Internet Scanner", "Business Service", Classification, "Trust Level", "Last Checked", "Check Live Status"
+            | sort -last_checked</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
-        <option name="refresh.display">progressbar</option>
-        <option name="drilldown">all</option>
+        <option name="count">25</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">preview</option>
+        <option name="rowNumbers">false</option>
         <drilldown>
-          <link target="_blank">
-            <![CDATA[
-              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*
-            ]]>
-          </link>
+          <condition field="IP">
+            <unset token="tkn_ip_for_request"></unset>
+            <link target="_blank">
+              <![CDATA[
+                /app/SA-GreyNoise/live_investigation?form.tkn_ip_address=$row.IP$&form.redirect=redirect&form.last_7_days=true
+              ]]>
+            </link>
+          </condition>
+          <condition field="Noise">
+            <unset token="tkn_ip_for_request"></unset>
+            <link target="_blank">
+              <![CDATA[
+                /app/SA-GreyNoise/live_investigation?form.tkn_ip_address=$row.IP$&form.redirect=redirect&form.last_7_days=true
+              ]]>
+            </link>
+          </condition>
+          <condition field="RIOT">
+            <unset token="tkn_ip_for_request"></unset>
+            <link target="_blank">
+              <![CDATA[
+                /app/SA-GreyNoise/live_investigation?form.tkn_ip_address=$row.IP$&form.redirect=redirect&form.last_7_days=true
+              ]]>
+            </link>
+          </condition>
+          <!-- No drill down for Last Checked field -->
+          <condition field="Last Checked"></condition>
+          <!-- No drill down for the Code Message field -->
+          <condition field="Code Message"></condition>
+          <condition field="Check Live Status">
+            <set token="tkn_ip_for_request">$row.IP$</set>
+          </condition>
         </drilldown>
-      </single>
-    </panel>
-    <panel>
-      <single>
-        <title># of indicators in GreyNoise Feed lookup</title>
-        <search>
-          <query>
-            | inputlookup greynoise_indicators.csv
-            | stats count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="drilldown">all</option>
-        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
-        <option name="refresh.display">progressbar</option>
-      </single>
+      </table>
     </panel>
   </row>
   <row>
-    <panel>
+    <panel depends="$tkn_ip_for_request$">
       <single>
-        <title># of Noise IPs in the deployment</title>
+        <title>Current Internet Scanner status of IP: $tkn_ip_for_request$</title>
         <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup where (noise="1")
-            | stats count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="refresh.display">progressbar</option>
-        <option name="drilldown">all</option>
-        <drilldown>
-          <link target="_blank">
-            <![CDATA[
-              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*&form.tkn_noise=1
-            ]]>
-          </link>
-        </drilldown>
-      </single>
-    </panel>
-    <panel>
-      <single>
-        <title>Percentage of Noise IPs in the deployment</title>
-        <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup
-            | stats count(eval(noise=1)) AS noisy_ips, count(eval(noise=1 OR noise=0)) AS total_ips
-            | eval noise_percent=((noisy_ips/total_ips)*100)
-            | eval noise_percent = if(noise_percent&gt;0, noise_percent, 0)
-            | table noise_percent
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="drilldown">none</option>
-        <option name="numberPrecision">0.00</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="unit">%</option>
-      </single>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <single>
-        <title># of RIOT IPs in the deployment</title>
-        <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup where (RIOT="1")
-            | stats count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="refresh.display">progressbar</option>
-        <option name="drilldown">all</option>
-        <drilldown>
-          <link target="_blank">
-            <![CDATA[
-              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*&form.tkn_riot=1
-            ]]>
-          </link>
-        </drilldown>
-      </single>
-    </panel>
-    <panel>
-      <single>
-        <title>Percentage of RIOT IPs in the deployment</title>
-        <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup
-            | stats count(eval(RIOT=1)) AS riot_ips, count(eval(RIOT=1 OR RIOT=0)) AS total_ips
-            | eval riot_percent=((riot_ips/total_ips)*100)
-            | eval riot_percent = if(riot_percent&gt;0, riot_percent, 0)
-            | table riot_percent
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="drilldown">none</option>
-        <option name="numberPrecision">0.00</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="unit">%</option>
-      </single>
-    </panel>
-  </row>
-    <row>
-      <html>
-        <center><h1>The information below represents the state of the GreyNoise service today.</h1></center>
-      </html>
-  </row>
-  <row>
-    <panel>
-      <single>
-        <title># of Malicious IP Addresses in GreyNoise today</title>
-        <search>
-          <query>
-            | inputlookup gn_overview_lookup where (stats_field=classification AND classification=malicious)
-            | table stats_count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="colorMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="rangeColors">["0x555","0xdc4e41"]</option>
-        <option name="rangeValues">[0]</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="unitPosition">after</option>
-        <option name="useColors">1</option>
-      </single>
-    </panel>
-    <panel>
-      <single>
-        <title># of Suspicious IP Addresses in GreyNoise today</title>
-        <search>
-          <query>
-            | inputlookup gn_overview_lookup where (stats_field=classification AND classification=suspicious)
-            | table stats_count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="colorMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="rangeColors">["0x555","0xcba700"]</option>
-        <option name="rangeValues">[0]</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="unitPosition">after</option>
-        <option name="useColors">1</option>
-      </single>
-    </panel>
-    <panel>
-      <single>
-        <title># of Benign IP Addresses in GreyNoise today</title>
-        <search>
-          <query>
-            | inputlookup gn_overview_lookup where (stats_field=classification AND classification=benign)
-            | table stats_count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="drilldown">none</option>
-        <option name="rangeColors">["0x555","0x118832"]</option>
-        <option name="rangeValues">[0]</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="useColors">1</option>
-      </single>
-    </panel>
-    <panel>
-      <single>
-        <title># of Unknown IP Addresses in GreyNoise today</title>
-        <search>
-          <query>
-            | inputlookup gn_overview_lookup where (stats_field=classification AND classification=unknown)
-            | table stats_count
-          </query>
+          <query>| gnquick ip="$tkn_ip_for_request$"
+    | spath output=noise path=results.internet_scanner_intelligence.found
+    | spath output=RIOT path=results.business_service_intelligence.found 
+    | spath output=classification path=results.internet_scanner_intelligence.classification
+    | spath output=trust_level path=results.business_service_intelligence.trust_level
+    | eval last_checked=strftime(time(), "%Y-%m-%d %T")
+    | eval _key = ip
+    | outputlookup gn_scan_deployment_ip_lookup key_field=_key
+    | eval "Internet Scanner" = if(noise="true", noise . " / " . classification, if(noise="false", "False", "Could not retrieve noise status"))
+    | table "Internet Scanner"</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
@@ -212,190 +127,27 @@
         <option name="refresh.display">progressbar</option>
       </single>
     </panel>
-  </row>
-  <row>
-    <panel>
-      <input type="dropdown" token="tkn_classification" searchWhenChanged="true">
-        <label>Classification</label>
-        <choice value="*">All</choice>
-        <choice value="malicious">malicious</choice>
-        <choice value="suspicious">suspicious</choice>
-        <choice value="benign">benign</choice>
-        <choice value="unknown">unknown</choice>
-        <default>*</default>
-      </input>
-      <html>
-        <p>
-          <i>
-            <b>Note:</b> The data in the panels below are updated every 6 hours. For the most recent information, visit the Trends page of the GreyNoise Visualizer.</i>
-        </p>
-      </html>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <chart>
-        <title>Top 10 Organizations</title>
+    <panel depends="$tkn_ip_for_request$">
+      <single>
+        <title>Current Business Services status of IP: $tkn_ip_for_request$</title>
         <search>
-          <query>
-            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="organization")
-            | stats sum(stats_count) as stats_count by stats_value
-            | sort -stats_count
-            | head 10
-            | rename stats_value as Organization, stats_count as count
-            | table Organization, count
-          </query>
+          <query>| gnquick ip="$tkn_ip_for_request$"
+    | spath output=noise path=results.internet_scanner_intelligence.found
+    | spath output=RIOT path=results.business_service_intelligence.found 
+    | spath output=classification path=results.internet_scanner_intelligence.classification
+    | spath output=trust_level path=results.business_service_intelligence.trust_level
+    | eval last_checked=strftime(time(), "%Y-%m-%d %T")
+    | eval _key = ip
+    | outputlookup gn_scan_deployment_ip_lookup key_field=_key
+    | eval trust_level = if(trust_level=1, "Reasonably Ignore", if(trust_level=2, "Commonly Seen", "Unknown"))
+    | eval "Business Service" = if(RIOT="true", RIOT . " / " . trust_level, if(RIOT="false", "False", "Could not retrieve noise status"))
+    | table "Business Service"</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
-        <option name="charting.chart">pie</option>
-        <option name="charting.drilldown">all</option>
+        <option name="drilldown">none</option>
         <option name="refresh.display">progressbar</option>
-        <drilldown>
-          <link target="_blank">
-            <![CDATA[
-              /app/SA-GreyNoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_organization=$click.value$&form.redirect=redirect
-            ]]>
-          </link>
-        </drilldown>
-      </chart>
-    </panel>
-    <panel>
-      <chart>
-        <title>Top 10 Actors</title>
-        <search>
-          <query>
-            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="actor")
-            | stats sum(stats_count) as stats_count by stats_value
-            | sort -stats_count
-            | head 10
-            | rename stats_value as Actor, stats_count as count
-            | table Actor, count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="charting.chart">pie</option>
-        <option name="charting.drilldown">all</option>
-        <option name="refresh.display">progressbar</option>
-        <drilldown>
-          <link target="_blank">
-            <![CDATA[
-              /app/SA-GreyNoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_actor=$click.value$&form.redirect=redirect
-            ]]>
-          </link>
-        </drilldown>
-      </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <chart>
-        <title>Top 10 Tags</title>
-        <search>
-          <query>
-            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="tag")
-            | stats sum(stats_count) as stats_count by stats_value
-            | sort -stats_count
-            | head 10
-            | rename stats_value as Tag, stats_count as Count
-            | table Tag, Count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="charting.chart">bar</option>
-        <option name="charting.axisY.scale">log</option>
-        <option name="charting.legend.placement">none</option>
-        <option name="charting.seriesColors">[0x669966]</option>
-        <option name="charting.drilldown">all</option>
-        <option name="refresh.display">progressbar</option>
-        <drilldown>
-          <link target="_blank">
-            <![CDATA[
-              /app/SA-GreyNoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_tag=$click.value$&form.redirect=redirect
-            ]]>
-          </link>
-        </drilldown>
-      </chart>
-    </panel>
-    <panel>
-      <chart>
-        <title>Top 10 ASN</title>
-        <search>
-          <query>
-            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="asn")
-            | stats sum(stats_count) as stats_count by stats_value
-            | sort -stats_count
-            | head 10
-            | rename stats_value as ASN, stats_count as Count
-            | table ASN, Count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="charting.chart">column</option>
-        <option name="charting.axisY.scale">log</option>
-        <option name="charting.legend.placement">none</option>
-        <option name="charting.seriesColors">[0x6B1037]</option>
-        <option name="charting.drilldown">all</option>
-        <option name="refresh.display">progressbar</option>
-        <drilldown>
-          <link target="_blank">
-            <![CDATA[
-              /app/SA-GreyNoise/live_investigation?form.tkn_classification=$tkn_classification$&form.tkn_asn=$click.value$&form.redirect=redirect
-            ]]>
-          </link>
-        </drilldown>
-      </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <chart>
-        <title>Top 10 Categories</title>
-        <search>
-          <query>
-            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="category")
-            | stats sum(stats_count) as stats_count by stats_value
-            | sort -stats_count
-            | head 10
-            | rename stats_value as Category, stats_count as Count
-            | table Category, Count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="charting.chart">column</option>
-        <option name="charting.axisY.scale">log</option>
-        <option name="charting.legend.placement">none</option>
-        <option name="charting.seriesColors">[0x067097]</option>
-        <option name="charting.drilldown">none</option>
-        <option name="refresh.display">progressbar</option>
-      </chart>
-    </panel>
-    <panel>
-      <chart>
-        <title>Top 10 OS</title>
-        <search>
-          <query>
-            | inputlookup gn_overview_lookup where (classification="$tkn_classification$" AND stats_field="operating_system")
-            | stats sum(stats_count) as stats_count by stats_value
-            | sort -stats_count
-            | head 10
-            | rename stats_value as "Operating System", stats_count as Count
-            | table "Operating System", Count
-          </query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="charting.chart">bar</option>
-        <option name="charting.axisY.scale">log</option>
-        <option name="charting.legend.placement">none</option>
-        <option name="charting.seriesColors">[0x986B1C]</option>
-        <option name="charting.drilldown">none</option>
-        <option name="refresh.display">progressbar</option>
-      </chart>
+      </single>
     </panel>
   </row>
 </form>

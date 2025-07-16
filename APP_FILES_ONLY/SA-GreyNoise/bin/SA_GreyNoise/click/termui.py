@@ -5,16 +5,11 @@ import sys
 import typing as t
 from gettext import gettext as _
 
-from ._compat import isatty
-from ._compat import strip_ansi
-from .exceptions import Abort
-from .exceptions import UsageError
+from ._compat import isatty, strip_ansi
+from .exceptions import Abort, UsageError
 from .globals import resolve_color_default
-from .types import Choice
-from .types import convert_type
-from .types import ParamType
-from .utils import echo
-from .utils import LazyFile
+from .types import Choice, ParamType, convert_type
+from .utils import LazyFile, echo
 
 if t.TYPE_CHECKING:
     from ._termui_impl import ProgressBar
@@ -149,9 +144,7 @@ def prompt(
     if value_proc is None:
         value_proc = convert_type(type, default)
 
-    prompt = _build_prompt(
-        text, prompt_suffix, show_default, default, show_choices, type
-    )
+    prompt = _build_prompt(text, prompt_suffix, show_default, default, show_choices, type)
 
     if confirmation_prompt:
         if confirmation_prompt is True:
@@ -173,7 +166,7 @@ def prompt(
             if hide_input:
                 echo(_("Error: The value you entered was invalid."), err=err)
             else:
-                echo(_("Error: {e.message}").format(e=e), err=err)  # noqa: B306
+                echo(_("Error: {e.message}").format(e=e), err=err)
             continue
         if not confirmation_prompt:
             return result
@@ -446,9 +439,7 @@ def clear() -> None:
     echo("\033[2J\033[1;1H", nl=False)
 
 
-def _interpret_color(
-    color: t.Union[int, t.Tuple[int, int, int], str], offset: int = 0
-) -> str:
+def _interpret_color(color: t.Union[int, t.Tuple[int, int, int], str], offset: int = 0) -> str:
     if isinstance(color, int):
         return f"{38 + offset};5;{color:d}"
 

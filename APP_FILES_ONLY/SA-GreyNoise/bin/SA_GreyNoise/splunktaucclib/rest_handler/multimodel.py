@@ -54,9 +54,7 @@ class MultiModelRestHandler(base.BaseRestHandler):
             shouldPrint=False,
             shouldRaise=False,
         )
-        assert hasattr(self, "modelMap") and isinstance(
-            self.modelMap, dict
-        ), RH_Err.ctl(
+        assert hasattr(self, "modelMap") and isinstance(self.modelMap, dict), RH_Err.ctl(
             1002,
             msgx="%s.modelMap" % self.__class__.__name__,
             shouldPrint=False,
@@ -88,15 +86,12 @@ class MultiModelRestHandler(base.BaseRestHandler):
         attrs = {
             attr: getattr(obj, attr, None)
             for attr in dir(obj)
-            if not attr.startswith("__")
-            and attr not in ("endpoint", "rest_prefix", "cap4endpoint", "cap4get_cred")
+            if not attr.startswith("__") and attr not in ("endpoint", "rest_prefix", "cap4endpoint", "cap4get_cred")
         }
         self.__dict__.update(attrs)
 
         # credential fields
-        self.encryptedArgs = {
-            (self.keyMap.get(arg) or arg) for arg in self.encryptedArgs
-        }
+        self.encryptedArgs = {(self.keyMap.get(arg) or arg) for arg in self.encryptedArgs}
         user, app = self.user_app()
         self._cred_mgmt = CredMgmt(
             sessionKey=self.getSessionKey(),

@@ -141,9 +141,7 @@ class Binding:
             event.app.invalidate()
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}(keys={self.keys!r}, handler={self.handler!r})"
-        )
+        return f"{self.__class__.__name__}(keys={self.keys!r}, handler={self.handler!r})"
 
 
 # Sequence of keys presses.
@@ -225,12 +223,8 @@ class KeyBindings(KeyBindingsBase):
 
     def __init__(self) -> None:
         self._bindings: list[Binding] = []
-        self._get_bindings_for_keys_cache: SimpleCache[KeysTuple, list[Binding]] = (
-            SimpleCache(maxsize=10000)
-        )
-        self._get_bindings_starting_with_keys_cache: SimpleCache[
-            KeysTuple, list[Binding]
-        ] = SimpleCache(maxsize=1000)
+        self._get_bindings_for_keys_cache: SimpleCache[KeysTuple, list[Binding]] = SimpleCache(maxsize=10000)
+        self._get_bindings_starting_with_keys_cache: SimpleCache[KeysTuple, list[Binding]] = SimpleCache(maxsize=1000)
         self.__version = 0  # For cache invalidation.
 
     def _clear_cache(self) -> None:
@@ -545,9 +539,7 @@ class ConditionalKeyBindings(_Proxy):
     :param filter: :class:`~prompt_toolkit.filters.Filter` object.
     """
 
-    def __init__(
-        self, key_bindings: KeyBindingsBase, filter: FilterOrBool = True
-    ) -> None:
+    def __init__(self, key_bindings: KeyBindingsBase, filter: FilterOrBool = True) -> None:
         _Proxy.__init__(self)
 
         self.key_bindings = key_bindings

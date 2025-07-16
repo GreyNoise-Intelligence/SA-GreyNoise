@@ -2,20 +2,19 @@
 a part of the pymongo distribution.
 """
 
-from __future__ import unicode_literals, absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import bson
 
 from ..common import *
+from ..exceptions import ConversionError
 from ..translator import _
 from ..types import BaseType
-from ..exceptions import ConversionError
 
-__all__ = ['ObjectIdType']
+__all__ = ["ObjectIdType"]
 
 
 class ObjectIdType(BaseType):
-
     """An field wrapper around MongoDB ObjectIds.  It is correct to say they're
     bson fields, but I am unaware of bson being used outside MongoDB.
 
@@ -24,7 +23,7 @@ class ObjectIdType(BaseType):
     """
 
     MESSAGES = {
-        'convert': _("Couldn't interpret value as an ObjectId."),
+        "convert": _("Couldn't interpret value as an ObjectId."),
     }
 
     def __init__(self, auto_fill=False, **kwargs):
@@ -36,12 +35,13 @@ class ObjectIdType(BaseType):
             try:
                 value = bson.objectid.ObjectId(str(value))
             except bson.objectid.InvalidId:
-                raise ConversionError(self.messages['convert'])
+                raise ConversionError(self.messages["convert"])
         return value
 
     def to_primitive(self, value, context=None):
         return str(value)
 
+
 if PY2:
     # Python 2 names cannot be unicode
-    __all__ = [n.encode('ascii') for n in __all__]
+    __all__ = [n.encode("ascii") for n in __all__]

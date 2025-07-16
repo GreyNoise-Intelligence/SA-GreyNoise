@@ -5,6 +5,7 @@ requests.sessions
 This module provides a Session object to manage and persist settings across
 requests (cookies, auth, proxies).
 """
+
 import os
 import sys
 import time
@@ -28,7 +29,6 @@ from .exceptions import (
     TooManyRedirects,
 )
 from .hooks import default_hooks, dispatch_hook
-
 # formerly defined here, reexposed here for backward compatibility
 from .models import (  # noqa: F401
     DEFAULT_REDIRECT_LIMIT,
@@ -71,9 +71,7 @@ def merge_setting(request_setting, session_setting, dict_class=OrderedDict):
         return session_setting
 
     # Bypass if not a dictionary (e.g. verify)
-    if not (
-        isinstance(session_setting, Mapping) and isinstance(request_setting, Mapping)
-    ):
+    if not (isinstance(session_setting, Mapping) and isinstance(request_setting, Mapping)):
         return request_setting
 
     merged_setting = dict_class(to_key_val_list(session_setting))
@@ -146,11 +144,7 @@ class SessionRedirectMixin:
         changed_port = old_parsed.port != new_parsed.port
         changed_scheme = old_parsed.scheme != new_parsed.scheme
         default_port = (DEFAULT_PORTS.get(old_parsed.scheme, None), None)
-        if (
-            not changed_scheme
-            and old_parsed.port in default_port
-            and new_parsed.port in default_port
-        ):
+        if not changed_scheme and old_parsed.port in default_port and new_parsed.port in default_port:
             return False
 
         # Standard case: root URI must match
@@ -188,9 +182,7 @@ class SessionRedirectMixin:
                 resp.raw.read(decode_content=False)
 
             if len(resp.history) >= self.max_redirects:
-                raise TooManyRedirects(
-                    f"Exceeded {self.max_redirects} redirects.", response=resp
-                )
+                raise TooManyRedirects(f"Exceeded {self.max_redirects} redirects.", response=resp)
 
             # Release the connection back into the pool.
             resp.close()
@@ -287,9 +279,7 @@ class SessionRedirectMixin:
         headers = prepared_request.headers
         url = prepared_request.url
 
-        if "Authorization" in headers and self.should_strip_auth(
-            response.request.url, url
-        ):
+        if "Authorization" in headers and self.should_strip_auth(response.request.url, url):
             # If we get redirected to a new host, we should strip out any
             # authentication headers.
             del headers["Authorization"]
@@ -471,9 +461,7 @@ class Session(SessionRedirectMixin):
             cookies = cookiejar_from_dict(cookies)
 
         # Merge with session cookies
-        merged_cookies = merge_cookies(
-            merge_cookies(RequestsCookieJar(), self.cookies), cookies
-        )
+        merged_cookies = merge_cookies(merge_cookies(RequestsCookieJar(), self.cookies), cookies)
 
         # Set environment's basic authentication if not explicitly set.
         auth = request.auth
@@ -487,9 +475,7 @@ class Session(SessionRedirectMixin):
             files=request.files,
             data=request.data,
             json=request.json,
-            headers=merge_setting(
-                request.headers, self.headers, dict_class=CaseInsensitiveDict
-            ),
+            headers=merge_setting(request.headers, self.headers, dict_class=CaseInsensitiveDict),
             params=merge_setting(request.params, self.params),
             auth=merge_setting(auth, self.auth),
             cookies=merged_cookies,
@@ -576,9 +562,7 @@ class Session(SessionRedirectMixin):
 
         proxies = proxies or {}
 
-        settings = self.merge_environment_settings(
-            prep.url, proxies, stream, verify, cert
-        )
+        settings = self.merge_environment_settings(prep.url, proxies, stream, verify, cert)
 
         # Send the request.
         send_kwargs = {
@@ -736,9 +720,7 @@ class Session(SessionRedirectMixin):
         # If redirects aren't being followed, store the response on the Request for Response.next().
         if not allow_redirects:
             try:
-                r._next = next(
-                    self.resolve_redirects(r, request, yield_requests=True, **kwargs)
-                )
+                r._next = next(self.resolve_redirects(r, request, yield_requests=True, **kwargs))
             except StopIteration:
                 pass
 
@@ -764,11 +746,7 @@ class Session(SessionRedirectMixin):
             # Look for requests environment configuration
             # and be compatible with cURL.
             if verify is True or verify is None:
-                verify = (
-                    os.environ.get("REQUESTS_CA_BUNDLE")
-                    or os.environ.get("CURL_CA_BUNDLE")
-                    or verify
-                )
+                verify = os.environ.get("REQUESTS_CA_BUNDLE") or os.environ.get("CURL_CA_BUNDLE") or verify
 
         # Merge all the kwargs.
         proxies = merge_setting(proxies, self.proxies)

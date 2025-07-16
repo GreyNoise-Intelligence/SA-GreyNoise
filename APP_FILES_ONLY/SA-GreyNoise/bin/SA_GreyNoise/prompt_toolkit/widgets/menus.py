@@ -68,9 +68,7 @@ class MenuContainer:
 
         @kb.add("right", filter=in_main_menu)
         def _right(event: E) -> None:
-            self.selected_menu[0] = min(
-                len(self.menu_items) - 1, self.selected_menu[0] + 1
-            )
+            self.selected_menu[0] = min(len(self.menu_items) - 1, self.selected_menu[0] + 1)
 
         @kb.add("down", filter=in_main_menu)
         def _down(event: E) -> None:
@@ -99,13 +97,8 @@ class MenuContainer:
                 self.selected_menu.append(0)
 
             # If This item does not have a sub menu. Go up in the parent menu.
-            elif (
-                len(self.selected_menu) == 2
-                and self.selected_menu[0] < len(self.menu_items) - 1
-            ):
-                self.selected_menu = [
-                    min(len(self.menu_items) - 1, self.selected_menu[0] + 1)
-                ]
+            elif len(self.selected_menu) == 2 and self.selected_menu[0] < len(self.menu_items) - 1:
+                self.selected_menu = [min(len(self.menu_items) - 1, self.selected_menu[0] + 1)]
                 if self.menu_items[self.selected_menu[0]].children:
                     self.selected_menu.append(0)
 
@@ -116,11 +109,7 @@ class MenuContainer:
             menu = self._get_menu(len(self.selected_menu) - 2)
             index = self.selected_menu[-1]
 
-            previous_indexes = [
-                i
-                for i, item in enumerate(menu.children)
-                if i < index and not item.disabled
-            ]
+            previous_indexes = [i for i, item in enumerate(menu.children) if i < index and not item.disabled]
 
             if previous_indexes:
                 self.selected_menu[-1] = previous_indexes[-1]
@@ -134,11 +123,7 @@ class MenuContainer:
             menu = self._get_menu(len(self.selected_menu) - 2)
             index = self.selected_menu[-1]
 
-            next_indexes = [
-                i
-                for i, item in enumerate(menu.children)
-                if i > index and not item.disabled
-            ]
+            next_indexes = [i for i, item in enumerate(menu.children) if i > index and not item.disabled]
 
             if next_indexes:
                 self.selected_menu[-1] = next_indexes[0]
@@ -179,9 +164,7 @@ class MenuContainer:
                 Float(
                     xcursor=True,
                     ycursor=True,
-                    content=ConditionalContainer(
-                        content=Shadow(body=submenu), filter=has_focus
-                    ),
+                    content=ConditionalContainer(content=Shadow(body=submenu), filter=has_focus),
                 ),
                 Float(
                     attach_to_window=submenu,
@@ -190,8 +173,7 @@ class MenuContainer:
                     allow_cover_cursor=True,
                     content=ConditionalContainer(
                         content=Shadow(body=submenu2),
-                        filter=has_focus
-                        & Condition(lambda: len(self.selected_menu) >= 1),
+                        filter=has_focus & Condition(lambda: len(self.selected_menu) >= 1),
                     ),
                 ),
                 Float(
@@ -201,8 +183,7 @@ class MenuContainer:
                     allow_cover_cursor=True,
                     content=ConditionalContainer(
                         content=Shadow(body=submenu3),
-                        filter=has_focus
-                        & Condition(lambda: len(self.selected_menu) >= 2),
+                        filter=has_focus & Condition(lambda: len(self.selected_menu) >= 2),
                     ),
                 ),
                 # --
@@ -235,11 +216,7 @@ class MenuContainer:
         def one_item(i: int, item: MenuItem) -> Iterable[OneStyleAndTextTuple]:
             def mouse_handler(mouse_event: MouseEvent) -> None:
                 hover = mouse_event.event_type == MouseEventType.MOUSE_MOVE
-                if (
-                    mouse_event.event_type == MouseEventType.MOUSE_DOWN
-                    or hover
-                    and focused
-                ):
+                if mouse_event.event_type == MouseEventType.MOUSE_DOWN or hover and focused:
                     # Toggle focus.
                     app = get_app()
                     if not hover:
@@ -279,27 +256,20 @@ class MenuContainer:
                     except IndexError:
                         selected_item = -1
 
-                    def one_item(
-                        i: int, item: MenuItem
-                    ) -> Iterable[OneStyleAndTextTuple]:
+                    def one_item(i: int, item: MenuItem) -> Iterable[OneStyleAndTextTuple]:
                         def mouse_handler(mouse_event: MouseEvent) -> None:
                             if item.disabled:
                                 # The arrow keys can't interact with menu items that are disabled.
                                 # The mouse shouldn't be able to either.
                                 return
                             hover = mouse_event.event_type == MouseEventType.MOUSE_MOVE
-                            if (
-                                mouse_event.event_type == MouseEventType.MOUSE_UP
-                                or hover
-                            ):
+                            if mouse_event.event_type == MouseEventType.MOUSE_UP or hover:
                                 app = get_app()
                                 if not hover and item.handler:
                                     app.layout.focus_last()
                                     item.handler()
                                 else:
-                                    self.selected_menu = self.selected_menu[
-                                        : level + 1
-                                    ] + [i]
+                                    self.selected_menu = self.selected_menu[: level + 1] + [i]
 
                         if i == selected_item:
                             yield ("[SetCursorPosition]", "")

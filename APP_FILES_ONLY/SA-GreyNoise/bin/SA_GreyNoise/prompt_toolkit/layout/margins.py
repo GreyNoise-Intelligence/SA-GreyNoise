@@ -46,9 +46,7 @@ class Margin(metaclass=ABCMeta):
         return 0
 
     @abstractmethod
-    def create_margin(
-        self, window_render_info: WindowRenderInfo, width: int, height: int
-    ) -> StyleAndTextTuples:
+    def create_margin(self, window_render_info: WindowRenderInfo, width: int, height: int) -> StyleAndTextTuples:
         """
         Creates a margin.
         This should return a list of (style_str, text) tuples.
@@ -76,9 +74,7 @@ class NumberedMargin(Margin):
         like Vi does.
     """
 
-    def __init__(
-        self, relative: FilterOrBool = False, display_tildes: FilterOrBool = False
-    ) -> None:
+    def __init__(self, relative: FilterOrBool = False, display_tildes: FilterOrBool = False) -> None:
         self.relative = to_filter(relative)
         self.display_tildes = to_filter(display_tildes)
 
@@ -86,9 +82,7 @@ class NumberedMargin(Margin):
         line_count = get_ui_content().line_count
         return max(3, len(f"{line_count}") + 1)
 
-    def create_margin(
-        self, window_render_info: WindowRenderInfo, width: int, height: int
-    ) -> StyleAndTextTuples:
+    def create_margin(self, window_render_info: WindowRenderInfo, width: int, height: int) -> StyleAndTextTuples:
         relative = self.relative()
 
         style = "class:line-number"
@@ -112,9 +106,7 @@ class NumberedMargin(Margin):
                         # Left align current number in relative mode.
                         result.append((style_current, "%i" % (lineno + 1)))
                     else:
-                        result.append(
-                            (style_current, ("%i " % (lineno + 1)).rjust(width))
-                        )
+                        result.append((style_current, ("%i " % (lineno + 1)).rjust(width)))
                 else:
                     # Other lines.
                     if relative:
@@ -149,9 +141,7 @@ class ConditionalMargin(Margin):
         else:
             return 0
 
-    def create_margin(
-        self, window_render_info: WindowRenderInfo, width: int, height: int
-    ) -> StyleAndTextTuples:
+    def create_margin(self, window_render_info: WindowRenderInfo, width: int, height: int) -> StyleAndTextTuples:
         if width and self.filter():
             return self.margin.create_margin(window_render_info, width, height)
         else:
@@ -178,9 +168,7 @@ class ScrollbarMargin(Margin):
     def get_width(self, get_ui_content: Callable[[], UIContent]) -> int:
         return 1
 
-    def create_margin(
-        self, window_render_info: WindowRenderInfo, width: int, height: int
-    ) -> StyleAndTextTuples:
+    def create_margin(self, window_render_info: WindowRenderInfo, width: int, height: int) -> StyleAndTextTuples:
         content_height = window_render_info.content_height
         window_height = window_render_info.window_height
         display_arrows = self.display_arrows()
@@ -189,14 +177,10 @@ class ScrollbarMargin(Margin):
             window_height -= 2
 
         try:
-            fraction_visible = len(window_render_info.displayed_lines) / float(
-                content_height
-            )
+            fraction_visible = len(window_render_info.displayed_lines) / float(content_height)
             fraction_above = window_render_info.vertical_scroll / float(content_height)
 
-            scrollbar_height = int(
-                min(window_height, max(1, window_height * fraction_visible))
-            )
+            scrollbar_height = int(min(window_height, max(1, window_height * fraction_visible)))
             scrollbar_top = int(window_height * fraction_above)
         except ZeroDivisionError:
             return []
@@ -269,8 +253,7 @@ class PromptMargin(Margin):
     def __init__(
         self,
         get_prompt: Callable[[], StyleAndTextTuples],
-        get_continuation: None
-        | (Callable[[int, int, bool], StyleAndTextTuples]) = None,
+        get_continuation: None | (Callable[[int, int, bool], StyleAndTextTuples]) = None,
     ) -> None:
         self.get_prompt = get_prompt
         self.get_continuation = get_continuation
@@ -281,9 +264,7 @@ class PromptMargin(Margin):
         text = fragment_list_to_text(self.get_prompt())
         return get_cwidth(text)
 
-    def create_margin(
-        self, window_render_info: WindowRenderInfo, width: int, height: int
-    ) -> StyleAndTextTuples:
+    def create_margin(self, window_render_info: WindowRenderInfo, width: int, height: int) -> StyleAndTextTuples:
         get_continuation = self.get_continuation
         result: StyleAndTextTuples = []
 
@@ -296,9 +277,7 @@ class PromptMargin(Margin):
 
             for y in window_render_info.displayed_lines[1:]:
                 result.append(("", "\n"))
-                result.extend(
-                    to_formatted_text(get_continuation(width, y, y == last_y))
-                )
+                result.extend(to_formatted_text(get_continuation(width, y, y == last_y)))
                 last_y = y
 
         return result

@@ -41,9 +41,7 @@ class SystemCompleter(GrammarCompleter):
                 "single_quoted_filename": (lambda string: string.replace("'", "\\'")),
             },
             unescape_funcs={
-                "double_quoted_filename": (
-                    lambda string: string.replace('\\"', '"')
-                ),  # XXX: not entirely correct.
+                "double_quoted_filename": (lambda string: string.replace('\\"', '"')),  # XXX: not entirely correct.
                 "single_quoted_filename": (lambda string: string.replace("\\'", "'")),
             },
         )
@@ -54,11 +52,7 @@ class SystemCompleter(GrammarCompleter):
             {
                 "executable": ExecutableCompleter(),
                 "filename": PathCompleter(only_directories=False, expanduser=True),
-                "double_quoted_filename": PathCompleter(
-                    only_directories=False, expanduser=True
-                ),
-                "single_quoted_filename": PathCompleter(
-                    only_directories=False, expanduser=True
-                ),
+                "double_quoted_filename": PathCompleter(only_directories=False, expanduser=True),
+                "single_quoted_filename": PathCompleter(only_directories=False, expanduser=True),
             },
         )

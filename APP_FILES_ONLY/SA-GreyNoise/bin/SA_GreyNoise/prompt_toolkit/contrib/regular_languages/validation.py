@@ -24,9 +24,7 @@ class GrammarValidator(Validator):
                        `Validator` instances to be used for each variable.
     """
 
-    def __init__(
-        self, compiled_grammar: _CompiledGrammar, validators: dict[str, Validator]
-    ) -> None:
+    def __init__(self, compiled_grammar: _CompiledGrammar, validators: dict[str, Validator]) -> None:
         self.compiled_grammar = compiled_grammar
         self.validators = validators
 
@@ -55,6 +53,4 @@ class GrammarValidator(Validator):
                             message=e.message,
                         ) from e
         else:
-            raise ValidationError(
-                cursor_position=len(document.text), message="Invalid command"
-            )
+            raise ValidationError(cursor_position=len(document.text), message="Invalid command")

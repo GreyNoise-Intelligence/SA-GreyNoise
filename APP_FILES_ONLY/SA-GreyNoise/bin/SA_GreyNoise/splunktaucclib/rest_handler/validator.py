@@ -14,8 +14,7 @@
 # limitations under the License.
 #
 
-"""Validators
-"""
+"""Validators"""
 
 
 import json
@@ -173,9 +172,7 @@ class Range(Validator):
         self._minVal, self._maxVal = minVal, maxVal
 
         if None not in (self._minVal, self._maxVal):
-            self._msg = "Value should be between {} and {}" "".format(
-                self._minVal, self._maxVal
-            )
+            self._msg = "Value should be between {} and {}" "".format(self._minVal, self._maxVal)
         elif self._minVal is not None:
             self._msg = "Value should be no smaller than {}" "".format(self._minVal)
         elif self._maxVal is not None:
@@ -217,9 +214,7 @@ class String(Validator):
         self._maxLen = 0 if maxLen is not None and maxLen < 0 else maxLen
 
         if None not in (self._minLen, self._maxLen):
-            self._msg = "Value should be between {} and {}" "".format(
-                self._minLen, self._maxLen
-            )
+            self._msg = "Value should be between {} and {}" "".format(self._minLen, self._maxLen)
         elif self._minLen is not None:
             self._msg = "Value should be no smaller than {}" "".format(self._minLen)
         elif self._maxLen is not None:

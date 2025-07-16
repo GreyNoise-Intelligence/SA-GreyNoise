@@ -47,9 +47,7 @@ def wait_for_handles(handles: list[HANDLE], timeout: int = INFINITE) -> HANDLE |
     arrtype = HANDLE * len(handles)
     handle_array = arrtype(*handles)
 
-    ret: int = windll.kernel32.WaitForMultipleObjects(
-        len(handle_array), handle_array, BOOL(False), DWORD(timeout)
-    )
+    ret: int = windll.kernel32.WaitForMultipleObjects(len(handle_array), handle_array, BOOL(False), DWORD(timeout))
 
     if ret == WAIT_TIMEOUT:
         return None

@@ -23,7 +23,6 @@ from urllib3.util import make_headers, parse_url
 
 from . import certs
 from .__version__ import __version__
-
 # to_native_string is unused here, but imported here for backwards compatibility
 from ._internal_utils import (  # noqa: F401
     _HEADER_VALIDATORS_BYTE,
@@ -38,6 +37,7 @@ from .compat import (
     getproxies,
     getproxies_environment,
     integer_types,
+    is_urllib3_1,
 )
 from .compat import parse_http_list as _parse_list_header
 from .compat import (
@@ -65,9 +65,7 @@ DEFAULT_CA_BUNDLE_PATH = certs.where()
 DEFAULT_PORTS = {"http": 80, "https": 443}
 
 # Ensure that ', ' is used to preserve previous delimiter behavior.
-DEFAULT_ACCEPT_ENCODING = ", ".join(
-    re.split(r",\s*", make_headers(accept_encoding=True)["accept-encoding"])
-)
+DEFAULT_ACCEPT_ENCODING = ", ".join(re.split(r",\s*", make_headers(accept_encoding=True)["accept-encoding"]))
 
 
 if sys.platform == "win32":
@@ -136,7 +134,9 @@ def super_len(o):
     total_length = None
     current_position = 0
 
-    if isinstance(o, str):
+    if not is_urllib3_1 and isinstance(o, str):
+        # urllib3 2.x+ treats all strings as utf-8 instead
+        # of latin-1 (iso-8859-1) like http.client.
         o = o.encode("utf-8")
 
     if hasattr(o, "__len__"):
@@ -216,14 +216,7 @@ def get_netrc_auth(url, raise_errors=False):
         netrc_path = None
 
         for f in netrc_locations:
-            try:
-                loc = os.path.expanduser(f)
-            except KeyError:
-                # os.path.expanduser can fail when $HOME is undefined and
-                # getpwuid fails. See https://bugs.python.org/issue20164 &
-                # https://github.com/psf/requests/issues/1846
-                return
-
+            loc = os.path.expanduser(f)
             if os.path.exists(loc):
                 netrc_path = loc
                 break
@@ -233,13 +226,7 @@ def get_netrc_auth(url, raise_errors=False):
             return
 
         ri = urlparse(url)
-
-        # Strip port numbers from netloc. This weird `if...encode`` dance is
-        # used for Python 3.2, which doesn't support unicode literals.
-        splitstr = b":"
-        if isinstance(url, str):
-            splitstr = splitstr.decode("ascii")
-        host = ri.netloc.split(splitstr)[0]
+        host = ri.hostname
 
         try:
             _netrc = netrc(netrc_path).authenticators(host)
@@ -504,11 +491,7 @@ def get_encodings_from_content(content):
     pragma_re = re.compile(r'<meta.*?content=["\']*;?charset=(.+?)["\'>]', flags=re.I)
     xml_re = re.compile(r'^<\?xml.*?encoding=["\']*(.+?)["\'>]')
 
-    return (
-        charset_re.findall(content)
-        + pragma_re.findall(content)
-        + xml_re.findall(content)
-    )
+    return charset_re.findall(content) + pragma_re.findall(content) + xml_re.findall(content)
 
 
 def _parse_content_type_header(header):
@@ -628,9 +611,7 @@ def get_unicode_from_response(r):
 
 
 # The unreserved URI characters (RFC 3986)
-UNRESERVED_SET = frozenset(
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" + "0123456789-._~"
-)
+UNRESERVED_SET = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" + "0123456789-._~")
 
 
 def unquote_unreserved(uri):
@@ -1049,8 +1030,7 @@ def _validate_header_part(header, header_part, header_validator_index):
         validator = _HEADER_VALIDATORS_BYTE[header_validator_index]
     else:
         raise InvalidHeader(
-            f"Header part ({header_part!r}) from {header} "
-            f"must be of type str or bytes, not {type(header_part)}"
+            f"Header part ({header_part!r}) from {header} " f"must be of type str or bytes, not {type(header_part)}"
         )
 
     if not validator.match(header_part):
@@ -1083,14 +1063,10 @@ def rewind_body(prepared_request):
     so it can be read again on redirect.
     """
     body_seek = getattr(prepared_request.body, "seek", None)
-    if body_seek is not None and isinstance(
-        prepared_request._body_position, integer_types
-    ):
+    if body_seek is not None and isinstance(prepared_request._body_position, integer_types):
         try:
             body_seek(prepared_request._body_position)
         except OSError:
-            raise UnrewindableBodyError(
-                "An error occurred when rewinding request body for redirect."
-            )
+            raise UnrewindableBodyError("An error occurred when rewinding request body for redirect.")
     else:
         raise UnrewindableBodyError("Unable to rewind request body for redirect.")

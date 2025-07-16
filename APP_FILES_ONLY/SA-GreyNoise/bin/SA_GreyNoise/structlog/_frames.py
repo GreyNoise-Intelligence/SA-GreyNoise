@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import sys
 import traceback
-
 from io import StringIO
 from types import FrameType
 

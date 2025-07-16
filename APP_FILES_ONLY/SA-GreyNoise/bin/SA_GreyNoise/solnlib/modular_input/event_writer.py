@@ -233,9 +233,7 @@ class HECEventWriter(EventWriter):
         if hec_uri and hec_token:
             scheme, host, hec_port = utils.extract_http_scheme_host_port(hec_uri)
         else:
-            hec_port, hec_token = self._get_hec_config(
-                hec_input_name, session_key, scheme, host, port, **context
-            )
+            hec_port, hec_token = self._get_hec_config(hec_input_name, session_key, scheme, host, port, **context)
 
         if not context.get("pool_connections"):
             context["pool_connections"] = 10
@@ -248,9 +246,7 @@ class HECEventWriter(EventWriter):
         )
 
     @staticmethod
-    def create_from_token(
-        hec_uri: str, hec_token: str, **context: dict
-    ) -> "HECEventWriter":
+    def create_from_token(hec_uri: str, hec_token: str, **context: dict) -> "HECEventWriter":
         """Given HEC URI and HEC token, create HECEventWriter object. This
         function simplifies the standalone mode HECEventWriter usage (not in a
         modinput).
@@ -264,21 +260,10 @@ class HECEventWriter(EventWriter):
             Created HECEventWriter.
         """
 
-        return HECEventWriter(
-            None,
-            None,
-            None,
-            None,
-            None,
-            hec_uri=hec_uri,
-            hec_token=hec_token,
-            **context
-        )
+        return HECEventWriter(None, None, None, None, None, hec_uri=hec_uri, hec_token=hec_token, **context)
 
     @staticmethod
-    def create_from_input(
-        hec_input_name: str, splunkd_uri: str, session_key: str, **context: dict
-    ) -> "HECEventWriter":
+    def create_from_input(hec_input_name: str, splunkd_uri: str, session_key: str, **context: dict) -> "HECEventWriter":
         """Given HEC input stanza name, splunkd URI and splunkd session key,
         create HECEventWriter object. HEC URI and token etc will be discovered
         from HEC input stanza. When hitting HEC event limit, the underlying
@@ -296,17 +281,11 @@ class HECEventWriter(EventWriter):
         """
 
         scheme, host, port = utils.extract_http_scheme_host_port(splunkd_uri)
-        return HECEventWriter(
-            hec_input_name, session_key, scheme, host, port, **context
-        )
+        return HECEventWriter(hec_input_name, session_key, scheme, host, port, **context)
 
     @staticmethod
     def create_from_token_with_session_key(
-        splunkd_uri: str,
-        session_key: str,
-        hec_uri: str,
-        hec_token: str,
-        **context: dict
+        splunkd_uri: str, session_key: str, hec_uri: str, hec_token: str, **context: dict
     ) -> "HECEventWriter":
         """Given Splunkd URI, Splunkd session key, HEC URI and HEC token,
         create HECEventWriter object. When hitting HEC event limit, the event
@@ -325,21 +304,10 @@ class HECEventWriter(EventWriter):
         """
 
         scheme, host, port = utils.extract_http_scheme_host_port(splunkd_uri)
-        return HECEventWriter(
-            None,
-            session_key,
-            scheme,
-            host,
-            port,
-            hec_uri=hec_uri,
-            hec_token=hec_token,
-            **context
-        )
+        return HECEventWriter(None, session_key, scheme, host, port, hec_uri=hec_uri, hec_token=hec_token, **context)
 
     @retry(exceptions=[binding.HTTPError])
-    def _get_hec_config(
-        self, hec_input_name, session_key, scheme, host, port, **context
-    ):
+    def _get_hec_config(self, hec_input_name, session_key, scheme, host, port, **context):
         hc = HECConfig(session_key, scheme=scheme, host=host, port=port, **context)
         settings = hc.get_settings()
         if utils.is_true(settings.get("disabled")):
@@ -446,9 +414,7 @@ class HECEventWriter(EventWriter):
                         headers=self.headers,
                     )
                 except binding.HTTPError as e:
-                    self.logger.warn(
-                        "Write events through HEC failed. Status=%s", e.status
-                    )
+                    self.logger.warn("Write events through HEC failed. Status=%s", e.status)
                     last_ex = e
                     if e.status in [self.TOO_MANY_REQUESTS, self.SERVICE_UNAVAILABLE]:
                         # wait time for n retries: 10, 20, 40, 80, 80, 80, 80, ....

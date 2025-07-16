@@ -70,9 +70,7 @@ class TextObject:
     Both `start` and `end` are relative to the current cursor position.
     """
 
-    def __init__(
-        self, start: int, end: int = 0, type: TextObjectType = TextObjectType.EXCLUSIVE
-    ):
+    def __init__(self, start: int, end: int = 0, type: TextObjectType = TextObjectType.EXCLUSIVE):
         self.start = start
         self.end = end
         self.type = type
@@ -107,10 +105,7 @@ class TextObject:
         start, end = self.sorted()
         doc = document
 
-        if (
-            self.type == TextObjectType.EXCLUSIVE
-            and doc.translate_index_to_position(end + doc.cursor_position)[1] == 0
-        ):
+        if self.type == TextObjectType.EXCLUSIVE and doc.translate_index_to_position(end + doc.cursor_position)[1] == 0:
             # If the motion is exclusive and the end of motion is on the first
             # column, the end position becomes end of previous line.
             end -= 1
@@ -121,10 +116,7 @@ class TextObject:
             row, col = doc.translate_index_to_position(start + doc.cursor_position)
             start = doc.translate_row_col_to_index(row, 0) - doc.cursor_position
             row, col = doc.translate_index_to_position(end + doc.cursor_position)
-            end = (
-                doc.translate_row_col_to_index(row, len(doc.lines[row]))
-                - doc.cursor_position
-            )
+            end = doc.translate_row_col_to_index(row, len(doc.lines[row])) - doc.cursor_position
         return start, end
 
     def get_line_numbers(self, buffer: Buffer) -> tuple[int, int]:
@@ -202,9 +194,7 @@ def create_text_object_decorator(
         """
 
         def decorator(text_object_func: _TOF) -> _TOF:
-            @key_bindings.add(
-                *keys, filter=vi_waiting_for_text_object_mode & filter, eager=eager
-            )
+            @key_bindings.add(*keys, filter=vi_waiting_for_text_object_mode & filter, eager=eager)
             def _apply_operator_to_text_object(event: E) -> None:
                 # Arguments are multiplied.
                 vi_state = event.app.vi_state
@@ -231,9 +221,7 @@ def create_text_object_decorator(
 
                 @key_bindings.add(
                     *keys,
-                    filter=~vi_waiting_for_text_object_mode
-                    & filter
-                    & vi_navigation_mode,
+                    filter=~vi_waiting_for_text_object_mode & filter & vi_navigation_mode,
                     eager=eager,
                 )
                 def _move_in_navigation_mode(event: E) -> None:
@@ -248,9 +236,7 @@ def create_text_object_decorator(
 
                 @key_bindings.add(
                     *keys,
-                    filter=~vi_waiting_for_text_object_mode
-                    & filter
-                    & vi_selection_mode,
+                    filter=~vi_waiting_for_text_object_mode & filter & vi_selection_mode,
                     eager=eager,
                 )
                 def _move_in_selection_mode(event: E) -> None:
@@ -303,9 +289,7 @@ def create_operator_decorator(
     Create a decorator that can be used for registering Vi operators.
     """
 
-    def operator_decorator(
-        *keys: Keys | str, filter: Filter = Always(), eager: bool = False
-    ) -> Callable[[_OF], _OF]:
+    def operator_decorator(*keys: Keys | str, filter: Filter = Always(), eager: bool = False) -> Callable[[_OF], _OF]:
         """
         Register a Vi operator.
 
@@ -379,9 +363,7 @@ def is_returnable() -> bool:
 @Condition
 def in_block_selection() -> bool:
     buff = get_app().current_buffer
-    return bool(
-        buff.selection_state and buff.selection_state.type == SelectionType.BLOCK
-    )
+    return bool(buff.selection_state and buff.selection_state.type == SelectionType.BLOCK)
 
 
 @Condition
@@ -491,9 +473,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         Go up, but if we enter a new history entry, move to the start of the
         line.
         """
-        event.current_buffer.auto_up(
-            count=event.arg, go_to_start_of_line_if_history_changes=True
-        )
+        event.current_buffer.auto_up(count=event.arg, go_to_start_of_line_if_history_changes=True)
 
     @handle("down", filter=vi_navigation_mode)
     @handle("c-n", filter=vi_navigation_mode)
@@ -508,18 +488,14 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         Go down, but if we enter a new history entry, go to the start of the line.
         """
-        event.current_buffer.auto_down(
-            count=event.arg, go_to_start_of_line_if_history_changes=True
-        )
+        event.current_buffer.auto_down(count=event.arg, go_to_start_of_line_if_history_changes=True)
 
     @handle("backspace", filter=vi_navigation_mode)
     def _go_left(event: E) -> None:
         """
         In navigation-mode, move cursor.
         """
-        event.current_buffer.cursor_position += (
-            event.current_buffer.document.get_cursor_left_position(count=event.arg)
-        )
+        event.current_buffer.cursor_position += event.current_buffer.document.get_cursor_left_position(count=event.arg)
 
     @handle("c-n", filter=vi_insert_mode)
     def _complete_next(event: E) -> None:
@@ -558,9 +534,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         event.current_buffer.cancel_completion()
 
     # In navigation mode, pressing enter will always return the input.
-    handle("enter", filter=vi_navigation_mode & is_returnable)(
-        get_by_name("accept-line")
-    )
+    handle("enter", filter=vi_navigation_mode & is_returnable)(get_by_name("accept-line"))
 
     # In insert mode, also accept input when enter is pressed, and the buffer
     # has been marked as single line.
@@ -573,9 +547,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         b = event.current_buffer
         b.cursor_down(count=event.arg)
-        b.cursor_position += b.document.get_start_of_line_position(
-            after_whitespace=True
-        )
+        b.cursor_position += b.document.get_start_of_line_position(after_whitespace=True)
 
     # ** In navigation mode **
 
@@ -599,16 +571,12 @@ def load_vi_bindings() -> KeyBindingsBase:
     # ~IsReadOnly, because we want to stay in navigation mode for
     # read-only buffers.
     def _a(event: E) -> None:
-        event.current_buffer.cursor_position += (
-            event.current_buffer.document.get_cursor_right_position()
-        )
+        event.current_buffer.cursor_position += event.current_buffer.document.get_cursor_right_position()
         event.app.vi_state.input_mode = InputMode.INSERT
 
     @handle("A", filter=vi_navigation_mode & ~is_read_only)
     def _A(event: E) -> None:
-        event.current_buffer.cursor_position += (
-            event.current_buffer.document.get_end_of_line_position()
-        )
+        event.current_buffer.cursor_position += event.current_buffer.document.get_end_of_line_position()
         event.app.vi_state.input_mode = InputMode.INSERT
 
     @handle("C", filter=vi_navigation_mode & ~is_read_only)
@@ -636,9 +604,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         event.app.clipboard.set_data(data)
 
         # But we delete after the whitespace
-        buffer.cursor_position += buffer.document.get_start_of_line_position(
-            after_whitespace=True
-        )
+        buffer.cursor_position += buffer.document.get_start_of_line_position(after_whitespace=True)
         buffer.delete(count=buffer.document.get_end_of_line_position())
         event.app.vi_state.input_mode = InputMode.INSERT
 
@@ -663,10 +629,7 @@ def load_vi_bindings() -> KeyBindingsBase:
 
         before = "\n".join(lines[: buffer.document.cursor_position_row])
         deleted = "\n".join(
-            lines[
-                buffer.document.cursor_position_row : buffer.document.cursor_position_row
-                + event.arg
-            ]
+            lines[buffer.document.cursor_position_row : buffer.document.cursor_position_row + event.arg]
         )
         after = "\n".join(lines[buffer.document.cursor_position_row + event.arg :])
 
@@ -700,10 +663,8 @@ def load_vi_bindings() -> KeyBindingsBase:
     @handle("I", filter=vi_navigation_mode & ~is_read_only)
     def _I(event: E) -> None:
         event.app.vi_state.input_mode = InputMode.INSERT
-        event.current_buffer.cursor_position += (
-            event.current_buffer.document.get_start_of_line_position(
-                after_whitespace=True
-            )
+        event.current_buffer.cursor_position += event.current_buffer.document.get_start_of_line_position(
+            after_whitespace=True
         )
 
     @handle("I", filter=in_block_selection & ~is_read_only)
@@ -802,9 +763,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         if c in vi_register_names:
             data = event.app.vi_state.named_registers.get(c)
             if data:
-                event.current_buffer.paste_clipboard_data(
-                    data, count=event.arg, paste_mode=PasteMode.VI_AFTER
-                )
+                event.current_buffer.paste_clipboard_data(data, count=event.arg, paste_mode=PasteMode.VI_AFTER)
 
     @handle('"', Keys.Any, "P", filter=vi_navigation_mode)
     def _paste_register_before(event: E) -> None:
@@ -815,9 +774,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         if c in vi_register_names:
             data = event.app.vi_state.named_registers.get(c)
             if data:
-                event.current_buffer.paste_clipboard_data(
-                    data, count=event.arg, paste_mode=PasteMode.VI_BEFORE
-                )
+                event.current_buffer.paste_clipboard_data(data, count=event.arg, paste_mode=PasteMode.VI_BEFORE)
 
     @handle("r", filter=vi_navigation_mode)
     def _replace(event: E) -> None:
@@ -919,10 +876,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         buffer = event.current_buffer
 
-        if (
-            buffer.selection_state
-            and buffer.selection_state.type == SelectionType.LINES
-        ):
+        if buffer.selection_state and buffer.selection_state.type == SelectionType.LINES:
             buffer.selection_state.type = SelectionType.CHARACTERS
 
     @handle("x", filter=vi_navigation_mode)
@@ -959,12 +913,8 @@ def load_vi_bindings() -> KeyBindingsBase:
         Move to first non whitespace of next line
         """
         buffer = event.current_buffer
-        buffer.cursor_position += buffer.document.get_cursor_down_position(
-            count=event.arg
-        )
-        buffer.cursor_position += buffer.document.get_start_of_line_position(
-            after_whitespace=True
-        )
+        buffer.cursor_position += buffer.document.get_cursor_down_position(count=event.arg)
+        buffer.cursor_position += buffer.document.get_start_of_line_position(after_whitespace=True)
 
     @handle("-", filter=vi_navigation_mode)
     def _prev_line(event: E) -> None:
@@ -972,12 +922,8 @@ def load_vi_bindings() -> KeyBindingsBase:
         Move to first non whitespace of previous line
         """
         buffer = event.current_buffer
-        buffer.cursor_position += buffer.document.get_cursor_up_position(
-            count=event.arg
-        )
-        buffer.cursor_position += buffer.document.get_start_of_line_position(
-            after_whitespace=True
-        )
+        buffer.cursor_position += buffer.document.get_cursor_up_position(count=event.arg)
+        buffer.cursor_position += buffer.document.get_start_of_line_position(after_whitespace=True)
 
     @handle(">", ">", filter=vi_navigation_mode)
     @handle("c-t", filter=vi_insert_mode)
@@ -1101,9 +1047,7 @@ def load_vi_bindings() -> KeyBindingsBase:
     # *** Operators ***
     #
 
-    def create_delete_and_change_operators(
-        delete_only: bool, with_register: bool = False
-    ) -> None:
+    def create_delete_and_change_operators(delete_only: bool, with_register: bool = False) -> None:
         """
         Delete and change operators.
 
@@ -1143,9 +1087,7 @@ def load_vi_bindings() -> KeyBindingsBase:
     create_delete_and_change_operators(True, False)
     create_delete_and_change_operators(True, True)
 
-    def create_transform_handler(
-        filter: Filter, transform_func: Callable[[str], str], *a: str
-    ) -> None:
+    def create_transform_handler(filter: Filter, transform_func: Callable[[str], str], *a: str) -> None:
         @operator(*a, filter=filter & ~is_read_only)
         def _(event: E, text_object: TextObject) -> None:
             """
@@ -1223,22 +1165,14 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         Move one word or token left.
         """
-        return TextObject(
-            event.current_buffer.document.find_start_of_previous_word(count=event.arg)
-            or 0
-        )
+        return TextObject(event.current_buffer.document.find_start_of_previous_word(count=event.arg) or 0)
 
     @text_object("B")
     def _B(event: E) -> TextObject:
         """
         Move one non-blank word left
         """
-        return TextObject(
-            event.current_buffer.document.find_start_of_previous_word(
-                count=event.arg, WORD=True
-            )
-            or 0
-        )
+        return TextObject(event.current_buffer.document.find_start_of_previous_word(count=event.arg, WORD=True) or 0)
 
     @text_object("$")
     def _dollar(event: E) -> TextObject:
@@ -1263,9 +1197,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         'WORD' forward. 'cW', 'dW', 'W': Delete/change/move one WORD.
         """
         return TextObject(
-            event.current_buffer.document.find_next_word_beginning(
-                count=event.arg, WORD=True
-            )
+            event.current_buffer.document.find_next_word_beginning(count=event.arg, WORD=True)
             or event.current_buffer.document.get_end_of_document_position()
         )
 
@@ -1282,9 +1214,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         End of 'WORD': 'cE', 'dE', 'E'
         """
-        end = event.current_buffer.document.find_next_word_ending(
-            count=event.arg, WORD=True
-        )
+        end = event.current_buffer.document.find_next_word_ending(count=event.arg, WORD=True)
         return TextObject(end - 1 if end else 0, type=TextObjectType.INCLUSIVE)
 
     @text_object("i", "w", no_move_handler=True)
@@ -1300,9 +1230,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         A 'word': caw and daw
         """
-        start, end = event.current_buffer.document.find_boundaries_of_current_word(
-            include_trailing_whitespace=True
-        )
+        start, end = event.current_buffer.document.find_boundaries_of_current_word(include_trailing_whitespace=True)
         return TextObject(start, end)
 
     @text_object("i", "W", no_move_handler=True)
@@ -1310,9 +1238,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         Inner 'WORD': ciW and diW
         """
-        start, end = event.current_buffer.document.find_boundaries_of_current_word(
-            WORD=True
-        )
+        start, end = event.current_buffer.document.find_boundaries_of_current_word(WORD=True)
         return TextObject(start, end)
 
     @text_object("a", "W", no_move_handler=True)
@@ -1337,11 +1263,7 @@ def load_vi_bindings() -> KeyBindingsBase:
     @text_object("^")
     def _start_of_line(event: E) -> TextObject:
         """'c^', 'd^' and '^': Soft start of line, after whitespace."""
-        return TextObject(
-            event.current_buffer.document.get_start_of_line_position(
-                after_whitespace=True
-            )
-        )
+        return TextObject(event.current_buffer.document.get_start_of_line_position(after_whitespace=True))
 
     @text_object("0")
     def _hard_start_of_line(event: E) -> TextObject:
@@ -1349,15 +1271,9 @@ def load_vi_bindings() -> KeyBindingsBase:
         'c0', 'd0': Hard start of line, before whitespace.
         (The move '0' key is implemented elsewhere, because a '0' could also change the `arg`.)
         """
-        return TextObject(
-            event.current_buffer.document.get_start_of_line_position(
-                after_whitespace=False
-            )
-        )
+        return TextObject(event.current_buffer.document.get_start_of_line_position(after_whitespace=False))
 
-    def create_ci_ca_handles(
-        ci_start: str, ci_end: str, inner: bool, key: str | None = None
-    ) -> None:
+    def create_ci_ca_handles(ci_start: str, ci_end: str, inner: bool, key: str | None = None) -> None:
         # TODO: 'dat', 'dit', (tags (like xml)
         """
         Delete/Change string between this start and stop character. But keep these characters.
@@ -1367,18 +1283,12 @@ def load_vi_bindings() -> KeyBindingsBase:
         def handler(event: E) -> TextObject:
             if ci_start == ci_end:
                 # Quotes
-                start = event.current_buffer.document.find_backwards(
-                    ci_start, in_current_line=False
-                )
+                start = event.current_buffer.document.find_backwards(ci_start, in_current_line=False)
                 end = event.current_buffer.document.find(ci_end, in_current_line=False)
             else:
                 # Brackets
-                start = event.current_buffer.document.find_enclosing_bracket_left(
-                    ci_start, ci_end
-                )
-                end = event.current_buffer.document.find_enclosing_bracket_right(
-                    ci_start, ci_end
-                )
+                start = event.current_buffer.document.find_enclosing_bracket_left(ci_start, ci_end)
+                end = event.current_buffer.document.find_enclosing_bracket_right(ci_start, ci_end)
 
             if start is not None and end is not None:
                 offset = 0 if inner else 1
@@ -1414,9 +1324,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         Move to previous blank-line separated section.
         Implements '{', 'c{', 'd{', 'y{'
         """
-        index = event.current_buffer.document.start_of_paragraph(
-            count=event.arg, before=True
-        )
+        index = event.current_buffer.document.start_of_paragraph(count=event.arg, before=True)
         return TextObject(index)
 
     @text_object("}")
@@ -1425,9 +1333,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         Move to next blank-line separated section.
         Implements '}', 'c}', 'd}', 'y}'
         """
-        index = event.current_buffer.document.end_of_paragraph(
-            count=event.arg, after=True
-        )
+        index = event.current_buffer.document.end_of_paragraph(count=event.arg, after=True)
         return TextObject(index)
 
     @text_object("f", Keys.Any)
@@ -1437,9 +1343,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         cursor to the next occurrence of character. 'x'.
         """
         event.app.vi_state.last_character_find = CharacterFind(event.data, False)
-        match = event.current_buffer.document.find(
-            event.data, in_current_line=True, count=event.arg
-        )
+        match = event.current_buffer.document.find(event.data, in_current_line=True, count=event.arg)
         if match:
             return TextObject(match, type=TextObjectType.INCLUSIVE)
         else:
@@ -1453,10 +1357,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         event.app.vi_state.last_character_find = CharacterFind(event.data, True)
         return TextObject(
-            event.current_buffer.document.find_backwards(
-                event.data, in_current_line=True, count=event.arg
-            )
-            or 0
+            event.current_buffer.document.find_backwards(event.data, in_current_line=True, count=event.arg) or 0
         )
 
     @text_object("t", Keys.Any)
@@ -1465,9 +1366,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         Move right to the next occurrence of c, then one char backward.
         """
         event.app.vi_state.last_character_find = CharacterFind(event.data, False)
-        match = event.current_buffer.document.find(
-            event.data, in_current_line=True, count=event.arg
-        )
+        match = event.current_buffer.document.find(event.data, in_current_line=True, count=event.arg)
         if match:
             return TextObject(match - 1, type=TextObjectType.INCLUSIVE)
         else:
@@ -1479,9 +1378,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         Move left to the previous occurrence of c, then one char forward.
         """
         event.app.vi_state.last_character_find = CharacterFind(event.data, True)
-        match = event.current_buffer.document.find_backwards(
-            event.data, in_current_line=True, count=event.arg
-        )
+        match = event.current_buffer.document.find_backwards(event.data, in_current_line=True, count=event.arg)
         return TextObject(match + 1 if match else 0)
 
     def repeat(reverse: bool) -> None:
@@ -1507,13 +1404,9 @@ def load_vi_bindings() -> KeyBindingsBase:
                     backwards = not backwards
 
                 if backwards:
-                    pos = event.current_buffer.document.find_backwards(
-                        char, in_current_line=True, count=event.arg
-                    )
+                    pos = event.current_buffer.document.find_backwards(char, in_current_line=True, count=event.arg)
                 else:
-                    pos = event.current_buffer.document.find(
-                        char, in_current_line=True, count=event.arg
-                    )
+                    pos = event.current_buffer.document.find(char, in_current_line=True, count=event.arg)
                     type = TextObjectType.INCLUSIVE
             if pos:
                 return TextObject(pos, type=type)
@@ -1529,9 +1422,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         Implements 'ch', 'dh', 'h': Cursor left.
         """
-        return TextObject(
-            event.current_buffer.document.get_cursor_left_position(count=event.arg)
-        )
+        return TextObject(event.current_buffer.document.get_cursor_left_position(count=event.arg))
 
     @text_object("j", no_move_handler=True, no_selection_handler=True)
     # Note: We also need `no_selection_handler`, because we in
@@ -1563,9 +1454,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         Implements 'cl', 'dl', 'l', 'c ', 'd ', ' '. Cursor right.
         """
-        return TextObject(
-            event.current_buffer.document.get_cursor_right_position(count=event.arg)
-        )
+        return TextObject(event.current_buffer.document.get_cursor_right_position(count=event.arg))
 
     @text_object("H")
     def _top_of_screen(event: E) -> TextObject:
@@ -1580,9 +1469,7 @@ def load_vi_bindings() -> KeyBindingsBase:
             # When we find a Window that has BufferControl showing this window,
             # move to the start of the visible area.
             pos = (
-                b.document.translate_row_col_to_index(
-                    w.render_info.first_visible_line(after_scroll_offset=True), 0
-                )
+                b.document.translate_row_col_to_index(w.render_info.first_visible_line(after_scroll_offset=True), 0)
                 - b.cursor_position
             )
 
@@ -1603,12 +1490,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         if w and w.render_info:
             # When we find a Window that has BufferControl showing this window,
             # move to the center of the visible area.
-            pos = (
-                b.document.translate_row_col_to_index(
-                    w.render_info.center_visible_line(), 0
-                )
-                - b.cursor_position
-            )
+            pos = b.document.translate_row_col_to_index(w.render_info.center_visible_line(), 0) - b.cursor_position
 
         else:
             # Otherwise, move to the start of the input.
@@ -1627,9 +1509,7 @@ def load_vi_bindings() -> KeyBindingsBase:
             # When we find a Window that has BufferControl showing this window,
             # move to the end of the visible area.
             pos = (
-                b.document.translate_row_col_to_index(
-                    w.render_info.last_visible_line(before_scroll_offset=True), 0
-                )
+                b.document.translate_row_col_to_index(w.render_info.last_visible_line(before_scroll_offset=True), 0)
                 - b.cursor_position
             )
 
@@ -1646,9 +1526,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         buff = event.current_buffer
         search_state = event.app.current_search_state
 
-        cursor_position = buff.get_search_position(
-            search_state, include_current_position=False, count=event.arg
-        )
+        cursor_position = buff.get_search_position(search_state, include_current_position=False, count=event.arg)
         return TextObject(cursor_position - buff.cursor_position)
 
     @handle("n", filter=vi_navigation_mode)
@@ -1658,9 +1536,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         search_state = event.app.current_search_state
 
-        event.current_buffer.apply_search(
-            search_state, include_current_position=False, count=event.arg
-        )
+        event.current_buffer.apply_search(search_state, include_current_position=False, count=event.arg)
 
     @text_object("N", no_move_handler=True)
     def _search_previous(event: E) -> TextObject:
@@ -1670,9 +1546,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         buff = event.current_buffer
         search_state = event.app.current_search_state
 
-        cursor_position = buff.get_search_position(
-            ~search_state, include_current_position=False, count=event.arg
-        )
+        cursor_position = buff.get_search_position(~search_state, include_current_position=False, count=event.arg)
         return TextObject(cursor_position - buff.cursor_position)
 
     @handle("N", filter=vi_navigation_mode)
@@ -1682,9 +1556,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         search_state = event.app.current_search_state
 
-        event.current_buffer.apply_search(
-            ~search_state, include_current_position=False, count=event.arg
-        )
+        event.current_buffer.apply_search(~search_state, include_current_position=False, count=event.arg)
 
     @handle("z", "+", filter=vi_navigation_mode | vi_selection_mode)
     @handle("z", "t", filter=vi_navigation_mode | vi_selection_mode)
@@ -1771,9 +1643,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         Move to the n-th column (you may specify the argument n by typing it on
         number keys, for example, 20|).
         """
-        return TextObject(
-            event.current_buffer.document.get_column_cursor_position(event.arg - 1)
-        )
+        return TextObject(event.current_buffer.document.get_column_cursor_position(event.arg - 1))
 
     @text_object("g", "g")
     def _goto_first_line(event: E) -> TextObject:
@@ -1791,9 +1661,7 @@ def load_vi_bindings() -> KeyBindingsBase:
             )
         else:
             # Move to the top of the input.
-            return TextObject(
-                d.get_start_of_document_position(), type=TextObjectType.LINEWISE
-            )
+            return TextObject(d.get_start_of_document_position(), type=TextObjectType.LINEWISE)
 
     @text_object("g", "_")
     def _goto_last_line(event: E) -> TextObject:
@@ -1812,12 +1680,8 @@ def load_vi_bindings() -> KeyBindingsBase:
         Go to last character of previous word.
         'ge', 'cge', 'yge', etc..
         """
-        prev_end = event.current_buffer.document.find_previous_word_ending(
-            count=event.arg
-        )
-        return TextObject(
-            prev_end - 1 if prev_end is not None else 0, type=TextObjectType.INCLUSIVE
-        )
+        prev_end = event.current_buffer.document.find_previous_word_ending(count=event.arg)
+        return TextObject(prev_end - 1 if prev_end is not None else 0, type=TextObjectType.INCLUSIVE)
 
     @text_object("g", "E")
     def _gE(event: E) -> TextObject:
@@ -1825,12 +1689,8 @@ def load_vi_bindings() -> KeyBindingsBase:
         Go to last character of previous WORD.
         'gE', 'cgE', 'ygE', etc..
         """
-        prev_end = event.current_buffer.document.find_previous_word_ending(
-            count=event.arg, WORD=True
-        )
-        return TextObject(
-            prev_end - 1 if prev_end is not None else 0, type=TextObjectType.INCLUSIVE
-        )
+        prev_end = event.current_buffer.document.find_previous_word_ending(count=event.arg, WORD=True)
+        return TextObject(prev_end - 1 if prev_end is not None else 0, type=TextObjectType.INCLUSIVE)
 
     @text_object("g", "m")
     def _gm(event: E) -> TextObject:
@@ -1855,8 +1715,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         """
         buf = event.current_buffer
         return TextObject(
-            buf.document.translate_row_col_to_index(buf.document.line_count - 1, 0)
-            - buf.cursor_position,
+            buf.document.translate_row_col_to_index(buf.document.line_count - 1, 0) - buf.cursor_position,
             type=TextObjectType.LINEWISE,
         )
 
@@ -1876,9 +1735,7 @@ def load_vi_bindings() -> KeyBindingsBase:
 
         @handle(
             n,
-            filter=vi_navigation_mode
-            | vi_selection_mode
-            | vi_waiting_for_text_object_mode,
+            filter=vi_navigation_mode | vi_selection_mode | vi_waiting_for_text_object_mode,
         )
         def _arg(event: E) -> None:
             """
@@ -1888,10 +1745,7 @@ def load_vi_bindings() -> KeyBindingsBase:
 
     @handle(
         "0",
-        filter=(
-            vi_navigation_mode | vi_selection_mode | vi_waiting_for_text_object_mode
-        )
-        & has_arg,
+        filter=(vi_navigation_mode | vi_selection_mode | vi_waiting_for_text_object_mode) & has_arg,
     )
     def _0_arg(event: E) -> None:
         """
@@ -1940,9 +1794,7 @@ def load_vi_bindings() -> KeyBindingsBase:
         text.append(original_text[p:])
 
         # Shift all cursor positions.
-        new_cursor_positions = [
-            pos + i + 1 for i, pos in enumerate(buff.multiple_cursor_positions)
-        ]
+        new_cursor_positions = [pos + i + 1 for i, pos in enumerate(buff.multiple_cursor_positions)]
 
         # Set result.
         buff.text = "".join(text)
@@ -2150,9 +2002,7 @@ def load_vi_bindings() -> KeyBindingsBase:
 
         # Store and stop recording.
         if vi_state.recording_register:
-            vi_state.named_registers[vi_state.recording_register] = ClipboardData(
-                vi_state.current_recording
-            )
+            vi_state.named_registers[vi_state.recording_register] = ClipboardData(vi_state.current_recording)
             vi_state.recording_register = None
             vi_state.current_recording = ""
 

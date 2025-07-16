@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import json
 import sys
-
 from typing import Any, Callable, Sequence, TextIO
 
 from twisted.python import log
@@ -140,9 +139,7 @@ class ReprWrapper:
         """
         Check for equality, just for tests.
         """
-        return (
-            isinstance(other, self.__class__) and self.string == other.string
-        )
+        return isinstance(other, self.__class__) and self.string == other.string
 
     def __repr__(self) -> str:
         return self.string
@@ -185,13 +182,7 @@ class JSONRenderer(GenericJSONRenderer):
         else:
             eventDict["event"] = _why
         return (
-            (
-                ReprWrapper(
-                    GenericJSONRenderer.__call__(  # type: ignore[arg-type]
-                        self, logger, name, eventDict
-                    )
-                ),
-            ),
+            (ReprWrapper(GenericJSONRenderer.__call__(self, logger, name, eventDict)),),  # type: ignore[arg-type]
             {"_structlog": True},
         )
 
@@ -216,8 +207,7 @@ class PlainFileLogObserver:
     def __call__(self, eventDict: EventDict) -> None:
         until_not_interrupted(
             self._write,
-            textFromEventDict(eventDict)  # type: ignore[arg-type, operator]
-            + "\n",
+            textFromEventDict(eventDict) + "\n",  # type: ignore[arg-type, operator]
         )
         until_not_interrupted(self._flush)
 
@@ -243,9 +233,7 @@ class JSONLogObserverWrapper:
             eventDict["message"] = (
                 json.dumps(
                     {
-                        "event": textFromEventDict(
-                            eventDict  # type: ignore[arg-type]
-                        ),
+                        "event": textFromEventDict(eventDict),  # type: ignore[arg-type]
                         "system": eventDict.get("system"),
                     }
                 ),
@@ -298,17 +286,14 @@ class EventAdapter:
 
     def __init__(
         self,
-        dictRenderer: Callable[[WrappedLogger, str, EventDict], str]
-        | None = None,
+        dictRenderer: Callable[[WrappedLogger, str, EventDict], str] | None = None,
     ) -> None:
         """
         :param dictRenderer: A processor used to format the log message.
         """
         self._dictRenderer = dictRenderer or _BUILTIN_DEFAULT_PROCESSORS[-1]
 
-    def __call__(
-        self, logger: WrappedLogger, name: str, eventDict: EventDict
-    ) -> Any:
+    def __call__(self, logger: WrappedLogger, name: str, eventDict: EventDict) -> Any:
         if name == "err":
             # This aspires to handle the following cases correctly:
             #   - log.err(failure, _why='event', **kw)

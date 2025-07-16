@@ -3,9 +3,8 @@
 # Copyright (c) 2013 by Christian Heimes <christian@python.org>
 # Licensed to PSF under a Contributor Agreement.
 # See https://www.python.org/psf/license for licensing details.
-"""Defused xml.dom.expatbuilder
-"""
-from __future__ import print_function, absolute_import
+"""Defused xml.dom.expatbuilder"""
+from __future__ import absolute_import, print_function
 
 from xml.dom.expatbuilder import ExpatBuilder as _ExpatBuilder
 from xml.dom.expatbuilder import Namespaces as _Namespaces
@@ -18,9 +17,7 @@ __origin__ = "xml.dom.expatbuilder"
 class DefusedExpatBuilder(_ExpatBuilder):
     """Defused document builder"""
 
-    def __init__(
-        self, options=None, forbid_dtd=False, forbid_entities=True, forbid_external=True
-    ):
+    def __init__(self, options=None, forbid_dtd=False, forbid_entities=True, forbid_external=True):
         _ExpatBuilder.__init__(self, options)
         self.forbid_dtd = forbid_dtd
         self.forbid_entities = forbid_entities
@@ -29,9 +26,7 @@ class DefusedExpatBuilder(_ExpatBuilder):
     def defused_start_doctype_decl(self, name, sysid, pubid, has_internal_subset):
         raise DTDForbidden(name, sysid, pubid)
 
-    def defused_entity_decl(
-        self, name, is_parameter_entity, value, base, sysid, pubid, notation_name
-    ):
+    def defused_entity_decl(self, name, is_parameter_entity, value, base, sysid, pubid, notation_name):
         raise EntitiesForbidden(name, value, base, sysid, pubid, notation_name)
 
     def defused_unparsed_entity_decl(self, name, base, sysid, pubid, notation_name):
@@ -76,9 +71,7 @@ def parse(file, namespaces=True, forbid_dtd=False, forbid_entities=True, forbid_
         build_builder = DefusedExpatBuilderNS
     else:
         build_builder = DefusedExpatBuilder
-    builder = build_builder(
-        forbid_dtd=forbid_dtd, forbid_entities=forbid_entities, forbid_external=forbid_external
-    )
+    builder = build_builder(forbid_dtd=forbid_dtd, forbid_entities=forbid_entities, forbid_external=forbid_external)
 
     if isinstance(file, str):
         fp = open(file, "rb")
@@ -91,9 +84,7 @@ def parse(file, namespaces=True, forbid_dtd=False, forbid_entities=True, forbid_
     return result
 
 
-def parseString(
-    string, namespaces=True, forbid_dtd=False, forbid_entities=True, forbid_external=True
-):
+def parseString(string, namespaces=True, forbid_dtd=False, forbid_entities=True, forbid_external=True):
     """Parse a document from a string, returning the resulting
     Document node.
     """
@@ -101,7 +92,5 @@ def parseString(
         build_builder = DefusedExpatBuilderNS
     else:
         build_builder = DefusedExpatBuilder
-    builder = build_builder(
-        forbid_dtd=forbid_dtd, forbid_entities=forbid_entities, forbid_external=forbid_external
-    )
+    builder = build_builder(forbid_dtd=forbid_dtd, forbid_entities=forbid_entities, forbid_external=forbid_external)
     return builder.parseString(string)

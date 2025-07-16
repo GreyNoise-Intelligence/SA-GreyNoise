@@ -92,9 +92,7 @@ def beginning_of_line(event: E) -> None:
     Move to the start of the current line.
     """
     buff = event.current_buffer
-    buff.cursor_position += buff.document.get_start_of_line_position(
-        after_whitespace=False
-    )
+    buff.cursor_position += buff.document.get_start_of_line_position(after_whitespace=False)
 
 
 @register("end-of-line")
@@ -356,9 +354,7 @@ def kill_line(event: E) -> None:
     """
     buff = event.current_buffer
     if event.arg < 0:
-        deleted = buff.delete_before_cursor(
-            count=-buff.document.get_start_of_line_position()
-        )
+        deleted = buff.delete_before_cursor(count=-buff.document.get_start_of_line_position())
     else:
         if buff.document.current_char == "\n":
             deleted = buff.delete(1)
@@ -449,9 +445,7 @@ def unix_line_discard(event: E) -> None:
     if buff.document.cursor_position_col == 0 and buff.document.cursor_position > 0:
         buff.delete_before_cursor(count=1)
     else:
-        deleted = buff.delete_before_cursor(
-            count=-buff.document.get_start_of_line_position()
-        )
+        deleted = buff.delete_before_cursor(count=-buff.document.get_start_of_line_position())
         event.app.clipboard.set_text(deleted)
 
 
@@ -623,9 +617,7 @@ def insert_comment(event: E) -> None:
         def change(line: str) -> str:
             return "#" + line
 
-    buff.document = Document(
-        text="\n".join(map(change, buff.text.splitlines())), cursor_position=0
-    )
+    buff.document = Document(text="\n".join(map(change, buff.text.splitlines())), cursor_position=0)
 
     # Accept input.
     buff.validate_and_handle()

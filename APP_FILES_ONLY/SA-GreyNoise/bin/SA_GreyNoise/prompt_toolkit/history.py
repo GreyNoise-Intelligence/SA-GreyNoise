@@ -154,9 +154,7 @@ class ThreadedHistory(History):
                 # Control-C is pressed before the history is fully loaded,
                 # because there's still this non-daemon executor thread waiting
                 # for this event.)
-                got_timeout = await loop.run_in_executor(
-                    None, lambda: event.wait(timeout=0.5)
-                )
+                got_timeout = await loop.run_in_executor(None, lambda: event.wait(timeout=0.5))
                 if not got_timeout:
                     continue
 

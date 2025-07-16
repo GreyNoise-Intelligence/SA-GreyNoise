@@ -84,8 +84,7 @@ def check_compatibility(urllib3_version, chardet_version, charset_normalizer_ver
         assert (2, 0, 0) <= (major, minor, patch) < (4, 0, 0)
     else:
         warnings.warn(
-            "Unable to find acceptable character detection dependency "
-            "(chardet or charset_normalizer).",
+            "Unable to find acceptable character detection dependency " "(chardet or charset_normalizer).",
             RequestsDependencyWarning,
         )
 
@@ -98,23 +97,17 @@ def _check_cryptography(cryptography_version):
         return
 
     if cryptography_version < [1, 3, 4]:
-        warning = "Old version of cryptography ({}) may cause slowdown.".format(
-            cryptography_version
-        )
+        warning = "Old version of cryptography ({}) may cause slowdown.".format(cryptography_version)
         warnings.warn(warning, RequestsDependencyWarning)
 
 
 # Check imported dependencies for compatibility.
 try:
-    check_compatibility(
-        urllib3.__version__, chardet_version, charset_normalizer_version
-    )
+    check_compatibility(urllib3.__version__, chardet_version, charset_normalizer_version)
 except (AssertionError, ValueError):
     warnings.warn(
         "urllib3 ({}) or chardet ({})/charset_normalizer ({}) doesn't match a supported "
-        "version!".format(
-            urllib3.__version__, chardet_version, charset_normalizer_version
-        ),
+        "version!".format(urllib3.__version__, chardet_version, charset_normalizer_version),
         RequestsDependencyWarning,
     )
 

@@ -25,9 +25,7 @@ class ClipboardData:
     :param type: :class:`~prompt_toolkit.selection.SelectionType`
     """
 
-    def __init__(
-        self, text: str = "", type: SelectionType = SelectionType.CHARACTERS
-    ) -> None:
+    def __init__(self, text: str = "", type: SelectionType = SelectionType.CHARACTERS) -> None:
         self.text = text
         self.type = type
 

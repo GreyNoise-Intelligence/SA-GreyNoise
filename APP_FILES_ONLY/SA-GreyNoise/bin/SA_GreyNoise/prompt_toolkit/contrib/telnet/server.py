@@ -168,9 +168,7 @@ class TelnetConnection:
 
         def ttype_received(ttype: str) -> None:
             """TelnetProtocolParser 'ttype_received' callback"""
-            self.vt100_output = Vt100_Output(
-                self.stdout, get_size, term=ttype, enable_cpr=enable_cpr
-            )
+            self.vt100_output = Vt100_Output(self.stdout, get_size, term=ttype, enable_cpr=enable_cpr)
             self._ready.set()
 
         self.parser = TelnetProtocolParser(data_received, size_received, ttype_received)
@@ -228,9 +226,7 @@ class TelnetConnection:
         if self.vt100_output is None:
             return
         formatted_text = to_formatted_text(formatted_text)
-        print_formatted_text(
-            self.vt100_output, formatted_text, self.style or DummyStyle()
-        )
+        print_formatted_text(self.vt100_output, formatted_text, self.style or DummyStyle())
 
     def send_above_prompt(self, formatted_text: AnyFormattedText) -> None:
         """
@@ -284,9 +280,7 @@ class TelnetServer:
         self,
         host: str = "127.0.0.1",
         port: int = 23,
-        interact: Callable[
-            [TelnetConnection], Coroutine[Any, Any, None]
-        ] = _dummy_interact,
+        interact: Callable[[TelnetConnection], Coroutine[Any, Any, None]] = _dummy_interact,
         encoding: str = "utf-8",
         style: BaseStyle | None = None,
         enable_cpr: bool = True,
@@ -321,9 +315,7 @@ class TelnetServer:
             actually listening.
         """
         socket = self._create_socket(self.host, self.port)
-        logger.info(
-            "Listening for telnet connections on %s port %r", self.host, self.port
-        )
+        logger.info("Listening for telnet connections on %s port %r", self.host, self.port)
 
         get_running_loop().add_reader(socket, lambda: self._accept(socket))
 

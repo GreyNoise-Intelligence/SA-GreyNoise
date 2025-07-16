@@ -12,12 +12,10 @@ from __future__ import annotations
 import asyncio
 import contextvars
 import logging
-
 from typing import Any, Callable
 
 from ._base import BoundLoggerBase
 from .typing import EventDict, FilteringBoundLogger
-
 
 # Adapted from the stdlib
 CRITICAL = 50
@@ -40,16 +38,10 @@ _NAME_TO_LEVEL = {
     "notset": NOTSET,
 }
 
-_LEVEL_TO_NAME = {
-    v: k
-    for k, v in _NAME_TO_LEVEL.items()
-    if k not in ("warn", "exception", "notset")
-}
+_LEVEL_TO_NAME = {v: k for k, v in _NAME_TO_LEVEL.items() if k not in ("warn", "exception", "notset")}
 
 
-def add_log_level(
-    logger: logging.Logger, method_name: str, event_dict: EventDict
-) -> EventDict:
+def add_log_level(logger: logging.Logger, method_name: str, event_dict: EventDict) -> EventDict:
     """
     Add the log level to the event dict under the ``level`` key.
 
@@ -165,9 +157,7 @@ def _make_filtering_bound_logger(min_level: int) -> type[FilteringBoundLogger]:
             ctx = contextvars.copy_context()
             await asyncio.get_running_loop().run_in_executor(
                 None,
-                lambda: ctx.run(
-                    lambda: self._proxy_to_logger(name, event, **kw)
-                ),
+                lambda: ctx.run(lambda: self._proxy_to_logger(name, event, **kw)),
             )
 
         meth.__name__ = name
@@ -185,9 +175,7 @@ def _make_filtering_bound_logger(min_level: int) -> type[FilteringBoundLogger]:
 
         return self._proxy_to_logger(name, event % args, **kw)
 
-    async def alog(
-        self: Any, level: int, event: str, *args: Any, **kw: Any
-    ) -> Any:
+    async def alog(self: Any, level: int, event: str, *args: Any, **kw: Any) -> Any:
         if level < min_level:
             return None
         name = _LEVEL_TO_NAME[level]
@@ -214,8 +202,7 @@ def _make_filtering_bound_logger(min_level: int) -> type[FilteringBoundLogger]:
     meths["amsg"] = meths["ainfo"]
 
     return type(
-        "BoundLoggerFilteringAt%s"
-        % (_LEVEL_TO_NAME.get(min_level, "Notset").capitalize()),
+        "BoundLoggerFilteringAt%s" % (_LEVEL_TO_NAME.get(min_level, "Notset").capitalize()),
         (BoundLoggerBase,),
         meths,
     )

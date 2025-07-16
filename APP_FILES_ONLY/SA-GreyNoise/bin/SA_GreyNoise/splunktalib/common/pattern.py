@@ -29,8 +29,7 @@ def singleton(class_):
     Singleton decoorator function.
     """
     warnings.warn(
-        "This function is deprecated. "
-        "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
+        "This function is deprecated. " "Please see https://github.com/splunk/addonfactory-ta-library-python/issues/38",
         DeprecationWarning,
         stacklevel=2,
     )

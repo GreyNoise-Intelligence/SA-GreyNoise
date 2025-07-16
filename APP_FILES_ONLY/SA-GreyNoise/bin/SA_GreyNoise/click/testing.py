@@ -8,9 +8,7 @@ import tempfile
 import typing as t
 from types import TracebackType
 
-from . import formatting
-from . import termui
-from . import utils
+from . import _compat, formatting, termui, utils
 from ._compat import _find_binary_reader
 
 if t.TYPE_CHECKING:
@@ -62,9 +60,7 @@ def _pause_echo(stream: t.Optional[EchoingStdin]) -> t.Iterator[None]:
 
 
 class _NamedTextIOWrapper(io.TextIOWrapper):
-    def __init__(
-        self, buffer: t.BinaryIO, name: str, mode: str, **kwargs: t.Any
-    ) -> None:
+    def __init__(self, buffer: t.BinaryIO, name: str, mode: str, **kwargs: t.Any) -> None:
         super().__init__(buffer, **kwargs)
         self._name = name
         self._mode = mode
@@ -78,9 +74,7 @@ class _NamedTextIOWrapper(io.TextIOWrapper):
         return self._mode
 
 
-def make_input_stream(
-    input: t.Optional[t.Union[str, bytes, t.IO[t.Any]]], charset: str
-) -> t.BinaryIO:
+def make_input_stream(input: t.Optional[t.Union[str, bytes, t.IO[t.Any]]], charset: str) -> t.BinaryIO:
     # Is already an input stream.
     if hasattr(input, "read"):
         rv = _find_binary_reader(t.cast(t.IO[t.Any], input))
@@ -109,9 +103,7 @@ class Result:
         return_value: t.Any,
         exit_code: int,
         exception: t.Optional[BaseException],
-        exc_info: t.Optional[
-            t.Tuple[t.Type[BaseException], BaseException, TracebackType]
-        ] = None,
+        exc_info: t.Optional[t.Tuple[t.Type[BaseException], BaseException, TracebackType]] = None,
     ):
         #: The runner that created the result
         self.runner = runner
@@ -138,18 +130,14 @@ class Result:
     @property
     def stdout(self) -> str:
         """The standard output as unicode string."""
-        return self.stdout_bytes.decode(self.runner.charset, "replace").replace(
-            "\r\n", "\n"
-        )
+        return self.stdout_bytes.decode(self.runner.charset, "replace").replace("\r\n", "\n")
 
     @property
     def stderr(self) -> str:
         """The standard error as unicode string."""
         if self.stderr_bytes is None:
             raise ValueError("stderr not separately captured")
-        return self.stderr_bytes.decode(self.runner.charset, "replace").replace(
-            "\r\n", "\n"
-        )
+        return self.stderr_bytes.decode(self.runner.charset, "replace").replace("\r\n", "\n")
 
     def __repr__(self) -> str:
         exc_str = repr(self.exception) if self.exception else "okay"
@@ -244,22 +232,16 @@ class CliRunner:
         bytes_output = io.BytesIO()
 
         if self.echo_stdin:
-            bytes_input = echo_input = t.cast(
-                t.BinaryIO, EchoingStdin(bytes_input, bytes_output)
-            )
+            bytes_input = echo_input = t.cast(t.BinaryIO, EchoingStdin(bytes_input, bytes_output))
 
-        sys.stdin = text_input = _NamedTextIOWrapper(
-            bytes_input, encoding=self.charset, name="<stdin>", mode="r"
-        )
+        sys.stdin = text_input = _NamedTextIOWrapper(bytes_input, encoding=self.charset, name="<stdin>", mode="r")
 
         if self.echo_stdin:
             # Force unbuffered reads, otherwise TextIOWrapper reads a
             # large chunk which is echoed early.
             text_input._CHUNK_SIZE = 1  # type: ignore
 
-        sys.stdout = _NamedTextIOWrapper(
-            bytes_output, encoding=self.charset, name="<stdout>", mode="w"
-        )
+        sys.stdout = _NamedTextIOWrapper(bytes_output, encoding=self.charset, name="<stdout>", mode="w")
 
         bytes_error = None
         if self.mix_stderr:
@@ -300,9 +282,7 @@ class CliRunner:
 
         default_color = color
 
-        def should_strip_ansi(
-            stream: t.Optional[t.IO[t.Any]] = None, color: t.Optional[bool] = None
-        ) -> bool:
+        def should_strip_ansi(stream: t.Optional[t.IO[t.Any]] = None, color: t.Optional[bool] = None) -> bool:
             if color is None:
                 return not default_color
             return not color
@@ -311,10 +291,12 @@ class CliRunner:
         old_hidden_prompt_func = termui.hidden_prompt_func
         old__getchar_func = termui._getchar
         old_should_strip_ansi = utils.should_strip_ansi  # type: ignore
+        old__compat_should_strip_ansi = _compat.should_strip_ansi
         termui.visible_prompt_func = visible_input
         termui.hidden_prompt_func = hidden_input
         termui._getchar = _getchar
         utils.should_strip_ansi = should_strip_ansi  # type: ignore
+        _compat.should_strip_ansi = should_strip_ansi
 
         old_env = {}
         try:
@@ -344,6 +326,7 @@ class CliRunner:
             termui.hidden_prompt_func = old_hidden_prompt_func
             termui._getchar = old__getchar_func
             utils.should_strip_ansi = old_should_strip_ansi  # type: ignore
+            _compat.should_strip_ansi = old__compat_should_strip_ansi
             formatting.FORCED_WIDTH = old_forced_width
 
     def invoke(
@@ -448,9 +431,7 @@ class CliRunner:
         )
 
     @contextlib.contextmanager
-    def isolated_filesystem(
-        self, temp_dir: t.Optional[t.Union[str, "os.PathLike[str]"]] = None
-    ) -> t.Iterator[str]:
+    def isolated_filesystem(self, temp_dir: t.Optional[t.Union[str, "os.PathLike[str]"]] = None) -> t.Iterator[str]:
         """A context manager that creates a temporary directory and
         changes the current working directory to it. This isolates tests
         that affect the contents of the CWD to prevent them from
@@ -475,5 +456,5 @@ class CliRunner:
             if temp_dir is None:
                 try:
                     shutil.rmtree(dt)
-                except OSError:  # noqa: B014
+                except OSError:
                     pass

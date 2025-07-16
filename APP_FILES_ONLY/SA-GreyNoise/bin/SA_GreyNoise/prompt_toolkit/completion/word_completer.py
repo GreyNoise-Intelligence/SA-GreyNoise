@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Mapping, Pattern
+from typing import Callable, Iterable, Mapping, Pattern, Sequence
 
 from prompt_toolkit.completion import CompleteEvent, Completer, Completion
 from prompt_toolkit.document import Document
@@ -33,7 +33,7 @@ class WordCompleter(Completer):
 
     def __init__(
         self,
-        words: list[str] | Callable[[], list[str]],
+        words: Sequence[str] | Callable[[], Sequence[str]],
         ignore_case: bool = False,
         display_dict: Mapping[str, AnyFormattedText] | None = None,
         meta_dict: Mapping[str, AnyFormattedText] | None = None,
@@ -53,9 +53,7 @@ class WordCompleter(Completer):
         self.match_middle = match_middle
         self.pattern = pattern
 
-    def get_completions(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> Iterable[Completion]:
+    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
         # Get list of words.
         words = self.words
         if callable(words):
@@ -65,9 +63,7 @@ class WordCompleter(Completer):
         if self.sentence:
             word_before_cursor = document.text_before_cursor
         else:
-            word_before_cursor = document.get_word_before_cursor(
-                WORD=self.WORD, pattern=self.pattern
-            )
+            word_before_cursor = document.get_word_before_cursor(WORD=self.WORD, pattern=self.pattern)
 
         if self.ignore_case:
             word_before_cursor = word_before_cursor.lower()

@@ -10,7 +10,6 @@ from asyncio import get_running_loop
 from typing import Any, Callable, Coroutine, TextIO, cast
 
 import asyncssh
-
 from prompt_toolkit.application.current import AppSession, create_app_session
 from prompt_toolkit.data_structures import Size
 from prompt_toolkit.input import PipeInput, create_pipe_input
@@ -92,9 +91,7 @@ class PromptToolkitSSHSession(asyncssh.SSHServerSession):  # type: ignore
 
         term = self._chan.get_terminal_type()
 
-        self._output = Vt100_Output(
-            self.stdout, self._get_size, term=term, enable_cpr=self.enable_cpr
-        )
+        self._output = Vt100_Output(self.stdout, self._get_size, term=term, enable_cpr=self.enable_cpr)
 
         with create_pipe_input() as self._input:
             with create_app_session(input=self._input, output=self._output) as session:
@@ -108,9 +105,7 @@ class PromptToolkitSSHSession(asyncssh.SSHServerSession):  # type: ignore
                     self._chan.close()
                     self._input.close()
 
-    def terminal_size_changed(
-        self, width: int, height: int, pixwidth: object, pixheight: object
-    ) -> None:
+    def terminal_size_changed(self, width: int, height: int, pixwidth: object, pixheight: object) -> None:
         # Send resize event to the current application.
         if self.app_session and self.app_session.app:
             self.app_session.app._on_resize()

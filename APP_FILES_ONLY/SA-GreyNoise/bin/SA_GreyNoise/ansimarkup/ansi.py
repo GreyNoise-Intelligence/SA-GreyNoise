@@ -1,5 +1,5 @@
+from colorama import Back, Fore, Style
 from colorama.ansi import AnsiCodes
-from colorama import Fore, Back, Style
 
 
 class AnsiExtendedStyle(AnsiCodes):

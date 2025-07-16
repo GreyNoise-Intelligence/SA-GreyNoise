@@ -248,9 +248,7 @@ class Style(BaseStyle):
         return self._style_rules
 
     @classmethod
-    def from_dict(
-        cls, style_dict: dict[str, str], priority: Priority = default_priority
-    ) -> Style:
+    def from_dict(cls, style_dict: dict[str, str], priority: Priority = default_priority) -> Style:
         """
         :param style_dict: Style dictionary.
         :param priority: `Priority` value.
@@ -265,9 +263,7 @@ class Style(BaseStyle):
         else:
             return cls(list(style_dict.items()))
 
-    def get_attrs_for_style_str(
-        self, style_str: str, default: Attrs = DEFAULT_ATTRS
-    ) -> Attrs:
+    def get_attrs_for_style_str(self, style_str: str, default: Attrs = DEFAULT_ATTRS) -> Attrs:
         """
         Get `Attrs` for the given style string.
         """
@@ -392,9 +388,7 @@ class _MergedStyle(BaseStyle):
             style_rules.extend(s.style_rules)
         return style_rules
 
-    def get_attrs_for_style_str(
-        self, style_str: str, default: Attrs = DEFAULT_ATTRS
-    ) -> Attrs:
+    def get_attrs_for_style_str(self, style_str: str, default: Attrs = DEFAULT_ATTRS) -> Attrs:
         return self._merged_style.get_attrs_for_style_str(style_str, default)
 
     def invalidation_hash(self) -> Hashable:

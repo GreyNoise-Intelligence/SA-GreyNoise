@@ -6,7 +6,7 @@ import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
 import utility
 import validator
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise_constants import INTEGRATION_NAME
 from greynoise_exceptions import APIKeyNotFoundError
 from splunklib.binding import HTTPError
@@ -19,7 +19,7 @@ class GNMultiCommand(EventingCommand):
     gnmulti - Transforming Command.
 
     Transforming command that adds the noise and RIOT status information to each event.
-    Data pulled from: /v2/noise/multi/quick
+    Data pulled from: /v3/ip
 
     **Syntax**::
     `index=firewall | gnmulti ip_field="ip"
@@ -39,6 +39,46 @@ class GNMultiCommand(EventingCommand):
 
     api_validation_flag = False
 
+    def __init__(self):
+        """Initialize custom command class."""
+        super(GNMultiCommand, self).__init__()
+        self.api_key = None
+        self.proxy = None
+        self.api_client = None
+
+    def initialize_api(self, session_key, logger):
+        """Initialize API key, proxy and validate API key."""
+        try:
+            message = ""
+            self.proxy = utility.get_proxy(session_key, logger=logger)
+            self.api_key = utility.get_api_key(session_key, logger=logger)
+        except APIKeyNotFoundError as e:
+            message = str(e)
+        except HTTPError as e:
+            message = str(e)
+
+        if message:
+            logger.error("Error occurred while retrieving Proxy and/or API key details, Error: {}".format(message))
+            raise Exception(message)
+
+        # API key validation
+        if not self.api_validation_flag:
+            api_key_validation, message = utility.validate_api_key(self.api_key, logger, self.proxy)
+            logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
+            self.api_validation_flag = True
+            if not api_key_validation:
+                logger.info(message)
+                raise Exception(message)
+
+        # Initialize API client
+        if "http" in self.proxy:
+            api_config = APIConfig(
+                api_key=self.api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=self.proxy
+            )
+        else:
+            api_config = APIConfig(api_key=self.api_key, timeout=120, integration_name=INTEGRATION_NAME)
+        self.api_client = GreyNoise(api_config)
+
     def transform(self, records):
         """Method that processes and yield event records to the Splunk events pipeline."""
         logger = utility.setup_logger(
@@ -47,9 +87,8 @@ class GNMultiCommand(EventingCommand):
 
         # Enter the mechanism only when the Search is complete and all the events are available
         if self.search_results_info and not self.metadata.preview:
-            EVENTS_PER_CHUNK = 5000
-            THREADS = 3
-            USE_CACHE = False
+            EVENTS_PER_CHUNK = 50000
+            THREADS = 1
             ip_field = self.ip_field
 
             logger.info(
@@ -69,64 +108,25 @@ class GNMultiCommand(EventingCommand):
                     self.write_error(str(e))
                     exit(1)
 
-                try:
-                    message = ""
-                    proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
-                    api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
-                except APIKeyNotFoundError as e:
-                    message = str(e)
-                except HTTPError as e:
-                    message = str(e)
-
-                if message:
-                    self.write_error(message)
-                    logger.error("Error occurred while retrieving API key, Error: {}".format(message))
-                    exit(1)
-
-                # API key validation
-                if not self.api_validation_flag:
-                    api_key_validation, message = utility.validate_api_key(api_key, logger, proxy)
-                    logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
-                    self.api_validation_flag = True
-                    if not api_key_validation:
-                        logger.info(message)
-                        self.write_error(message)
+                # Initialize API if not already done
+                if not self.api_client:
+                    try:
+                        self.initialize_api(self._metadata.searchinfo.session_key, logger)
+                    except Exception as e:
+                        self.write_error(str(e))
                         exit(1)
 
                 # Divide all the records in the form of dict of tuples having chunk_index as a key
                 # {<chunk_index>: (<records>, <All the ips present in records>)}
                 chunk_dict = event_generator.batch(records, ip_field, EVENTS_PER_CHUNK, logger)
-                logger.debug("Successfully divided events into chunks")
-
-                # This means there are only 1000 or below IPs to call in the entire bunch of records
-                # Use one thread with single thread with caching mechanism enabled for the chunk
-                if len(chunk_dict) == 1:
-                    logger.info(
-                        "Less then 1000 distinct IPs are present, optimizing the IP requests call to GreyNoise API..."
-                    )
-                    THREADS = 1
-                    USE_CACHE = True
-
-                # Opting timeout 120 seconds for the requests
-                if "http" in proxy:
-                    api_client = GreyNoise(
-                        api_key=api_key,
-                        timeout=120,
-                        use_cache=USE_CACHE,
-                        integration_name=INTEGRATION_NAME,
-                        proxy=proxy,
-                    )
-                else:
-                    api_client = GreyNoise(
-                        api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name=INTEGRATION_NAME
-                    )
+                logger.debug(f"Successfully divided events into {len(chunk_dict)} chunk(s)")
 
                 # When no records found, batch will return {0:([],[])}
                 if len(list(chunk_dict.values())[0][0]) >= 1:
                     tot_time_start = time.time()
                     for event in event_generator.get_all_events(
                         self._metadata.searchinfo.session_key,
-                        api_client,
+                        self.api_client,
                         "multi",
                         ip_field,
                         chunk_dict,
@@ -151,10 +151,6 @@ class GNMultiCommand(EventingCommand):
                     "Exception occurred while adding the noise and RIOT status of the "
                     "IP addresses to events. See greynoise_main.log for more details."
                 )
-
-    def __init__(self):
-        """Initialize custom command class."""
-        super(GNMultiCommand, self).__init__()
 
 
 dispatch(GNMultiCommand, sys.argv, sys.stdin, sys.stdout, __name__)

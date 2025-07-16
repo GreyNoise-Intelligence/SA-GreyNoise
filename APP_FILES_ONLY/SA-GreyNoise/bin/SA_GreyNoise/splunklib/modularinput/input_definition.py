@@ -13,7 +13,9 @@
 # under the License.
 
 import xml.etree.ElementTree as ET
+
 from .utils import parse_xml_data
+
 
 class InputDefinition:
     """``InputDefinition`` encodes the XML defining inputs that Splunk passes to
@@ -24,7 +26,8 @@ class InputDefinition:
         i = InputDefinition()
 
     """
-    def __init__ (self):
+
+    def __init__(self):
         self.metadata = {}
         self.inputs = {}
 

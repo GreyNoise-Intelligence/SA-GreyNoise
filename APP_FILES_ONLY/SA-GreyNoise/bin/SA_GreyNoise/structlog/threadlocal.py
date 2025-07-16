@@ -19,7 +19,6 @@ import sys
 import threading
 import uuid
 import warnings
-
 from typing import Any, Generator, Iterator, TypeVar
 
 import structlog
@@ -53,9 +52,7 @@ def _deprecated() -> None:
     callsite = ""
     try:
         f = sys._getframe()
-        callsite = f.f_back.f_back.f_globals[  # type: ignore[union-attr]
-            "__name__"
-        ]
+        callsite = f.f_back.f_back.f_globals["__name__"]  # type: ignore[union-attr]
     except Exception:  # pragma: no cover
         pass
 
@@ -71,8 +68,7 @@ def _deprecated() -> None:
         stacklevel += 2
 
     warnings.warn(
-        "`structlog.threadlocal` is deprecated, please use "
-        "`structlog.contextvars` instead.",
+        "`structlog.threadlocal` is deprecated, please use " "`structlog.contextvars` instead.",
         DeprecationWarning,
         stacklevel=stacklevel,
     )
@@ -89,9 +85,7 @@ def wrap_dict(dict_class: type[Context]) -> type[Context]:
     .. deprecated:: 22.1.0
     """
     _deprecated()
-    Wrapped = type(
-        "WrappedDict-" + str(uuid.uuid4()), (_ThreadLocalDictWrapper,), {}
-    )
+    Wrapped = type("WrappedDict-" + str(uuid.uuid4()), (_ThreadLocalDictWrapper,), {})
     Wrapped._tl = ThreadLocal()  # type: ignore[attr-defined]
     Wrapped._dict_class = dict_class  # type: ignore[attr-defined]
 
@@ -133,9 +127,7 @@ def as_immutable(logger: TLLogger) -> TLLogger:
 
 
 @contextlib.contextmanager
-def tmp_bind(
-    logger: TLLogger, **tmp_values: Any
-) -> Generator[TLLogger, None, None]:
+def tmp_bind(logger: TLLogger, **tmp_values: Any) -> Generator[TLLogger, None, None]:
     """
     Bind *tmp_values* to *logger* & memorize current state. Rewind afterwards.
 
@@ -250,9 +242,7 @@ def get_merged_threadlocal(bound_logger: BindableLogger) -> Context:
     return ctx
 
 
-def merge_threadlocal(
-    logger: WrappedLogger, method_name: str, event_dict: EventDict
-) -> EventDict:
+def merge_threadlocal(logger: WrappedLogger, method_name: str, event_dict: EventDict) -> EventDict:
     """
     A processor that merges in a global (thread-local) context.
 

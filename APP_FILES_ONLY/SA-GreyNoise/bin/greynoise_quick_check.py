@@ -4,6 +4,7 @@ greynoise_quick_check.py .
 Python script to gather intention of IP address via GreyNoise quick check endpoint.
 
 """
+
 from __future__ import print_function
 
 import json

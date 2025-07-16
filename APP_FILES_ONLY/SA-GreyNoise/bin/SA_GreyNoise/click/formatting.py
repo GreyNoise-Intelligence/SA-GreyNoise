@@ -19,9 +19,7 @@ def measure_table(rows: t.Iterable[t.Tuple[str, str]]) -> t.Tuple[int, ...]:
     return tuple(y for x, y in sorted(widths.items()))
 
 
-def iter_rows(
-    rows: t.Iterable[t.Tuple[str, str]], col_count: int
-) -> t.Iterator[t.Tuple[str, ...]]:
+def iter_rows(rows: t.Iterable[t.Tuple[str, str]], col_count: int) -> t.Iterator[t.Tuple[str, ...]]:
     for row in rows:
         yield row + ("",) * (col_count - len(row))
 
@@ -142,9 +140,7 @@ class HelpFormatter:
         """Decreases the indentation."""
         self.current_indent -= self.indent_increment
 
-    def write_usage(
-        self, prog: str, args: str = "", prefix: t.Optional[str] = None
-    ) -> None:
+    def write_usage(self, prog: str, args: str = "", prefix: t.Optional[str] = None) -> None:
         """Writes a usage line into the buffer.
 
         :param prog: the program name.
@@ -174,11 +170,7 @@ class HelpFormatter:
             self.write(usage_prefix)
             self.write("\n")
             indent = " " * (max(self.current_indent, term_len(prefix)) + 4)
-            self.write(
-                wrap_text(
-                    args, text_width, initial_indent=indent, subsequent_indent=indent
-                )
-            )
+            self.write(wrap_text(args, text_width, initial_indent=indent, subsequent_indent=indent))
 
         self.write("\n")
 

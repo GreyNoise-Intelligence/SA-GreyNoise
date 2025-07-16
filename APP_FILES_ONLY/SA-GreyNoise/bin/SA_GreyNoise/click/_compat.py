@@ -59,9 +59,7 @@ class _NonClosingTextIOWrapper(io.TextIOWrapper):
         force_writable: bool = False,
         **extra: t.Any,
     ) -> None:
-        self._stream = stream = t.cast(
-            t.BinaryIO, _FixupStream(stream, force_readable, force_writable)
-        )
+        self._stream = stream = t.cast(t.BinaryIO, _FixupStream(stream, force_readable, force_writable))
         super().__init__(stream, encoding, errors, **extra)
 
     def __del__(self) -> None:
@@ -220,15 +218,11 @@ def _is_compat_stream_attr(stream: t.TextIO, attr: str, value: t.Optional[str]) 
     return stream_value == value or (value is None and stream_value is not None)
 
 
-def _is_compatible_text_stream(
-    stream: t.TextIO, encoding: t.Optional[str], errors: t.Optional[str]
-) -> bool:
+def _is_compatible_text_stream(stream: t.TextIO, encoding: t.Optional[str], errors: t.Optional[str]) -> bool:
     """Check if a stream's encoding and errors attributes are
     compatible with the desired values.
     """
-    return _is_compat_stream_attr(
-        stream, "encoding", encoding
-    ) and _is_compat_stream_attr(stream, "errors", errors)
+    return _is_compat_stream_attr(stream, "encoding", encoding) and _is_compat_stream_attr(stream, "errors", errors)
 
 
 def _force_correct_text_stream(
@@ -330,27 +324,21 @@ def get_binary_stderr() -> t.BinaryIO:
     return writer
 
 
-def get_text_stdin(
-    encoding: t.Optional[str] = None, errors: t.Optional[str] = None
-) -> t.TextIO:
+def get_text_stdin(encoding: t.Optional[str] = None, errors: t.Optional[str] = None) -> t.TextIO:
     rv = _get_windows_console_stream(sys.stdin, encoding, errors)
     if rv is not None:
         return rv
     return _force_correct_text_reader(sys.stdin, encoding, errors, force_readable=True)
 
 
-def get_text_stdout(
-    encoding: t.Optional[str] = None, errors: t.Optional[str] = None
-) -> t.TextIO:
+def get_text_stdout(encoding: t.Optional[str] = None, errors: t.Optional[str] = None) -> t.TextIO:
     rv = _get_windows_console_stream(sys.stdout, encoding, errors)
     if rv is not None:
         return rv
     return _force_correct_text_writer(sys.stdout, encoding, errors, force_writable=True)
 
 
-def get_text_stderr(
-    encoding: t.Optional[str] = None, errors: t.Optional[str] = None
-) -> t.TextIO:
+def get_text_stderr(encoding: t.Optional[str] = None, errors: t.Optional[str] = None) -> t.TextIO:
     rv = _get_windows_console_stream(sys.stderr, encoding, errors)
     if rv is not None:
         return rv
@@ -493,9 +481,7 @@ def _is_jupyter_kernel_output(stream: t.IO[t.Any]) -> bool:
     return stream.__class__.__module__.startswith("ipykernel.")
 
 
-def should_strip_ansi(
-    stream: t.Optional[t.IO[t.Any]] = None, color: t.Optional[bool] = None
-) -> bool:
+def should_strip_ansi(stream: t.Optional[t.IO[t.Any]] = None, color: t.Optional[bool] = None) -> bool:
     if color is None:
         if stream is None:
             stream = sys.stdin
@@ -516,9 +502,7 @@ if sys.platform.startswith("win") and WIN:
 
     _ansi_stream_wrappers: t.MutableMapping[t.TextIO, t.TextIO] = WeakKeyDictionary()
 
-    def auto_wrap_for_ansi(  # noqa: F811
-        stream: t.TextIO, color: t.Optional[bool] = None
-    ) -> t.TextIO:
+    def auto_wrap_for_ansi(stream: t.TextIO, color: t.Optional[bool] = None) -> t.TextIO:
         """Support ANSI color and style codes on Windows by wrapping a
         stream with colorama.
         """
@@ -614,9 +598,7 @@ binary_streams: t.Mapping[str, t.Callable[[], t.BinaryIO]] = {
     "stderr": get_binary_stderr,
 }
 
-text_streams: t.Mapping[
-    str, t.Callable[[t.Optional[str], t.Optional[str]], t.TextIO]
-] = {
+text_streams: t.Mapping[str, t.Callable[[t.Optional[str], t.Optional[str]], t.TextIO]] = {
     "stdin": get_text_stdin,
     "stdout": get_text_stdout,
     "stderr": get_text_stderr,

@@ -52,9 +52,8 @@ from .screen import _CHAR_CACHE, Screen, WritePosition
 from .utils import explode_text_fragments
 
 if TYPE_CHECKING:
-    from typing_extensions import Protocol, TypeGuard
-
     from prompt_toolkit.key_binding.key_bindings import NotImplementedOrNone
+    from typing_extensions import Protocol, TypeGuard
 
 
 __all__ = [
@@ -165,9 +164,7 @@ AnyContainer = Union[Container, "MagicContainer"]
 
 def _window_too_small() -> Window:
     "Create a `Window` that displays the 'Window too small' text."
-    return Window(
-        FormattedTextControl(text=[("class:window-too-small", " Window too small... ")])
-    )
+    return Window(FormattedTextControl(text=[("class:window-too-small", " Window too small... ")]))
 
 
 class VerticalAlign(Enum):
@@ -296,9 +293,7 @@ class HSplit(_Split):
 
         self.align = align
 
-        self._children_cache: SimpleCache[tuple[Container, ...], list[Container]] = (
-            SimpleCache(maxsize=1)
-        )
+        self._children_cache: SimpleCache[tuple[Container, ...], list[Container]] = SimpleCache(maxsize=1)
         self._remaining_space_window = Window()  # Dummy window.
 
     def preferred_width(self, max_available_width: int) -> Dimension:
@@ -315,9 +310,7 @@ class HSplit(_Split):
         if self.height is not None:
             return to_dimension(self.height)
 
-        dimensions = [
-            c.preferred_height(width, max_available_height) for c in self._all_children
-        ]
+        dimensions = [c.preferred_height(width, max_available_height) for c in self._all_children]
         return sum_layout_dimensions(dimensions)
 
     def reset(self) -> None:
@@ -378,9 +371,7 @@ class HSplit(_Split):
         z_index = z_index if self.z_index is None else self.z_index
 
         if sizes is None:
-            self.window_too_small.write_to_screen(
-                screen, mouse_handlers, write_position, style, erase_bg, z_index
-            )
+            self.window_too_small.write_to_screen(screen, mouse_handlers, write_position, style, erase_bg, z_index)
         else:
             #
             ypos = write_position.ypos
@@ -441,9 +432,7 @@ class HSplit(_Split):
         # the whole height.)
         sizes = [d.min for d in dimensions]
 
-        child_generator = take_using_weights(
-            items=list(range(len(dimensions))), weights=[d.weight for d in dimensions]
-        )
+        child_generator = take_using_weights(items=list(range(len(dimensions))), weights=[d.weight for d in dimensions])
 
         i = next(child_generator)
 
@@ -533,18 +522,14 @@ class VSplit(_Split):
 
         self.align = align
 
-        self._children_cache: SimpleCache[tuple[Container, ...], list[Container]] = (
-            SimpleCache(maxsize=1)
-        )
+        self._children_cache: SimpleCache[tuple[Container, ...], list[Container]] = SimpleCache(maxsize=1)
         self._remaining_space_window = Window()  # Dummy window.
 
     def preferred_width(self, max_available_width: int) -> Dimension:
         if self.width is not None:
             return to_dimension(self.width)
 
-        dimensions = [
-            c.preferred_width(max_available_width) for c in self._all_children
-        ]
+        dimensions = [c.preferred_width(max_available_width) for c in self._all_children]
 
         return sum_layout_dimensions(dimensions)
 
@@ -566,10 +551,7 @@ class VSplit(_Split):
         if sizes is None:
             return Dimension()
         else:
-            dimensions = [
-                c.preferred_height(s, max_available_height)
-                for s, c in zip(sizes, children)
-            ]
+            dimensions = [c.preferred_height(s, max_available_height) for s, c in zip(sizes, children)]
             return max_layout_dimensions(dimensions)
 
     def reset(self) -> None:
@@ -636,9 +618,7 @@ class VSplit(_Split):
         # the whole width.)
         sizes = [d.min for d in dimensions]
 
-        child_generator = take_using_weights(
-            items=list(range(len(dimensions))), weights=[d.weight for d in dimensions]
-        )
+        child_generator = take_using_weights(items=list(range(len(dimensions))), weights=[d.weight for d in dimensions])
 
         i = next(child_generator)
 
@@ -686,16 +666,13 @@ class VSplit(_Split):
 
         # If there is not enough space.
         if sizes is None:
-            self.window_too_small.write_to_screen(
-                screen, mouse_handlers, write_position, style, erase_bg, z_index
-            )
+            self.window_too_small.write_to_screen(screen, mouse_handlers, write_position, style, erase_bg, z_index)
             return
 
         # Calculate heights, take the largest possible, but not larger than
         # write_position.height.
         heights = [
-            child.preferred_height(width, write_position.height).preferred
-            for width, child in zip(sizes, children)
+            child.preferred_height(width, write_position.height).preferred for width, child in zip(sizes, children)
         ]
         height = max(write_position.height, min(write_position.height, max(heights)))
 
@@ -797,9 +774,7 @@ class FloatContainer(Container):
         style = parent_style + " " + to_str(self.style)
         z_index = z_index if self.z_index is None else self.z_index
 
-        self.content.write_to_screen(
-            screen, mouse_handlers, write_position, style, erase_bg, z_index
-        )
+        self.content.write_to_screen(screen, mouse_handlers, write_position, style, erase_bg, z_index)
 
         for number, fl in enumerate(self.floats):
             # z_index of a Float is computed by summing the z_index of the
@@ -815,9 +790,7 @@ class FloatContainer(Container):
             postpone = fl.xcursor is not None or fl.ycursor is not None
 
             if postpone:
-                new_z_index = (
-                    number + 10**8
-                )  # Draw as late as possible, but keep the order.
+                new_z_index = number + 10**8  # Draw as late as possible, but keep the order.
                 screen.draw_with_z_index(
                     z_index=new_z_index,
                     draw_func=partial(
@@ -858,12 +831,8 @@ class FloatContainer(Container):
         # relative to the write_position.)
         # Note: This should be inside the for-loop, because one float could
         #       set the cursor position to be used for the next one.
-        cpos = screen.get_menu_position(
-            fl.attach_to_window or get_app().layout.current_window
-        )
-        cursor_position = Point(
-            x=cpos.x - write_position.xpos, y=cpos.y - write_position.ypos
-        )
+        cpos = screen.get_menu_position(fl.attach_to_window or get_app().layout.current_window)
+        cursor_position = Point(x=cpos.x - write_position.xpos, y=cpos.y - write_position.ypos)
 
         fl_width = fl.get_width()
         fl_height = fl.get_height()
@@ -930,9 +899,7 @@ class FloatContainer(Container):
             ypos = cursor_position.y + (0 if fl.allow_cover_cursor else 1)
 
             if fl_height is None:
-                height = fl.content.preferred_height(
-                    width, write_position.height
-                ).preferred
+                height = fl.content.preferred_height(width, write_position.height).preferred
             else:
                 height = fl_height
 
@@ -1072,9 +1039,7 @@ class Float:
         self.xcursor = xcursor
         self.ycursor = ycursor
 
-        self.attach_to_window = (
-            to_window(attach_to_window) if attach_to_window else None
-        )
+        self.attach_to_window = to_window(attach_to_window) if attach_to_window else None
 
         self.content = to_container(content)
         self.hide_when_covering_content = hide_when_covering_content
@@ -1155,10 +1120,7 @@ class WindowRenderInfo:
 
     @property
     def visible_line_to_input_line(self) -> dict[int, int]:
-        return {
-            visible_line: rowcol[0]
-            for visible_line, rowcol in self.visible_line_to_row_col.items()
-        }
+        return {visible_line: rowcol[0] for visible_line, rowcol in self.visible_line_to_row_col.items()}
 
     @property
     def cursor_position(self) -> Point:
@@ -1246,19 +1208,13 @@ class WindowRenderInfo:
         else:
             return self.displayed_lines[-1]
 
-    def center_visible_line(
-        self, before_scroll_offset: bool = False, after_scroll_offset: bool = False
-    ) -> int:
+    def center_visible_line(self, before_scroll_offset: bool = False, after_scroll_offset: bool = False) -> int:
         """
         Like `first_visible_line`, but for the center visible line.
         """
         return (
             self.first_visible_line(after_scroll_offset)
-            + (
-                self.last_visible_line(before_scroll_offset)
-                - self.first_visible_line(after_scroll_offset)
-            )
-            // 2
+            + (self.last_visible_line(before_scroll_offset) - self.first_visible_line(after_scroll_offset)) // 2
         )
 
     @property
@@ -1273,10 +1229,7 @@ class WindowRenderInfo:
         """
         True when the full height is visible (There is no vertical scroll.)
         """
-        return (
-            self.vertical_scroll == 0
-            and self.last_visible_line() == self.content_height
-        )
+        return self.vertical_scroll == 0 and self.last_visible_line() == self.content_height
 
     @property
     def top_visible(self) -> bool:
@@ -1309,9 +1262,7 @@ class WindowRenderInfo:
         (The height that it would take, if this line became visible.)
         """
         if self.wrap_lines:
-            return self.ui_content.get_height_for_line(
-                lineno, self.window_width, self.window.get_line_prefix
-            )
+            return self.ui_content.get_height_for_line(lineno, self.window_width, self.window.get_line_prefix)
         else:
             return 1
 
@@ -1464,9 +1415,7 @@ class Window(Container):
         always_hide_cursor: FilterOrBool = False,
         cursorline: FilterOrBool = False,
         cursorcolumn: FilterOrBool = False,
-        colorcolumns: (
-            None | list[ColorColumn] | Callable[[], list[ColorColumn]]
-        ) = None,
+        colorcolumns: None | list[ColorColumn] | Callable[[], list[ColorColumn]] = None,
         align: WindowAlign | Callable[[], WindowAlign] = WindowAlign.LEFT,
         style: str | Callable[[], str] = "",
         char: None | str | Callable[[], str] = None,
@@ -1499,12 +1448,8 @@ class Window(Container):
         self.z_index = z_index
 
         # Cache for the screens generated by the margin.
-        self._ui_content_cache: SimpleCache[tuple[int, int, int], UIContent] = (
-            SimpleCache(maxsize=8)
-        )
-        self._margin_width_cache: SimpleCache[tuple[Margin, int], int] = SimpleCache(
-            maxsize=1
-        )
+        self._ui_content_cache: SimpleCache[tuple[int, int, int], UIContent] = SimpleCache(maxsize=8)
+        self._margin_width_cache: SimpleCache[tuple[Margin, int], int] = SimpleCache(maxsize=1)
 
         self.reset()
 
@@ -1566,9 +1511,7 @@ class Window(Container):
             total_margin_width = self._get_total_margin_width()
 
             # Window of the content. (Can be `None`.)
-            preferred_width = self.content.preferred_width(
-                max_available_width - total_margin_width
-            )
+            preferred_width = self.content.preferred_width(max_available_width - total_margin_width)
 
             if preferred_width is not None:
                 # Include width of the margins.
@@ -1654,9 +1597,7 @@ class Window(Container):
 
         min_ = dimension.min if dimension.min_specified else None
 
-        return Dimension(
-            min=min_, max=max_, preferred=preferred, weight=dimension.weight
-        )
+        return Dimension(min=min_, max=max_, preferred=preferred, weight=dimension.weight)
 
     def _get_ui_content(self, width: int, height: int) -> UIContent:
         """
@@ -1713,9 +1654,7 @@ class Window(Container):
         if self.dont_extend_height():
             write_position.height = min(
                 write_position.height,
-                self.preferred_height(
-                    write_position.width, write_position.height
-                ).preferred,
+                self.preferred_height(write_position.width, write_position.height).preferred,
             )
 
         # Draw
@@ -1756,16 +1695,12 @@ class Window(Container):
         total_margin_width = sum(left_margin_widths + right_margin_widths)
 
         # Render UserControl.
-        ui_content = self.content.create_content(
-            write_position.width - total_margin_width, write_position.height
-        )
+        ui_content = self.content.create_content(write_position.width - total_margin_width, write_position.height)
         assert isinstance(ui_content, UIContent)
 
         # Scroll content.
         wrap_lines = self.wrap_lines()
-        self._scroll(
-            ui_content, write_position.width - total_margin_width, write_position.height
-        )
+        self._scroll(ui_content, write_position.width - total_margin_width, write_position.height)
 
         # Erase background and fill with `char`.
         self._fill_bg(screen, write_position, erase_bg)
@@ -1890,9 +1825,7 @@ class Window(Container):
 
             # Turn it into a UIContent object.
             # already rendered those fragments using this size.)
-            return FormattedTextControl(fragments).create_content(
-                width + 1, write_position.height
-            )
+            return FormattedTextControl(fragments).create_content(width + 1, write_position.height)
 
         for m, width in zip(self.left_margins, left_margin_widths):
             if width > 0:  # (ConditionalMargin returns a zero width. -- Don't render.)
@@ -2030,9 +1963,7 @@ class Window(Container):
 
                         # Insert line prefix (continuation prompt).
                         if is_input and get_line_prefix:
-                            prompt = to_formatted_text(
-                                get_line_prefix(lineno, wrap_count)
-                            )
+                            prompt = to_formatted_text(get_line_prefix(lineno, wrap_count))
                             x, y = copy_line(prompt, lineno, x, y, is_input=False)
 
                         new_buffer_row = new_buffer[y + ypos]
@@ -2061,14 +1992,9 @@ class Window(Container):
                             # character is a multiwidth character, then
                             # merge it two positions back.
                             for pw in [2, 1]:  # Previous character width.
-                                if (
-                                    x - pw >= 0
-                                    and new_buffer_row[x + xpos - pw].width == pw
-                                ):
+                                if x - pw >= 0 and new_buffer_row[x + xpos - pw].width == pw:
                                     prev_char = new_buffer_row[x + xpos - pw]
-                                    char2 = _CHAR_CACHE[
-                                        prev_char.char + c, prev_char.style
-                                    ]
+                                    char2 = _CHAR_CACHE[prev_char.char + c, prev_char.style]
                                     new_buffer_row[x + xpos - pw] = char2
 
                         # Keep track of write position for each character.
@@ -2152,9 +2078,7 @@ class Window(Container):
         if ui_content.menu_position:
             new_screen.set_menu_position(
                 self,
-                cursor_pos_to_screen_pos(
-                    ui_content.menu_position.y, ui_content.menu_position.x
-                ),
+                cursor_pos_to_screen_pos(ui_content.menu_position.y, ui_content.menu_position.x),
             )
 
         # Update output screen height.
@@ -2162,9 +2086,7 @@ class Window(Container):
 
         return visible_line_to_row_col, rowcol_to_yx
 
-    def _fill_bg(
-        self, screen: Screen, write_position: WritePosition, erase_bg: bool
-    ) -> None:
+    def _fill_bg(self, screen: Screen, write_position: WritePosition, erase_bg: bool) -> None:
         """
         Erase/fill the background.
         (Useful for floats and when a `char` has been given.)
@@ -2184,9 +2106,7 @@ class Window(Container):
                 for x in range(wp.xpos, wp.xpos + wp.width):
                     row[x] = char_obj
 
-    def _apply_style(
-        self, new_screen: Screen, write_position: WritePosition, parent_style: str
-    ) -> None:
+    def _apply_style(self, new_screen: Screen, write_position: WritePosition, parent_style: str) -> None:
         # Apply `self.style`.
         style = parent_style + " " + to_str(self.style)
 
@@ -2210,9 +2130,7 @@ class Window(Container):
         digraph_char = self._get_digraph_char()
         if digraph_char:
             cpos = new_screen.get_cursor_position(self)
-            new_screen.data_buffer[cpos.y][cpos.x] = _CHAR_CACHE[
-                digraph_char, "class:digraph"
-            ]
+            new_screen.data_buffer[cpos.y][cpos.x] = _CHAR_CACHE[digraph_char, "class:digraph"]
 
     def _show_key_processor_key_buffer(self, new_screen: Screen) -> None:
         """
@@ -2233,13 +2151,9 @@ class Window(Container):
             # Display only if this is a 1 cell width character.
             if get_cwidth(data) == 1:
                 cpos = new_screen.get_cursor_position(self)
-                new_screen.data_buffer[cpos.y][cpos.x] = _CHAR_CACHE[
-                    data, "class:partial-key-binding"
-                ]
+                new_screen.data_buffer[cpos.y][cpos.x] = _CHAR_CACHE[data, "class:partial-key-binding"]
 
-    def _highlight_cursorlines(
-        self, new_screen: Screen, cpos: Point, x: int, y: int, width: int, height: int
-    ) -> None:
+    def _highlight_cursorlines(self, new_screen: Screen, cpos: Point, x: int, y: int, width: int, height: int) -> None:
         """
         Highlight cursor row/column.
         """
@@ -2253,18 +2167,14 @@ class Window(Container):
             row = data_buffer[cpos.y]
             for x in range(x, x + width):
                 original_char = row[x]
-                row[x] = _CHAR_CACHE[
-                    original_char.char, original_char.style + cursor_line_style
-                ]
+                row[x] = _CHAR_CACHE[original_char.char, original_char.style + cursor_line_style]
 
         # Highlight cursor column.
         if self.cursorcolumn():
             for y2 in range(y, y + height):
                 row = data_buffer[y2]
                 original_char = row[cpos.x]
-                row[cpos.x] = _CHAR_CACHE[
-                    original_char.char, original_char.style + cursor_column_style
-                ]
+                row[cpos.x] = _CHAR_CACHE[original_char.char, original_char.style + cursor_column_style]
 
         # Highlight color columns
         colorcolumns = self.colorcolumns
@@ -2281,9 +2191,7 @@ class Window(Container):
                 for y2 in range(y, y + height):
                     row = data_buffer[y2]
                     original_char = row[column + x]
-                    row[column + x] = _CHAR_CACHE[
-                        original_char.char, original_char.style + color_column_style
-                    ]
+                    row[column + x] = _CHAR_CACHE[original_char.char, original_char.style + color_column_style]
 
     def _copy_margin(
         self,
@@ -2313,9 +2221,7 @@ class Window(Container):
 
         func(ui_content, width, height)
 
-    def _scroll_when_linewrapping(
-        self, ui_content: UIContent, width: int, height: int
-    ) -> None:
+    def _scroll_when_linewrapping(self, ui_content: UIContent, width: int, height: int) -> None:
         """
         Scroll to make sure the cursor position is visible and that we maintain
         the requested scroll offset.
@@ -2361,13 +2267,10 @@ class Window(Container):
             self.vertical_scroll = ui_content.cursor_position.y
             self.vertical_scroll_2 = min(
                 text_before_height - 1,  # Keep the cursor visible.
-                line_height
-                - height,  # Avoid blank lines at the bottom when scrolling up again.
+                line_height - height,  # Avoid blank lines at the bottom when scrolling up again.
                 self.vertical_scroll_2,
             )
-            self.vertical_scroll_2 = max(
-                0, text_before_height - height, self.vertical_scroll_2
-            )
+            self.vertical_scroll_2 = max(0, text_before_height - height, self.vertical_scroll_2)
             return
         else:
             self.vertical_scroll_2 = 0
@@ -2425,18 +2328,14 @@ class Window(Container):
         # Note: the `min(topmost_visible, ...)` is to make sure that we
         # don't require scrolling up because of the bottom scroll offset,
         # when we are at the end of the document.
-        self.vertical_scroll = max(
-            self.vertical_scroll, min(topmost_visible, get_min_vertical_scroll())
-        )
+        self.vertical_scroll = max(self.vertical_scroll, min(topmost_visible, get_min_vertical_scroll()))
         self.vertical_scroll = min(self.vertical_scroll, get_max_vertical_scroll())
 
         # Disallow scrolling beyond bottom?
         if not self.allow_scroll_beyond_bottom():
             self.vertical_scroll = min(self.vertical_scroll, topmost_visible)
 
-    def _scroll_without_linewrapping(
-        self, ui_content: UIContent, width: int, height: int
-    ) -> None:
+    def _scroll_without_linewrapping(self, ui_content: UIContent, width: int, height: int) -> None:
         """
         Scroll to make sure the cursor position is visible and that we maintain
         the requested scroll offset.
@@ -2454,9 +2353,7 @@ class Window(Container):
             self.horizontal_scroll = 0
             return
         else:
-            current_line_text = fragment_list_to_text(
-                ui_content.get_line(cursor_position.y)
-            )
+            current_line_text = fragment_list_to_text(ui_content.get_line(cursor_position.y))
 
         def do_scroll(
             current_scroll: int,
@@ -2470,22 +2367,15 @@ class Window(Container):
             # Calculate the scroll offset to apply.
             # This can obviously never be more than have the screen size. Also, when the
             # cursor appears at the top or bottom, we don't apply the offset.
-            scroll_offset_start = int(
-                min(scroll_offset_start, window_size / 2, cursor_pos)
-            )
-            scroll_offset_end = int(
-                min(scroll_offset_end, window_size / 2, content_size - 1 - cursor_pos)
-            )
+            scroll_offset_start = int(min(scroll_offset_start, window_size / 2, cursor_pos))
+            scroll_offset_end = int(min(scroll_offset_end, window_size / 2, content_size - 1 - cursor_pos))
 
             # Prevent negative scroll offsets.
             if current_scroll < 0:
                 current_scroll = 0
 
             # Scroll back if we scrolled to much and there's still space to show more of the document.
-            if (
-                not self.allow_scroll_beyond_bottom()
-                and current_scroll > content_size - window_size
-            ):
+            if not self.allow_scroll_beyond_bottom() and current_scroll > content_size - window_size:
                 current_scroll = max(0, content_size - window_size)
 
             # Scroll up if cursor is before visible part.
@@ -2534,9 +2424,7 @@ class Window(Container):
             window_size=width - current_line_prefix_width,
             # We can only analyze the current line. Calculating the width off
             # all the lines is too expensive.
-            content_size=max(
-                get_cwidth(current_line_text), self.horizontal_scroll + width
-            ),
+            content_size=max(get_cwidth(current_line_text), self.horizontal_scroll + width),
         )
 
     def _mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
@@ -2578,10 +2466,7 @@ class Window(Container):
 
         if info.vertical_scroll > 0:
             # TODO: not entirely correct yet in case of line wrapping and long lines.
-            if (
-                info.cursor_position.y
-                >= info.window_height - 1 - info.configured_scroll_offsets.bottom
-            ):
+            if info.cursor_position.y >= info.window_height - 1 - info.configured_scroll_offsets.bottom:
                 self.content.move_cursor_up()
 
             self.vertical_scroll -= 1
@@ -2635,9 +2520,7 @@ class ConditionalContainer(Container):
         z_index: int | None,
     ) -> None:
         if self.filter():
-            return self.content.write_to_screen(
-                screen, mouse_handlers, write_position, parent_style, erase_bg, z_index
-            )
+            return self.content.write_to_screen(screen, mouse_handlers, write_position, parent_style, erase_bg, z_index)
 
     def get_children(self) -> list[Container]:
         return [self.content]
@@ -2682,9 +2565,7 @@ class DynamicContainer(Container):
         erase_bg: bool,
         z_index: int | None,
     ) -> None:
-        self._get_container().write_to_screen(
-            screen, mouse_handlers, write_position, parent_style, erase_bg, z_index
-        )
+        self._get_container().write_to_screen(screen, mouse_handlers, write_position, parent_style, erase_bg, z_index)
 
     def is_modal(self) -> bool:
         return False

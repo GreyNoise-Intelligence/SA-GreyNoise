@@ -26,9 +26,7 @@ _lexer_cache: t.MutableMapping[t.Tuple, "Lexer"] = LRUCache(50)  # type: ignore
 # static regular expressions
 whitespace_re = re.compile(r"\s+")
 newline_re = re.compile(r"(\r\n|\r|\n)")
-string_re = re.compile(
-    r"('([^'\\]*(?:\\.[^'\\]*)*)'" r'|"([^"\\]*(?:\\.[^"\\]*)*)")', re.S
-)
+string_re = re.compile(r"('([^'\\]*(?:\\.[^'\\]*)*)'" r'|"([^"\\]*(?:\\.[^"\\]*)*)")', re.S)
 integer_re = re.compile(
     r"""
     (
@@ -142,9 +140,7 @@ operators = {
 
 reverse_operators = {v: k for k, v in operators.items()}
 assert len(operators) == len(reverse_operators), "operators dropped"
-operator_re = re.compile(
-    f"({'|'.join(re.escape(x) for x in sorted(operators, key=lambda x: -len(x)))})"
-)
+operator_re = re.compile(f"({'|'.join(re.escape(x) for x in sorted(operators, key=lambda x: -len(x)))})")
 
 ignored_tokens = frozenset(
     [
@@ -157,9 +153,7 @@ ignored_tokens = frozenset(
         TOKEN_LINECOMMENT,
     ]
 )
-ignore_if_empty = frozenset(
-    [TOKEN_WHITESPACE, TOKEN_DATA, TOKEN_COMMENT, TOKEN_LINECOMMENT]
-)
+ignore_if_empty = frozenset([TOKEN_WHITESPACE, TOKEN_DATA, TOKEN_COMMENT, TOKEN_LINECOMMENT])
 
 
 def _describe_token_type(token_type: str) -> str:
@@ -256,13 +250,11 @@ class Failure:
     Used by the `Lexer` to specify known errors.
     """
 
-    def __init__(
-        self, message: str, cls: t.Type[TemplateSyntaxError] = TemplateSyntaxError
-    ) -> None:
+    def __init__(self, message: str, cls: t.Type[TemplateSyntaxError] = TemplateSyntaxError) -> None:
         self.message = message
         self.error_class = cls
 
-    def __call__(self, lineno: int, filename: str) -> "te.NoReturn":
+    def __call__(self, lineno: int, filename: t.Optional[str]) -> "te.NoReturn":
         raise self.error_class(self.message, lineno, filename)
 
 
@@ -329,7 +321,7 @@ class TokenStream:
         filename: t.Optional[str],
     ):
         self._iter = iter(generator)
-        self._pushed: "te.Deque[Token]" = deque()
+        self._pushed: te.Deque[Token] = deque()
         self.name = name
         self.filename = filename
         self.closed = False
@@ -514,13 +506,8 @@ class Lexer:
         self.newline_sequence = environment.newline_sequence
         self.keep_trailing_newline = environment.keep_trailing_newline
 
-        root_raw_re = (
-            rf"(?P<raw_begin>{block_start_re}(\-|\+|)\s*raw\s*"
-            rf"(?:\-{block_end_re}\s*|{block_end_re}))"
-        )
-        root_parts_re = "|".join(
-            [root_raw_re] + [rf"(?P<{n}>{r}(\-|\+|))" for n, r in root_tag_rules]
-        )
+        root_raw_re = rf"(?P<raw_begin>{block_start_re}(\-|\+|)\s*raw\s*" rf"(?:\-{block_end_re}\s*|{block_end_re}))"
+        root_parts_re = "|".join([root_raw_re] + [rf"(?P<{n}>{r}(\-|\+|))" for n, r in root_tag_rules])
 
         # global lexing rules
         self.rules: t.Dict[str, t.List[_Rule]] = {
@@ -537,10 +524,7 @@ class Lexer:
             # comments
             TOKEN_COMMENT_BEGIN: [
                 _Rule(
-                    c(
-                        rf"(.*?)((?:\+{comment_end_re}|\-{comment_end_re}\s*"
-                        rf"|{comment_end_re}{block_suffix_re}))"
-                    ),
+                    c(rf"(.*?)((?:\+{comment_end_re}|\-{comment_end_re}\s*" rf"|{comment_end_re}{block_suffix_re}))"),
                     (TOKEN_COMMENT, TOKEN_COMMENT_END),
                     "#pop",
                 ),
@@ -549,10 +533,7 @@ class Lexer:
             # blocks
             TOKEN_BLOCK_BEGIN: [
                 _Rule(
-                    c(
-                        rf"(?:\+{block_end_re}|\-{block_end_re}\s*"
-                        rf"|{block_end_re}{block_suffix_re})"
-                    ),
+                    c(rf"(?:\+{block_end_re}|\-{block_end_re}\s*" rf"|{block_end_re}{block_suffix_re})"),
                     TOKEN_BLOCK_END,
                     "#pop",
                 ),
@@ -581,10 +562,7 @@ class Lexer:
                 _Rule(c(r"(.)"), (Failure("Missing end of raw directive"),), None),
             ],
             # line statements
-            TOKEN_LINESTATEMENT_BEGIN: [
-                _Rule(c(r"\s*(\n|$)"), TOKEN_LINESTATEMENT_END, "#pop")
-            ]
-            + tag_rules,
+            TOKEN_LINESTATEMENT_BEGIN: [_Rule(c(r"\s*(\n|$)"), TOKEN_LINESTATEMENT_END, "#pop")] + tag_rules,
             # line comments
             TOKEN_LINECOMMENT_BEGIN: [
                 _Rule(
@@ -642,9 +620,7 @@ class Lexer:
                 value = value_str
 
                 if not value.isidentifier():
-                    raise TemplateSyntaxError(
-                        "Invalid character in identifier", lineno, name, filename
-                    )
+                    raise TemplateSyntaxError("Invalid character in identifier", lineno, name, filename)
             elif token == TOKEN_STRING:
                 # try to unescape string
                 try:
@@ -757,7 +733,7 @@ class Lexer:
 
                     for idx, token in enumerate(tokens):
                         # failure group
-                        if token.__class__ is Failure:
+                        if isinstance(token, Failure):
                             raise token(lineno, filename)
                         # bygroup is a bit more complex, in that case we
                         # yield for the current token the first named
@@ -770,15 +746,14 @@ class Lexer:
                                     break
                             else:
                                 raise RuntimeError(
-                                    f"{regex!r} wanted to resolve the token dynamically"
-                                    " but no group matched"
+                                    f"{regex!r} wanted to resolve the token dynamically" " but no group matched"
                                 )
                         # normal group
                         else:
                             data = groups[idx]
 
                             if data or token not in ignore_if_empty:
-                                yield lineno, token, data
+                                yield lineno, token, data  # type: ignore[misc]
 
                             lineno += data.count("\n") + newlines_stripped
                             newlines_stripped = 0
@@ -797,9 +772,7 @@ class Lexer:
                             balancing_stack.append("]")
                         elif data in ("}", ")", "]"):
                             if not balancing_stack:
-                                raise TemplateSyntaxError(
-                                    f"unexpected '{data}'", lineno, name, filename
-                                )
+                                raise TemplateSyntaxError(f"unexpected '{data}'", lineno, name, filename)
 
                             expected_op = balancing_stack.pop()
 
@@ -836,8 +809,7 @@ class Lexer:
                                 break
                         else:
                             raise RuntimeError(
-                                f"{regex!r} wanted to resolve the new state dynamically"
-                                f" but no group matched"
+                                f"{regex!r} wanted to resolve the new state dynamically" f" but no group matched"
                             )
                     # direct state name given
                     else:
@@ -848,9 +820,7 @@ class Lexer:
                 # this means a loop without break condition, avoid that and
                 # raise error
                 elif pos2 == pos:
-                    raise RuntimeError(
-                        f"{regex!r} yielded empty string without stack change"
-                    )
+                    raise RuntimeError(f"{regex!r} yielded empty string without stack change")
 
                 # publish new function and start again
                 pos = pos2
@@ -863,6 +833,4 @@ class Lexer:
                     return
 
                 # something went wrong
-                raise TemplateSyntaxError(
-                    f"unexpected char {source[pos]!r} at {pos}", lineno, name, filename
-                )
+                raise TemplateSyntaxError(f"unexpected char {source[pos]!r} at {pos}", lineno, name, filename)

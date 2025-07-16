@@ -14,14 +14,12 @@ https://github.com/Textualize/rich/blob/972dedff/rich/traceback.py
 from __future__ import annotations
 
 import os
-
 from dataclasses import asdict, dataclass, field
 from traceback import walk_tb
 from types import TracebackType
 from typing import Any, Tuple, Union
 
 from .typing import ExcInfo
-
 
 __all__ = [
     "ExceptionDictTransformer",
@@ -170,12 +168,11 @@ def extract(
                 filename=filename or "?",
                 lineno=line_no,
                 name=frame_summary.f_code.co_name,
-                locals={
-                    key: to_repr(value, max_string=locals_max_string)
-                    for key, value in frame_summary.f_locals.items()
-                }
-                if show_locals
-                else None,
+                locals=(
+                    {key: to_repr(value, max_string=locals_max_string) for key, value in frame_summary.f_locals.items()}
+                    if show_locals
+                    else None
+                ),
             )
             append(frame)
 
@@ -188,11 +185,7 @@ def extract(
             continue
 
         cause = exc_value.__context__
-        if (
-            cause
-            and cause.__traceback__
-            and not getattr(exc_value, "__suppress_context__", False)
-        ):
+        if cause and cause.__traceback__ and not getattr(exc_value, "__suppress_context__", False):
             exc_type = cause.__class__
             exc_value = cause
             traceback = cause.__traceback__
@@ -232,9 +225,7 @@ class ExceptionDictTransformer:
         max_frames: int = MAX_FRAMES,
     ) -> None:
         if locals_max_string < 0:
-            raise ValueError(
-                f'"locals_max_string" must be >= 0: {locals_max_string}'
-            )
+            raise ValueError(f'"locals_max_string" must be >= 0: {locals_max_string}')
         if max_frames < 2:
             raise ValueError(f'"max_frames" must be >= 2: {max_frames}')
         self.show_locals = show_locals
@@ -252,9 +243,7 @@ class ExceptionDictTransformer:
             if len(stack.frames) <= self.max_frames:
                 continue
 
-            half = (
-                self.max_frames // 2
-            )  # Force int division to handle odd numbers correctly
+            half = self.max_frames // 2  # Force int division to handle odd numbers correctly
             fake_frame = Frame(
                 filename="",
                 lineno=-1,

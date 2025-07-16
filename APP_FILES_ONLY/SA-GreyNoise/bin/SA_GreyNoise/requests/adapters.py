@@ -78,9 +78,7 @@ try:
     import ssl  # noqa: F401
 
     _preloaded_ssl_context = create_urllib3_context()
-    _preloaded_ssl_context.load_verify_locations(
-        extract_zipped_paths(DEFAULT_CA_BUNDLE_PATH)
-    )
+    _preloaded_ssl_context.load_verify_locations(extract_zipped_paths(DEFAULT_CA_BUNDLE_PATH))
 except ImportError:
     # Bypass default SSLContext creation when Python
     # interpreter isn't built with the ssl module.
@@ -103,9 +101,7 @@ def _urllib3_request_context(
     # to optimize performance on standard requests.
     poolmanager_kwargs = getattr(poolmanager, "connection_pool_kw", {})
     has_poolmanager_ssl_context = poolmanager_kwargs.get("ssl_context")
-    should_use_default_ssl_context = (
-        _preloaded_ssl_context is not None and not has_poolmanager_ssl_context
-    )
+    should_use_default_ssl_context = _preloaded_ssl_context is not None and not has_poolmanager_ssl_context
 
     cert_reqs = "CERT_REQUIRED"
     if verify is False:
@@ -140,9 +136,7 @@ class BaseAdapter:
     def __init__(self):
         super().__init__()
 
-    def send(
-        self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None
-    ):
+    def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):
         """Sends PreparedRequest object. Returns Response object.
 
         :param request: The :class:`PreparedRequest <PreparedRequest>` being sent.
@@ -233,13 +227,9 @@ class HTTPAdapter(BaseAdapter):
         for attr, value in state.items():
             setattr(self, attr, value)
 
-        self.init_poolmanager(
-            self._pool_connections, self._pool_maxsize, block=self._pool_block
-        )
+        self.init_poolmanager(self._pool_connections, self._pool_maxsize, block=self._pool_block)
 
-    def init_poolmanager(
-        self, connections, maxsize, block=DEFAULT_POOLBLOCK, **pool_kwargs
-    ):
+    def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK, **pool_kwargs):
         """Initializes a urllib3 PoolManager.
 
         This method should not be called from user code, and is only
@@ -325,10 +315,7 @@ class HTTPAdapter(BaseAdapter):
                 cert_loc = verify
 
                 if not os.path.exists(cert_loc):
-                    raise OSError(
-                        f"Could not find a suitable TLS CA certificate bundle, "
-                        f"invalid path: {cert_loc}"
-                    )
+                    raise OSError(f"Could not find a suitable TLS CA certificate bundle, " f"invalid path: {cert_loc}")
 
                 if not os.path.isdir(cert_loc):
                     conn.ca_certs = cert_loc
@@ -347,14 +334,9 @@ class HTTPAdapter(BaseAdapter):
                 conn.cert_file = cert
                 conn.key_file = None
             if conn.cert_file and not os.path.exists(conn.cert_file):
-                raise OSError(
-                    f"Could not find the TLS certificate file, "
-                    f"invalid path: {conn.cert_file}"
-                )
+                raise OSError(f"Could not find the TLS certificate file, " f"invalid path: {conn.cert_file}")
             if conn.key_file and not os.path.exists(conn.key_file):
-                raise OSError(
-                    f"Could not find the TLS key file, invalid path: {conn.key_file}"
-                )
+                raise OSError(f"Could not find the TLS key file, invalid path: {conn.key_file}")
 
     def build_response(self, req, resp):
         """Builds a :class:`Response <requests.Response>` object from a urllib3
@@ -476,19 +458,12 @@ class HTTPAdapter(BaseAdapter):
             proxy = prepend_scheme_if_needed(proxy, "http")
             proxy_url = parse_url(proxy)
             if not proxy_url.host:
-                raise InvalidProxyURL(
-                    "Please check proxy URL. It is malformed "
-                    "and could be missing the host."
-                )
+                raise InvalidProxyURL("Please check proxy URL. It is malformed " "and could be missing the host.")
             proxy_manager = self.proxy_manager_for(proxy)
-            conn = proxy_manager.connection_from_host(
-                **host_params, pool_kwargs=pool_kwargs
-            )
+            conn = proxy_manager.connection_from_host(**host_params, pool_kwargs=pool_kwargs)
         else:
             # Only scheme should be lower case
-            conn = self.poolmanager.connection_from_host(
-                **host_params, pool_kwargs=pool_kwargs
-            )
+            conn = self.poolmanager.connection_from_host(**host_params, pool_kwargs=pool_kwargs)
 
         return conn
 
@@ -519,10 +494,7 @@ class HTTPAdapter(BaseAdapter):
             proxy = prepend_scheme_if_needed(proxy, "http")
             proxy_url = parse_url(proxy)
             if not proxy_url.host:
-                raise InvalidProxyURL(
-                    "Please check proxy URL. It is malformed "
-                    "and could be missing the host."
-                )
+                raise InvalidProxyURL("Please check proxy URL. It is malformed " "and could be missing the host.")
             proxy_manager = self.proxy_manager_for(proxy)
             conn = proxy_manager.connection_from_url(url)
         else:
@@ -610,9 +582,7 @@ class HTTPAdapter(BaseAdapter):
 
         return headers
 
-    def send(
-        self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None
-    ):
+    def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):
         """Sends PreparedRequest object. Returns Response object.
 
         :param request: The :class:`PreparedRequest <PreparedRequest>` being sent.
@@ -630,9 +600,7 @@ class HTTPAdapter(BaseAdapter):
         """
 
         try:
-            conn = self.get_connection_with_tls_context(
-                request, verify, proxies=proxies, cert=cert
-            )
+            conn = self.get_connection_with_tls_context(request, verify, proxies=proxies, cert=cert)
         except LocationValueError as e:
             raise InvalidURL(e, request=request)
 

@@ -7,7 +7,7 @@ import sys
 import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import six
 from cim_actions import ModularAction
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise_constants import INTEGRATION_NAME
 from utility import get_api_key, get_log_level, get_proxy
 
@@ -38,12 +38,13 @@ class AlertBase(ModularAction):
         """Get api client."""
         api_key = get_api_key(self.session_key, self.logger)
         proxy = get_proxy(self.session_key, self.logger)
+        api_config = APIConfig(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
         if not api_key:
             self._handle_alert_exit(1)
         if "http" in proxy:
-            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_client = GreyNoise(api_config)
         else:
-            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+            api_client = GreyNoise(api_config)
         return api_client
 
     def handle_results(self):

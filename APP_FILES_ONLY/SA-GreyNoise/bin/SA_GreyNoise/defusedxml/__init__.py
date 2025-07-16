@@ -3,9 +3,8 @@
 # Copyright (c) 2013 by Christian Heimes <christian@python.org>
 # Licensed to PSF under a Contributor Agreement.
 # See https://www.python.org/psf/license for licensing details.
-"""Defuse XML bomb denial of service vulnerabilities
-"""
-from __future__ import print_function, absolute_import
+"""Defuse XML bomb denial of service vulnerabilities"""
+from __future__ import absolute_import, print_function
 
 import warnings
 
@@ -28,13 +27,7 @@ def defuse_stdlib():
 
     with warnings.catch_warnings():
         from . import cElementTree
-    from . import ElementTree
-    from . import minidom
-    from . import pulldom
-    from . import sax
-    from . import expatbuilder
-    from . import expatreader
-    from . import xmlrpc
+    from . import ElementTree, expatbuilder, expatreader, minidom, pulldom, sax, xmlrpc
 
     xmlrpc.monkey_patch()
     defused[xmlrpc] = None

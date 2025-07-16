@@ -99,29 +99,21 @@ class InputHookSelector(BaseSelector):
         asyncio.set_event_loop(loop)
     """
 
-    def __init__(
-        self, selector: BaseSelector, inputhook: Callable[[InputHookContext], None]
-    ) -> None:
+    def __init__(self, selector: BaseSelector, inputhook: Callable[[InputHookContext], None]) -> None:
         self.selector = selector
         self.inputhook = inputhook
         self._r, self._w = os.pipe()
 
-    def register(
-        self, fileobj: FileDescriptorLike, events: _EventMask, data: Any = None
-    ) -> SelectorKey:
+    def register(self, fileobj: FileDescriptorLike, events: _EventMask, data: Any = None) -> SelectorKey:
         return self.selector.register(fileobj, events, data=data)
 
     def unregister(self, fileobj: FileDescriptorLike) -> SelectorKey:
         return self.selector.unregister(fileobj)
 
-    def modify(
-        self, fileobj: FileDescriptorLike, events: _EventMask, data: Any = None
-    ) -> SelectorKey:
+    def modify(self, fileobj: FileDescriptorLike, events: _EventMask, data: Any = None) -> SelectorKey:
         return self.selector.modify(fileobj, events, data=None)
 
-    def select(
-        self, timeout: float | None = None
-    ) -> list[tuple[SelectorKey, _EventMask]]:
+    def select(self, timeout: float | None = None) -> list[tuple[SelectorKey, _EventMask]]:
         # If there are tasks in the current event loop,
         # don't run the input hook.
         if len(getattr(get_running_loop(), "_ready", [])) > 0:

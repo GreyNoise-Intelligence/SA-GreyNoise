@@ -3,6 +3,7 @@ This module contains implementations for the termui module. To keep the
 import time of Click down, some infrequently used functionality is
 placed in this module and only imported as needed.
 """
+
 import contextlib
 import math
 import os
@@ -11,16 +12,19 @@ import time
 import typing as t
 from gettext import gettext as _
 from io import StringIO
+from shutil import which
 from types import TracebackType
 
-from ._compat import _default_text_stdout
-from ._compat import CYGWIN
-from ._compat import get_best_encoding
-from ._compat import isatty
-from ._compat import open_stream
-from ._compat import strip_ansi
-from ._compat import term_len
-from ._compat import WIN
+from ._compat import (
+    CYGWIN,
+    WIN,
+    _default_text_stdout,
+    get_best_encoding,
+    isatty,
+    open_stream,
+    strip_ansi,
+    term_len,
+)
 from .exceptions import ClickException
 from .utils import echo
 
@@ -189,12 +193,7 @@ class ProgressBar(t.Generic[V]):
         else:
             chars = list(self.empty_char * (self.width or 1))
             if self.time_per_iteration != 0:
-                chars[
-                    int(
-                        (math.cos(self.pos * self.time_per_iteration) / 2.0 + 0.5)
-                        * self.width
-                    )
-                ] = self.fill_char
+                chars[int((math.cos(self.pos * self.time_per_iteration) / 2.0 + 0.5) * self.width)] = self.fill_char
             bar = "".join(chars)
         return bar
 
@@ -371,31 +370,40 @@ def pager(generator: t.Iterable[str], color: t.Optional[bool] = None) -> None:
     pager_cmd = (os.environ.get("PAGER", None) or "").strip()
     if pager_cmd:
         if WIN:
-            return _tempfilepager(generator, pager_cmd, color)
-        return _pipepager(generator, pager_cmd, color)
+            if _tempfilepager(generator, pager_cmd, color):
+                return
+        elif _pipepager(generator, pager_cmd, color):
+            return
     if os.environ.get("TERM") in ("dumb", "emacs"):
         return _nullpager(stdout, generator, color)
-    if WIN or sys.platform.startswith("os2"):
-        return _tempfilepager(generator, "more <", color)
-    if hasattr(os, "system") and os.system("(less) 2>/dev/null") == 0:
-        return _pipepager(generator, "less", color)
+    if (WIN or sys.platform.startswith("os2")) and _tempfilepager(generator, "more", color):
+        return
+    if _pipepager(generator, "less", color):
+        return
 
     import tempfile
 
     fd, filename = tempfile.mkstemp()
     os.close(fd)
     try:
-        if hasattr(os, "system") and os.system(f'more "{filename}"') == 0:
-            return _pipepager(generator, "more", color)
+        if _pipepager(generator, "more", color):
+            return
         return _nullpager(stdout, generator, color)
     finally:
         os.unlink(filename)
 
 
-def _pipepager(generator: t.Iterable[str], cmd: str, color: t.Optional[bool]) -> None:
+def _pipepager(generator: t.Iterable[str], cmd: str, color: t.Optional[bool]) -> bool:
     """Page through text by feeding it to another program.  Invoking a
     pager through this might support colors.
+
+    Returns True if the command was found, False otherwise and thus another
+    pager should be attempted.
     """
+    cmd_absolute = which(cmd)
+    if cmd_absolute is None:
+        return False
+
     import subprocess
 
     env = dict(os.environ)
@@ -411,19 +419,25 @@ def _pipepager(generator: t.Iterable[str], cmd: str, color: t.Optional[bool]) ->
         elif "r" in less_flags or "R" in less_flags:
             color = True
 
-    c = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, env=env)
-    stdin = t.cast(t.BinaryIO, c.stdin)
-    encoding = get_best_encoding(stdin)
+    c = subprocess.Popen(
+        [cmd_absolute],
+        shell=True,
+        stdin=subprocess.PIPE,
+        env=env,
+        errors="replace",
+        text=True,
+    )
+    assert c.stdin is not None
     try:
         for text in generator:
             if not color:
                 text = strip_ansi(text)
 
-            stdin.write(text.encode(encoding, "replace"))
+            c.stdin.write(text)
     except (OSError, KeyboardInterrupt):
         pass
     else:
-        stdin.close()
+        c.stdin.close()
 
     # Less doesn't respect ^C, but catches it for its own UI purposes (aborting
     # search or other commands inside less).
@@ -441,11 +455,25 @@ def _pipepager(generator: t.Iterable[str], cmd: str, color: t.Optional[bool]) ->
         else:
             break
 
+    return True
+
 
 def _tempfilepager(
-    generator: t.Iterable[str], cmd: str, color: t.Optional[bool]
-) -> None:
-    """Page through text by invoking a program on a temporary file."""
+    generator: t.Iterable[str],
+    cmd: str,
+    color: t.Optional[bool],
+) -> bool:
+    """Page through text by invoking a program on a temporary file.
+
+    Returns True if the command was found, False otherwise and thus another
+    pager should be attempted.
+    """
+    # Which is necessary for Windows, it is also recommended in the Popen docs.
+    cmd_absolute = which(cmd)
+    if cmd_absolute is None:
+        return False
+
+    import subprocess
     import tempfile
 
     fd, filename = tempfile.mkstemp()
@@ -457,15 +485,18 @@ def _tempfilepager(
     with open_stream(filename, "wb")[0] as f:
         f.write(text.encode(encoding))
     try:
-        os.system(f'{cmd} "{filename}"')
+        subprocess.call([cmd_absolute, filename])
+    except OSError:
+        # Command not found
+        pass
     finally:
         os.close(fd)
         os.unlink(filename)
 
+    return True
 
-def _nullpager(
-    stream: t.TextIO, generator: t.Iterable[str], color: t.Optional[bool]
-) -> None:
+
+def _nullpager(stream: t.TextIO, generator: t.Iterable[str], color: t.Optional[bool]) -> None:
     """Simply print unformatted text.  This is the ultimate fallback."""
     for text in generator:
         if not color:
@@ -496,7 +527,7 @@ class Editor:
         if WIN:
             return "notepad"
         for editor in "sensible-editor", "vim", "nano":
-            if os.system(f"which {editor} >/dev/null 2>&1") == 0:
+            if which(editor) is not None:
                 return editor
         return "vi"
 
@@ -514,13 +545,9 @@ class Editor:
             c = subprocess.Popen(f'{editor} "{filename}"', env=environ, shell=True)
             exit_code = c.wait()
             if exit_code != 0:
-                raise ClickException(
-                    _("{editor}: Editing failed").format(editor=editor)
-                )
+                raise ClickException(_("{editor}: Editing failed").format(editor=editor))
         except OSError as e:
-            raise ClickException(
-                _("{editor}: Editing failed: {e}").format(editor=editor, e=e)
-            ) from e
+            raise ClickException(_("{editor}: Editing failed: {e}").format(editor=editor, e=e)) from e
 
     def edit(self, text: t.Optional[t.AnyStr]) -> t.Optional[t.AnyStr]:
         import tempfile
@@ -595,22 +622,33 @@ def open_url(url: str, wait: bool = False, locate: bool = False) -> int:
             null.close()
     elif WIN:
         if locate:
-            url = _unquote_file(url.replace('"', ""))
-            args = f'explorer /select,"{url}"'
+            url = _unquote_file(url)
+            args = ["explorer", f"/select,{url}"]
         else:
-            url = url.replace('"', "")
-            wait_str = "/WAIT" if wait else ""
-            args = f'start {wait_str} "" "{url}"'
-        return os.system(args)
+            args = ["start"]
+            if wait:
+                args.append("/WAIT")
+            args.append("")
+            args.append(url)
+        try:
+            return subprocess.call(args)
+        except OSError:
+            # Command not found
+            return 127
     elif CYGWIN:
         if locate:
-            url = os.path.dirname(_unquote_file(url).replace('"', ""))
-            args = f'cygstart "{url}"'
+            url = _unquote_file(url)
+            args = ["cygstart", os.path.dirname(url)]
         else:
-            url = url.replace('"', "")
-            wait_str = "-w" if wait else ""
-            args = f'cygstart {wait_str} "{url}"'
-        return os.system(args)
+            args = ["cygstart"]
+            if wait:
+                args.append("-w")
+            args.append(url)
+        try:
+            return subprocess.call(args)
+        except OSError:
+            # Command not found
+            return 127
 
     try:
         if locate:
@@ -698,8 +736,8 @@ if WIN:
         return rv
 
 else:
-    import tty
     import termios
+    import tty
 
     @contextlib.contextmanager
     def raw_terminal() -> t.Iterator[int]:

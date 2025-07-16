@@ -5,18 +5,16 @@ Useful when the template itself comes from an untrusted source.
 import operator
 import types
 import typing as t
-from collections import abc
-from collections import deque
+from collections import abc, deque
+from functools import update_wrapper
 from string import Formatter
 
 from _string import formatter_field_name_split  # type: ignore
-from markupsafe import EscapeFormatter
-from markupsafe import Markup
+from markupsafe import EscapeFormatter, Markup
 
 from .environment import Environment
 from .exceptions import SecurityError
-from .runtime import Context
-from .runtime import Undefined
+from .runtime import Context, Undefined
 
 F = t.TypeVar("F", bound=t.Callable[..., t.Any])
 
@@ -60,7 +58,7 @@ _mutable_spec: t.Tuple[t.Tuple[t.Type[t.Any], t.FrozenSet[str]], ...] = (
     ),
     (
         abc.MutableSequence,
-        frozenset(["append", "reverse", "insert", "sort", "extend", "remove"]),
+        frozenset(["append", "clear", "pop", "reverse", "insert", "sort", "extend", "remove"]),
     ),
     (
         deque,
@@ -81,20 +79,6 @@ _mutable_spec: t.Tuple[t.Tuple[t.Type[t.Any], t.FrozenSet[str]], ...] = (
 )
 
 
-def inspect_format_method(callable: t.Callable[..., t.Any]) -> t.Optional[str]:
-    if not isinstance(
-        callable, (types.MethodType, types.BuiltinMethodType)
-    ) or callable.__name__ not in ("format", "format_map"):
-        return None
-
-    obj = callable.__self__
-
-    if isinstance(obj, str):
-        return obj
-
-    return None
-
-
 def safe_range(*args: int) -> range:
     """A range that can't generate ranges with a length of more than
     MAX_RANGE items.
@@ -102,10 +86,7 @@ def safe_range(*args: int) -> range:
     rng = range(*args)
 
     if len(rng) > MAX_RANGE:
-        raise OverflowError(
-            "Range too big. The sandbox blocks ranges larger than"
-            f" MAX_RANGE ({MAX_RANGE})."
-        )
+        raise OverflowError("Range too big. The sandbox blocks ranges larger than" f" MAX_RANGE ({MAX_RANGE}).")
 
     return rng
 
@@ -152,9 +133,7 @@ def is_internal_attribute(obj: t.Any, attr: str) -> bool:
     elif hasattr(types, "CoroutineType") and isinstance(obj, types.CoroutineType):
         if attr in UNSAFE_COROUTINE_ATTRIBUTES:
             return True
-    elif hasattr(types, "AsyncGeneratorType") and isinstance(
-        obj, types.AsyncGeneratorType
-    ):
+    elif hasattr(types, "AsyncGeneratorType") and isinstance(obj, types.AsyncGeneratorType):
         if attr in UNSAFE_ASYNC_GENERATOR_ATTRIBUTES:
             return True
     return attr.startswith("__")
@@ -272,13 +251,9 @@ class SandboxedEnvironment(Environment):
         This also recognizes the Django convention of setting
         ``func.alters_data = True``.
         """
-        return not (
-            getattr(obj, "unsafe_callable", False) or getattr(obj, "alters_data", False)
-        )
+        return not (getattr(obj, "unsafe_callable", False) or getattr(obj, "alters_data", False))
 
-    def call_binop(
-        self, context: Context, operator: str, left: t.Any, right: t.Any
-    ) -> t.Any:
+    def call_binop(self, context: Context, operator: str, left: t.Any, right: t.Any) -> t.Any:
         """For intercepted binary operator calls (:meth:`intercepted_binops`)
         this function is executed instead of the builtin operator.  This can
         be used to fine tune the behavior of certain operators.
@@ -296,9 +271,7 @@ class SandboxedEnvironment(Environment):
         """
         return self.unop_table[operator](arg)
 
-    def getitem(
-        self, obj: t.Any, argument: t.Union[str, t.Any]
-    ) -> t.Union[t.Any, Undefined]:
+    def getitem(self, obj: t.Any, argument: t.Union[str, t.Any]) -> t.Union[t.Any, Undefined]:
         """Subscribe an object from sandboxed code."""
         try:
             return obj[argument]
@@ -314,6 +287,9 @@ class SandboxedEnvironment(Environment):
                     except AttributeError:
                         pass
                     else:
+                        fmt = self.wrap_str_format(value)
+                        if fmt is not None:
+                            return fmt
                         if self.is_safe_attribute(obj, argument, value):
                             return value
                         return self.unsafe_undefined(obj, argument)
@@ -331,6 +307,9 @@ class SandboxedEnvironment(Environment):
             except (TypeError, LookupError):
                 pass
         else:
+            fmt = self.wrap_str_format(value)
+            if fmt is not None:
+                return fmt
             if self.is_safe_attribute(obj, attribute, value):
                 return value
             return self.unsafe_undefined(obj, attribute)
@@ -339,41 +318,54 @@ class SandboxedEnvironment(Environment):
     def unsafe_undefined(self, obj: t.Any, attribute: str) -> Undefined:
         """Return an undefined object for unsafe attributes."""
         return self.undefined(
-            f"access to attribute {attribute!r} of"
-            f" {type(obj).__name__!r} object is unsafe.",
+            f"access to attribute {attribute!r} of" f" {type(obj).__name__!r} object is unsafe.",
             name=attribute,
             obj=obj,
             exc=SecurityError,
         )
 
-    def format_string(
-        self,
-        s: str,
-        args: t.Tuple[t.Any, ...],
-        kwargs: t.Dict[str, t.Any],
-        format_func: t.Optional[t.Callable[..., t.Any]] = None,
-    ) -> str:
-        """If a format call is detected, then this is routed through this
-        method so that our safety sandbox can be used for it.
+    def wrap_str_format(self, value: t.Any) -> t.Optional[t.Callable[..., str]]:
+        """If the given value is a ``str.format`` or ``str.format_map`` method,
+        return a new function than handles sandboxing. This is done at access
+        rather than in :meth:`call`, so that calls made without ``call`` are
+        also sandboxed.
         """
+        if not isinstance(value, (types.MethodType, types.BuiltinMethodType)) or value.__name__ not in (
+            "format",
+            "format_map",
+        ):
+            return None
+
+        f_self: t.Any = value.__self__
+
+        if not isinstance(f_self, str):
+            return None
+
+        str_type: t.Type[str] = type(f_self)
+        is_format_map = value.__name__ == "format_map"
         formatter: SandboxedFormatter
-        if isinstance(s, Markup):
-            formatter = SandboxedEscapeFormatter(self, escape=s.escape)
+
+        if isinstance(f_self, Markup):
+            formatter = SandboxedEscapeFormatter(self, escape=f_self.escape)
         else:
             formatter = SandboxedFormatter(self)
 
-        if format_func is not None and format_func.__name__ == "format_map":
-            if len(args) != 1 or kwargs:
-                raise TypeError(
-                    "format_map() takes exactly one argument"
-                    f" {len(args) + (kwargs is not None)} given"
-                )
+        vformat = formatter.vformat
 
-            kwargs = args[0]
-            args = ()
+        def wrapper(*args: t.Any, **kwargs: t.Any) -> str:
+            if is_format_map:
+                if kwargs:
+                    raise TypeError("format_map() takes no keyword arguments")
 
-        rv = formatter.vformat(s, args, kwargs)
-        return type(s)(rv)
+                if len(args) != 1:
+                    raise TypeError(f"format_map() takes exactly one argument ({len(args)} given)")
+
+                kwargs = args[0]
+                args = ()
+
+            return str_type(vformat(f_self, args, kwargs))
+
+        return update_wrapper(wrapper, value)
 
     def call(
         __self,  # noqa: B902
@@ -383,9 +375,6 @@ class SandboxedEnvironment(Environment):
         **kwargs: t.Any,
     ) -> t.Any:
         """Call an object from sandboxed code."""
-        fmt = inspect_format_method(__obj)
-        if fmt is not None:
-            return __self.format_string(fmt, args, kwargs, __obj)
 
         # the double prefixes are to avoid double keyword argument
         # errors when proxying the call.
@@ -412,9 +401,7 @@ class SandboxedFormatter(Formatter):
         self._env = env
         super().__init__(**kwargs)
 
-    def get_field(
-        self, field_name: str, args: t.Sequence[t.Any], kwargs: t.Mapping[str, t.Any]
-    ) -> t.Tuple[t.Any, str]:
+    def get_field(self, field_name: str, args: t.Sequence[t.Any], kwargs: t.Mapping[str, t.Any]) -> t.Tuple[t.Any, str]:
         first, rest = formatter_field_name_split(field_name)
         obj = self.get_value(first, args, kwargs)
         for is_attr, i in rest:

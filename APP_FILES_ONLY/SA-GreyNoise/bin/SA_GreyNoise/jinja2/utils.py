@@ -3,10 +3,8 @@ import json
 import os
 import re
 import typing as t
-from collections import abc
-from collections import deque
-from random import choice
-from random import randrange
+from collections import abc, deque
+from random import choice, randrange
 from threading import Lock
 from types import CodeType
 from urllib.parse import quote_from_bytes
@@ -18,8 +16,17 @@ if t.TYPE_CHECKING:
 
 F = t.TypeVar("F", bound=t.Callable[..., t.Any])
 
-# special singleton representing missing values for the runtime
-missing: t.Any = type("MissingType", (), {"__repr__": lambda x: "missing"})()
+
+class _MissingType:
+    def __repr__(self) -> str:
+        return "missing"
+
+    def __reduce__(self) -> str:
+        return "missing"
+
+
+missing: t.Any = _MissingType()
+"""Special singleton representing missing values for the runtime."""
 
 internal_code: t.MutableSet[CodeType] = set()
 
@@ -309,14 +316,9 @@ def urlize(
 
         if _http_re.match(middle):
             if middle.startswith("https://") or middle.startswith("http://"):
-                middle = (
-                    f'<a href="{middle}"{rel_attr}{target_attr}>{trim_url(middle)}</a>'
-                )
+                middle = f'<a href="{middle}"{rel_attr}{target_attr}>{trim_url(middle)}</a>'
             else:
-                middle = (
-                    f'<a href="https://{middle}"{rel_attr}{target_attr}>'
-                    f"{trim_url(middle)}</a>"
-                )
+                middle = f'<a href="https://{middle}"{rel_attr}{target_attr}>' f"{trim_url(middle)}</a>"
 
         elif middle.startswith("mailto:") and _email_re.match(middle[7:]):
             middle = f'<a href="{middle}">{middle[7:]}</a>'
@@ -324,6 +326,8 @@ def urlize(
         elif (
             "@" in middle
             and not middle.startswith("www.")
+            # ignore values like `@a@b`
+            and not middle.startswith("@")
             and ":" not in middle
             and _email_re.match(middle)
         ):
@@ -339,9 +343,7 @@ def urlize(
     return "".join(words)
 
 
-def generate_lorem_ipsum(
-    n: int = 5, html: bool = True, min: int = 20, max: int = 100
-) -> str:
+def generate_lorem_ipsum(n: int = 5, html: bool = True, min: int = 20, max: int = 100) -> str:
     """Generate some lorem ipsum for the template."""
     from .constants import LOREM_IPSUM_WORDS
 
@@ -389,9 +391,7 @@ def generate_lorem_ipsum(
 
     if not html:
         return "\n\n".join(result)
-    return markupsafe.Markup(
-        "\n".join(f"<p>{markupsafe.escape(x)}</p>" for x in result)
-    )
+    return markupsafe.Markup("\n".join(f"<p>{markupsafe.escape(x)}</p>" for x in result))
 
 
 def url_quote(obj: t.Any, charset: str = "utf-8", for_qs: bool = False) -> str:
@@ -428,7 +428,7 @@ class LRUCache:
     def __init__(self, capacity: int) -> None:
         self.capacity = capacity
         self._mapping: t.Dict[t.Any, t.Any] = {}
-        self._queue: "te.Deque[t.Any]" = deque()
+        self._queue: te.Deque[t.Any] = deque()
         self._postinit()
 
     def _postinit(self) -> None:
@@ -453,7 +453,7 @@ class LRUCache:
     def __getnewargs__(self) -> t.Tuple[t.Any, ...]:
         return (self.capacity,)
 
-    def copy(self) -> "LRUCache":
+    def copy(self) -> "te.Self":
         """Return a shallow copy of the instance."""
         rv = self.__class__(self.capacity)
         rv._mapping.update(self._mapping)

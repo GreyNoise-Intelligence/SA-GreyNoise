@@ -6,7 +6,7 @@ import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
 import validator
 from base_command_handler import BaseCommandHandler
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise_constants import INTEGRATION_NAME
 from splunklib.searchcommands import Configuration, Option, dispatch
 
@@ -119,9 +119,11 @@ class GNIPSimilarCommand(BaseCommandHandler):
 
         # Opting timeout of 240 seconds for the request
         if "http" in proxy:
-            api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_config = APIConfig(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_client = GreyNoise(api_config)
         else:
-            api_client = GreyNoise(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
+            api_config = APIConfig(api_key=api_key, timeout=240, integration_name=INTEGRATION_NAME)
+            api_client = GreyNoise(api_config)
 
         logger.info(
             "Fetching results for Similarity lookup: {}, requested number of results: {}, min score: {}".format(

@@ -62,9 +62,7 @@ class Layout:
             try:
                 self._stack.append(next(self.find_all_windows()))
             except StopIteration as e:
-                raise InvalidLayoutError(
-                    "Invalid layout. The layout does not contain any Window object."
-                ) from e
+                raise InvalidLayoutError("Invalid layout. The layout does not contain any Window object.") from e
         else:
             self.focus(focused_element)
 
@@ -118,9 +116,7 @@ class Layout:
         # Focus UIControl.
         elif isinstance(value, UIControl):
             if value not in self.find_all_controls():
-                raise ValueError(
-                    "Invalid value. Container does not appear in the layout."
-                )
+                raise ValueError("Invalid value. Container does not appear in the layout.")
             if not value.is_focusable():
                 raise ValueError("Invalid value. UIControl is not focusable.")
 
@@ -133,9 +129,7 @@ class Layout:
             if isinstance(value, Window):
                 # This is a `Window`: focus that.
                 if value not in self.find_all_windows():
-                    raise ValueError(
-                        f"Invalid value. Window does not appear in the layout: {value!r}"
-                    )
+                    raise ValueError(f"Invalid value. Window does not appear in the layout: {value!r}")
 
                 self.current_window = value
             else:
@@ -160,9 +154,7 @@ class Layout:
                     self.current_window = windows[0]
                     return
 
-                raise ValueError(
-                    f"Invalid value. Container cannot be focused: {value!r}"
-                )
+                raise ValueError(f"Invalid value. Container cannot be focused: {value!r}")
 
     def has_focus(self, value: FocusableElement) -> bool:
         """
@@ -398,11 +390,7 @@ def walk(container: Container, skip_hidden: bool = False) -> Iterable[Container]
     Walk through layout, starting at this container.
     """
     # When `skip_hidden` is set, don't go into disabled ConditionalContainer containers.
-    if (
-        skip_hidden
-        and isinstance(container, ConditionalContainer)
-        and not container.filter()
-    ):
+    if skip_hidden and isinstance(container, ConditionalContainer) and not container.filter():
         return
 
     yield container

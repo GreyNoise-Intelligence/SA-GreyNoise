@@ -68,9 +68,7 @@ def _parse_requirement(tokenizer: Tokenizer) -> ParsedRequirement:
     """
     tokenizer.consume("WS")
 
-    name_token = tokenizer.expect(
-        "IDENTIFIER", expected="package name at the start of dependency specifier"
-    )
+    name_token = tokenizer.expect("IDENTIFIER", expected="package name at the start of dependency specifier")
     name = name_token.text
     tokenizer.consume("WS")
 
@@ -110,9 +108,7 @@ def _parse_requirement_details(
         if tokenizer.check("END", peek=True):
             return (url, specifier, marker)
 
-        marker = _parse_requirement_marker(
-            tokenizer, span_start=url_start, after="URL and whitespace"
-        )
+        marker = _parse_requirement_marker(tokenizer, span_start=url_start, after="URL and whitespace")
     else:
         specifier_start = tokenizer.position
         specifier = _parse_specifier(tokenizer)
@@ -124,19 +120,13 @@ def _parse_requirement_details(
         marker = _parse_requirement_marker(
             tokenizer,
             span_start=specifier_start,
-            after=(
-                "version specifier"
-                if specifier
-                else "name and no valid version specifier"
-            ),
+            after=("version specifier" if specifier else "name and no valid version specifier"),
         )
 
     return (url, specifier, marker)
 
 
-def _parse_requirement_marker(
-    tokenizer: Tokenizer, *, span_start: int, after: str
-) -> MarkerList:
+def _parse_requirement_marker(tokenizer: Tokenizer, *, span_start: int, after: str) -> MarkerList:
     """
     requirement_marker = SEMICOLON marker WS?
     """
@@ -316,9 +306,7 @@ def _parse_marker_var(tokenizer: Tokenizer) -> MarkerVar:
     elif tokenizer.check("QUOTED_STRING"):
         return process_python_str(tokenizer.read().text)
     else:
-        tokenizer.raise_syntax_error(
-            message="Expected a marker variable or quoted string"
-        )
+        tokenizer.raise_syntax_error(message="Expected a marker variable or quoted string")
 
 
 def process_env_var(env_var: str) -> Variable:
@@ -349,6 +337,5 @@ def _parse_marker_op(tokenizer: Tokenizer) -> Op:
         return Op(tokenizer.read().text)
     else:
         return tokenizer.raise_syntax_error(
-            "Expected marker operator, one of "
-            "<=, <, !=, ==, >=, >, ~=, ===, in, not in"
+            "Expected marker operator, one of " "<=, <, !=, ==, >=, >, ~=, ===, in, not in"
         )

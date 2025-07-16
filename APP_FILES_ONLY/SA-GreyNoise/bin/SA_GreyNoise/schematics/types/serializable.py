@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals, absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import copy
 from functools import partial
@@ -8,12 +8,11 @@ from types import FunctionType
 
 from ..common import *
 from ..exceptions import *
-from ..undefined import Undefined
 from ..transforms import get_import_context
-
+from ..undefined import Undefined
 from .base import BaseType, TypeMeta
 
-__all__ = ['calculated', 'serializable', 'Serializable']
+__all__ = ["calculated", "serializable", "Serializable"]
 
 
 def serializable(arg=None, **kwargs):
@@ -50,8 +49,7 @@ def serializable(arg=None, **kwargs):
     if isinstance(serialized_type, BaseType):
         # `serialized_type` is already a type instance,
         # so update it with the options found in `kwargs`.
-        serialized_type._set_export_level(kwargs.pop('export_level', None),
-                                          kwargs.pop("serialize_when_none", None))
+        serialized_type._set_export_level(kwargs.pop("export_level", None), kwargs.pop("serialize_when_none", None))
         for name, value in kwargs.items():
             setattr(serialized_type, name, value)
     else:
@@ -104,12 +102,12 @@ class Serializable(object):
         return self.__class__(self.fget, type=copy.deepcopy(self.type), fset=self.fset)
 
     def __repr__(self):
-        type_ = "%s(%s) instance" % (self.__class__.__name__, self._repr_info() or '')
-        model = " on %s" % self.owner_model.__name__ if self.owner_model else ''
-        field = " as '%s'" % self.name if self.name else ''
+        type_ = "%s(%s) instance" % (self.__class__.__name__, self._repr_info() or "")
+        model = " on %s" % self.owner_model.__name__ if self.owner_model else ""
+        field = " as '%s'" % self.name if self.name else ""
         return "<%s>" % (type_ + model + field)
 
 
 if PY2:
     # Python 2 names cannot be unicode
-    __all__ = [n.encode('ascii') for n in __all__]
+    __all__ = [n.encode("ascii") for n in __all__]

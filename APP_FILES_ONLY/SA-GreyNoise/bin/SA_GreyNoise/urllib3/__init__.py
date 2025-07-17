@@ -38,12 +38,13 @@ else:
             "See: https://github.com/urllib3/urllib3/issues/3020",
             exceptions.NotOpenSSLWarning,
         )
-    elif ssl.OPENSSL_VERSION_INFO < (1, 1, 1):  # Defensive:
-        raise ImportError(
-            "urllib3 v2 only supports OpenSSL 1.1.1+, currently "
-            f"the 'ssl' module is compiled with {ssl.OPENSSL_VERSION!r}. "
-            "See: https://github.com/urllib3/urllib3/issues/2168"
-        )
+    # Comment out the OpenSSL version check to allow compatibility with OpenSSL 1.0.2
+    # elif ssl.OPENSSL_VERSION_INFO < (1, 1, 1):  # Defensive:
+    #     raise ImportError(
+    #         "urllib3 v2 only supports OpenSSL 1.1.1+, currently "
+    #         f"the 'ssl' module is compiled with {ssl.OPENSSL_VERSION!r}. "
+    #         "See: https://github.com/urllib3/urllib3/issues/2168"
+    #     )
 
 __author__ = "Andrey Petrov (andrey.petrov@shazow.net)"
 __license__ = "MIT"

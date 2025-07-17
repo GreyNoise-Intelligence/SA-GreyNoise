@@ -12,7 +12,7 @@ from six.moves import range
 from splunklib.binding import HTTPError
 
 APP_NAME = app_greynoise_declare.ta_name
-EPOCH = datetime.datetime.fromtimestamp(0, datetime.UTC)
+EPOCH = datetime.datetime.fromtimestamp(0, datetime.timezone.utc)
 
 
 class Caching(object):
@@ -60,7 +60,7 @@ class Caching(object):
             raise CachingException(str(e))
 
     def _get_age(self):
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         return int((now - EPOCH).total_seconds())
 
     def _groom(self, data):

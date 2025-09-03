@@ -16,7 +16,7 @@ from splunklib.searchcommands import Configuration, EventingCommand, Option, dis
 
 
 def event_filter(chunk_index, result, records_dict, ip_field, noise_events, method):
-    """Method for filtering the events based on the noise status."""
+    """Method for filtering the events based on the internet scanner status."""
     api_results = result["response"]
     error_flag = True
     # Before yielding events, make the ip lookup dict which will have the following format:
@@ -29,7 +29,7 @@ def event_filter(chunk_index, result, records_dict, ip_field, noise_events, meth
 
     for record in records_dict[0]:
         if error_flag:
-            # Exception has occurred while fetching the noise statuses from API
+            # Exception has occurred while fetching the internet scanner statuses from API
             if ip_field in record and record[ip_field] != "":
                 # These calls have been failed due to API failure,
                 # as this event have IP address value, considering them as noise
@@ -47,7 +47,7 @@ def event_filter(chunk_index, result, records_dict, ip_field, noise_events, meth
             if ip_field in record and record[ip_field] != "":
                 # Check if the IP field is not an iterable to avoid any error while referencing ip in ip_lookup
                 if isinstance(record[ip_field], six.string_types) and record[ip_field] in ip_lookup:
-                    if ip_lookup[record[ip_field]]["noise"] == noise_events:
+                    if ip_lookup[record[ip_field]]["internet_scanner_intelligence"] == noise_events:
                         yield event_generator.make_valid_event(method, ip_lookup[record[ip_field]], True, record)
                 else:
                     # Meaning ip is either invalid or not returned by the API, which is case of `multi` method only
@@ -221,7 +221,7 @@ class GNFilterCommand(EventingCommand):
             except Exception:
                 logger.info("Exception occurred while filtering events, Error: {}".format(traceback.format_exc()))
                 self.write_error(
-                    "Exception occurred while filtering the events based on noise status. "
+                    "Exception occurred while filtering the events based on internet scanner status. "
                     "See greynoise_main.log for more details."
                 )
 

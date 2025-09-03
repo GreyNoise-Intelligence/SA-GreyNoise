@@ -20,14 +20,14 @@ class GNEnrichCommand(EventingCommand):
 
     Transforming command that enriches Splunk search events with the context information of the IP addresses
     present as values in the IP field passed in ip_field parameter.
-    Data pulled from: /v2/noise/context/{ip}
+    Data pulled from: v3/ip
 
     **Syntax**::
     `index=firewall | gnenrich ip_field="ip"
 
     **Description**::
     The `gnenrich` command uses the IP represented by IP field in `ip_field` to return
-    context information using method :method:`quick` from GreyNoise Python SDK.
+    context information using method :method:`ip_multi` from GreyNoise Python SDK.
     """
 
     ip_field = Option(
@@ -92,7 +92,7 @@ class GNEnrichCommand(EventingCommand):
             THREADS = 3
             ip_field = self.ip_field
 
-            logger.info("Started retrieving noise data for the IP addresses present in field: {}".format(ip_field))
+            logger.info("Started retrieving internet scanner data for the IP addresses present in field: {}".format(ip_field))
 
             try:
                 # Strip the spaces from the parameter value if given
@@ -142,12 +142,12 @@ class GNEnrichCommand(EventingCommand):
 
             except Exception:
                 logger.info(
-                    "Exception occurred while adding the noise status to the events, Error: {}".format(
+                    "Exception occurred while adding the internet scanner status to the events, Error: {}".format(
                         traceback.format_exc()
                     )
                 )
                 self.write_error(
-                    "Exception occurred while adding the noise status of the "
+                    "Exception occurred while adding the internet scanner status of the "
                     "IP addresses to events. See greynoise_main.log for more details."
                 )
 

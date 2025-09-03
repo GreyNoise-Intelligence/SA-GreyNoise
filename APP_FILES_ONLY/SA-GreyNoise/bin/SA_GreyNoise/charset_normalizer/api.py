@@ -1,8 +1,11 @@
-from __future__ import annotations
-
 import logging
-from os import PathLike
-from typing import BinaryIO
+from os.path import basename, splitext
+from typing import BinaryIO, List, Optional, Set
+
+try:
+    from os import PathLike
+except ImportError:  # pragma: no cover
+    PathLike = str  # type: ignore
 
 from .cd import (
     coherence_ratio,
@@ -15,7 +18,6 @@ from .md import mess_ratio
 from .models import CharsetMatch, CharsetMatches
 from .utils import (
     any_specified_encoding,
-    cut_sequence_chunks,
     iana_name,
     identify_sig_or_bom,
     is_cp_similar,
@@ -23,6 +25,8 @@ from .utils import (
     should_strip_sig_or_bom,
 )
 
+# Will most likely be controversial
+# logging.addLevelName(TRACE, "TRACE")
 logger = logging.getLogger("charset_normalizer")
 explain_handler = logging.StreamHandler()
 explain_handler.setFormatter(
@@ -31,21 +35,19 @@ explain_handler.setFormatter(
 
 
 def from_bytes(
-    sequences: bytes | bytearray,
+    sequences: bytes,
     steps: int = 5,
     chunk_size: int = 512,
     threshold: float = 0.2,
-    cp_isolation: list[str] | None = None,
-    cp_exclusion: list[str] | None = None,
+    cp_isolation: List[str] = None,
+    cp_exclusion: List[str] = None,
     preemptive_behaviour: bool = True,
     explain: bool = False,
-    language_threshold: float = 0.1,
-    enable_fallback: bool = True,
 ) -> CharsetMatches:
     """
     Given a raw bytes sequence, return the best possibles charset usable to render str objects.
     If there is no results, it is a strong indicator that the source is binary/not text.
-    By default, the process will extract 5 blocks of 512o each to assess the mess and coherence of a given sequence.
+    By default, the process will extract 5 blocs of 512o each to assess the mess and coherence of a given sequence.
     And will give up a particular code page after 20% of measured mess. Those criteria are customizable at will.
 
     The preemptive behavior DOES NOT replace the traditional detection workflow, it prioritize a particular code page
@@ -62,21 +64,21 @@ def from_bytes(
 
     if not isinstance(sequences, (bytearray, bytes)):
         raise TypeError(
-            "Expected object of type bytes or bytearray, got: {}".format(
+            "Expected object of type bytes or bytearray, got: {0}".format(
                 type(sequences)
             )
         )
 
     if explain:
-        previous_logger_level: int = logger.level
+        previous_logger_level = logger.level  # type: int
         logger.addHandler(explain_handler)
         logger.setLevel(TRACE)
 
-    length: int = len(sequences)
+    length = len(sequences)  # type: int
 
     if length == 0:
         logger.debug("Encoding detection on empty bytes, assuming utf_8 intention.")
-        if explain:  # Defensive: ensure exit path clean handler
+        if explain:
             logger.removeHandler(explain_handler)
             logger.setLevel(previous_logger_level or logging.WARNING)
         return CharsetMatches([CharsetMatch(sequences, "utf_8", 0.0, False, [], "")])
@@ -117,8 +119,8 @@ def from_bytes(
     if steps > 1 and length / steps < chunk_size:
         chunk_size = int(length / steps)
 
-    is_too_small_sequence: bool = len(sequences) < TOO_SMALL_SEQUENCE
-    is_too_large_sequence: bool = len(sequences) >= TOO_BIG_SEQUENCE
+    is_too_small_sequence = len(sequences) < TOO_SMALL_SEQUENCE  # type: bool
+    is_too_large_sequence = len(sequences) >= TOO_BIG_SEQUENCE  # type: bool
 
     if is_too_small_sequence:
         logger.log(
@@ -135,11 +137,11 @@ def from_bytes(
             ),
         )
 
-    prioritized_encodings: list[str] = []
+    prioritized_encodings = []  # type: List[str]
 
-    specified_encoding: str | None = (
+    specified_encoding = (
         any_specified_encoding(sequences) if preemptive_behaviour else None
-    )
+    )  # type: Optional[str]
 
     if specified_encoding is not None:
         prioritized_encodings.append(specified_encoding)
@@ -149,17 +151,15 @@ def from_bytes(
             specified_encoding,
         )
 
-    tested: set[str] = set()
-    tested_but_hard_failure: list[str] = []
-    tested_but_soft_failure: list[str] = []
+    tested = set()  # type: Set[str]
+    tested_but_hard_failure = []  # type: List[str]
+    tested_but_soft_failure = []  # type: List[str]
 
-    fallback_ascii: CharsetMatch | None = None
-    fallback_u8: CharsetMatch | None = None
-    fallback_specified: CharsetMatch | None = None
+    fallback_ascii = None  # type: Optional[CharsetMatch]
+    fallback_u8 = None  # type: Optional[CharsetMatch]
+    fallback_specified = None  # type: Optional[CharsetMatch]
 
-    results: CharsetMatches = CharsetMatches()
-
-    early_stop_results: CharsetMatches = CharsetMatches()
+    results = CharsetMatches()  # type: CharsetMatches
 
     sig_encoding, sig_payload = identify_sig_or_bom(sequences)
 
@@ -178,6 +178,7 @@ def from_bytes(
         prioritized_encodings.append("utf_8")
 
     for encoding_iana in prioritized_encodings + IANA_SUPPORTED:
+
         if cp_isolation and encoding_iana not in cp_isolation:
             continue
 
@@ -189,29 +190,22 @@ def from_bytes(
 
         tested.add(encoding_iana)
 
-        decoded_payload: str | None = None
-        bom_or_sig_available: bool = sig_encoding == encoding_iana
-        strip_sig_or_bom: bool = bom_or_sig_available and should_strip_sig_or_bom(
+        decoded_payload = None  # type: Optional[str]
+        bom_or_sig_available = sig_encoding == encoding_iana  # type: bool
+        strip_sig_or_bom = bom_or_sig_available and should_strip_sig_or_bom(
             encoding_iana
-        )
+        )  # type: bool
 
         if encoding_iana in {"utf_16", "utf_32"} and not bom_or_sig_available:
             logger.log(
                 TRACE,
-                "Encoding %s won't be tested as-is because it require a BOM. Will try some sub-encoder LE/BE.",
-                encoding_iana,
-            )
-            continue
-        if encoding_iana in {"utf_7"} and not bom_or_sig_available:
-            logger.log(
-                TRACE,
-                "Encoding %s won't be tested as-is because detection is unreliable without BOM/SIG.",
+                "Encoding %s wont be tested as-is because it require a BOM. Will try some sub-encoder LE/BE.",
                 encoding_iana,
             )
             continue
 
         try:
-            is_multi_byte_decoder: bool = is_multi_byte_encoding(encoding_iana)
+            is_multi_byte_decoder = is_multi_byte_encoding(encoding_iana)  # type: bool
         except (ModuleNotFoundError, ImportError):
             logger.log(
                 TRACE,
@@ -223,20 +217,16 @@ def from_bytes(
         try:
             if is_too_large_sequence and is_multi_byte_decoder is False:
                 str(
-                    (
-                        sequences[: int(50e4)]
-                        if strip_sig_or_bom is False
-                        else sequences[len(sig_payload) : int(50e4)]
-                    ),
+                    sequences[: int(50e4)]
+                    if strip_sig_or_bom is False
+                    else sequences[len(sig_payload) : int(50e4)],
                     encoding=encoding_iana,
                 )
             else:
                 decoded_payload = str(
-                    (
-                        sequences
-                        if strip_sig_or_bom is False
-                        else sequences[len(sig_payload) :]
-                    ),
+                    sequences
+                    if strip_sig_or_bom is False
+                    else sequences[len(sig_payload) :],
                     encoding=encoding_iana,
                 )
         except (UnicodeDecodeError, LookupError) as e:
@@ -250,7 +240,7 @@ def from_bytes(
             tested_but_hard_failure.append(encoding_iana)
             continue
 
-        similar_soft_failure_test: bool = False
+        similar_soft_failure_test = False  # type: bool
 
         for encoding_soft_failed in tested_but_soft_failure:
             if is_cp_similar(encoding_iana, encoding_soft_failed):
@@ -272,11 +262,11 @@ def from_bytes(
             int(length / steps),
         )
 
-        multi_byte_bonus: bool = (
+        multi_byte_bonus = (
             is_multi_byte_decoder
             and decoded_payload is not None
             and len(decoded_payload) < length
-        )
+        )  # type: bool
 
         if multi_byte_bonus:
             logger.log(
@@ -286,55 +276,72 @@ def from_bytes(
                 encoding_iana,
             )
 
-        max_chunk_gave_up: int = int(len(r_) / 4)
+        max_chunk_gave_up = int(len(r_) / 4)  # type: int
 
         max_chunk_gave_up = max(max_chunk_gave_up, 2)
-        early_stop_count: int = 0
+        early_stop_count = 0  # type: int
         lazy_str_hard_failure = False
 
-        md_chunks: list[str] = []
+        md_chunks = []  # type: List[str]
         md_ratios = []
 
-        try:
-            for chunk in cut_sequence_chunks(
-                sequences,
-                encoding_iana,
-                r_,
-                chunk_size,
-                bom_or_sig_available,
-                strip_sig_or_bom,
-                sig_payload,
-                is_multi_byte_decoder,
-                decoded_payload,
-            ):
-                md_chunks.append(chunk)
+        for i in r_:
+            if i + chunk_size > length + 8:
+                continue
 
-                md_ratios.append(
-                    mess_ratio(
-                        chunk,
-                        threshold,
-                        explain is True and 1 <= len(cp_isolation) <= 2,
-                    )
+            cut_sequence = sequences[i : i + chunk_size]
+
+            if bom_or_sig_available and strip_sig_or_bom is False:
+                cut_sequence = sig_payload + cut_sequence
+
+            try:
+                chunk = cut_sequence.decode(
+                    encoding_iana,
+                    errors="ignore" if is_multi_byte_decoder else "strict",
+                )  # type: str
+            except UnicodeDecodeError as e:  # Lazy str loading may have missed something there
+                logger.log(
+                    TRACE,
+                    "LazyStr Loading: After MD chunk decode, code page %s does not fit given bytes sequence at ALL. %s",
+                    encoding_iana,
+                    str(e),
                 )
+                early_stop_count = max_chunk_gave_up
+                lazy_str_hard_failure = True
+                break
 
-                if md_ratios[-1] >= threshold:
-                    early_stop_count += 1
+            # multi-byte bad cutting detector and adjustment
+            # not the cleanest way to perform that fix but clever enough for now.
+            if is_multi_byte_decoder and i > 0 and sequences[i] >= 0x80:
 
-                if (early_stop_count >= max_chunk_gave_up) or (
-                    bom_or_sig_available and strip_sig_or_bom is False
+                chunk_partial_size_chk = min(chunk_size, 16)  # type: int
+
+                if (
+                    decoded_payload
+                    and chunk[:chunk_partial_size_chk] not in decoded_payload
                 ):
-                    break
-        except (
-            UnicodeDecodeError
-        ) as e:  # Lazy str loading may have missed something there
-            logger.log(
-                TRACE,
-                "LazyStr Loading: After MD chunk decode, code page %s does not fit given bytes sequence at ALL. %s",
-                encoding_iana,
-                str(e),
-            )
-            early_stop_count = max_chunk_gave_up
-            lazy_str_hard_failure = True
+                    for j in range(i, i - 4, -1):
+                        cut_sequence = sequences[j : i + chunk_size]
+
+                        if bom_or_sig_available and strip_sig_or_bom is False:
+                            cut_sequence = sig_payload + cut_sequence
+
+                        chunk = cut_sequence.decode(encoding_iana, errors="ignore")
+
+                        if chunk[:chunk_partial_size_chk] in decoded_payload:
+                            break
+
+            md_chunks.append(chunk)
+
+            md_ratios.append(mess_ratio(chunk, threshold))
+
+            if md_ratios[-1] >= threshold:
+                early_stop_count += 1
+
+            if (early_stop_count >= max_chunk_gave_up) or (
+                bom_or_sig_available and strip_sig_or_bom is False
+            ):
+                break
 
         # We might want to check the sequence again with the whole content
         # Only if initial MD tests passes
@@ -355,7 +362,9 @@ def from_bytes(
                 tested_but_hard_failure.append(encoding_iana)
                 continue
 
-        mean_mess_ratio: float = sum(md_ratios) / len(md_ratios) if md_ratios else 0.0
+        mean_mess_ratio = (
+            sum(md_ratios) / len(md_ratios) if md_ratios else 0.0
+        )  # type: float
         if mean_mess_ratio >= threshold or early_stop_count >= max_chunk_gave_up:
             tested_but_soft_failure.append(encoding_iana)
             logger.log(
@@ -368,18 +377,11 @@ def from_bytes(
             )
             # Preparing those fallbacks in case we got nothing.
             if (
-                enable_fallback
-                and encoding_iana in ["ascii", "utf_8", specified_encoding]
+                encoding_iana in ["ascii", "utf_8", specified_encoding]
                 and not lazy_str_hard_failure
             ):
                 fallback_entry = CharsetMatch(
-                    sequences,
-                    encoding_iana,
-                    threshold,
-                    False,
-                    [],
-                    decoded_payload,
-                    preemptive_declaration=specified_encoding,
+                    sequences, encoding_iana, threshold, False, [], decoded_payload
                 )
                 if encoding_iana == specified_encoding:
                     fallback_specified = fallback_entry
@@ -397,7 +399,7 @@ def from_bytes(
         )
 
         if not is_multi_byte_decoder:
-            target_languages: list[str] = encoding_languages(encoding_iana)
+            target_languages = encoding_languages(encoding_iana)  # type: List[str]
         else:
             target_languages = mb_encoding_languages(encoding_iana)
 
@@ -416,9 +418,7 @@ def from_bytes(
         if encoding_iana != "ascii":
             for chunk in md_chunks:
                 chunk_languages = coherence_ratio(
-                    chunk,
-                    language_threshold,
-                    ",".join(target_languages) if target_languages else None,
+                    chunk, 0.1, ",".join(target_languages) if target_languages else None
                 )
 
                 cd_ratios.append(chunk_languages)
@@ -433,58 +433,28 @@ def from_bytes(
                 ),
             )
 
-        current_match = CharsetMatch(
-            sequences,
-            encoding_iana,
-            mean_mess_ratio,
-            bom_or_sig_available,
-            cd_ratios_merged,
-            (
-                decoded_payload
-                if (
-                    is_too_large_sequence is False
-                    or encoding_iana in [specified_encoding, "ascii", "utf_8"]
-                )
-                else None
-            ),
-            preemptive_declaration=specified_encoding,
+        results.append(
+            CharsetMatch(
+                sequences,
+                encoding_iana,
+                mean_mess_ratio,
+                bom_or_sig_available,
+                cd_ratios_merged,
+                decoded_payload,
+            )
         )
-
-        results.append(current_match)
 
         if (
             encoding_iana in [specified_encoding, "ascii", "utf_8"]
             and mean_mess_ratio < 0.1
         ):
-            # If md says nothing to worry about, then... stop immediately!
-            if mean_mess_ratio == 0.0:
-                logger.debug(
-                    "Encoding detection: %s is most likely the one.",
-                    current_match.encoding,
-                )
-                if explain:  # Defensive: ensure exit path clean handler
-                    logger.removeHandler(explain_handler)
-                    logger.setLevel(previous_logger_level)
-                return CharsetMatches([current_match])
-
-            early_stop_results.append(current_match)
-
-        if (
-            len(early_stop_results)
-            and (specified_encoding is None or specified_encoding in tested)
-            and "ascii" in tested
-            and "utf_8" in tested
-        ):
-            probable_result: CharsetMatch = early_stop_results.best()  # type: ignore[assignment]
             logger.debug(
-                "Encoding detection: %s is most likely the one.",
-                probable_result.encoding,
+                "Encoding detection: %s is most likely the one.", encoding_iana
             )
-            if explain:  # Defensive: ensure exit path clean handler
+            if explain:
                 logger.removeHandler(explain_handler)
                 logger.setLevel(previous_logger_level)
-
-            return CharsetMatches([probable_result])
+            return CharsetMatches([results[encoding_iana]])
 
         if encoding_iana == sig_encoding:
             logger.debug(
@@ -492,7 +462,7 @@ def from_bytes(
                 "the beginning of the sequence.",
                 encoding_iana,
             )
-            if explain:  # Defensive: ensure exit path clean handler
+            if explain:
                 logger.removeHandler(explain_handler)
                 logger.setLevel(previous_logger_level)
             return CharsetMatches([results[encoding_iana]])
@@ -546,12 +516,10 @@ def from_fp(
     steps: int = 5,
     chunk_size: int = 512,
     threshold: float = 0.20,
-    cp_isolation: list[str] | None = None,
-    cp_exclusion: list[str] | None = None,
+    cp_isolation: List[str] = None,
+    cp_exclusion: List[str] = None,
     preemptive_behaviour: bool = True,
     explain: bool = False,
-    language_threshold: float = 0.1,
-    enable_fallback: bool = True,
 ) -> CharsetMatches:
     """
     Same thing than the function from_bytes but using a file pointer that is already ready.
@@ -566,22 +534,18 @@ def from_fp(
         cp_exclusion,
         preemptive_behaviour,
         explain,
-        language_threshold,
-        enable_fallback,
     )
 
 
 def from_path(
-    path: str | bytes | PathLike,  # type: ignore[type-arg]
+    path: PathLike,
     steps: int = 5,
     chunk_size: int = 512,
     threshold: float = 0.20,
-    cp_isolation: list[str] | None = None,
-    cp_exclusion: list[str] | None = None,
+    cp_isolation: List[str] = None,
+    cp_exclusion: List[str] = None,
     preemptive_behaviour: bool = True,
     explain: bool = False,
-    language_threshold: float = 0.1,
-    enable_fallback: bool = True,
 ) -> CharsetMatches:
     """
     Same thing than the function from_bytes but with one extra step. Opening and reading given file path in binary mode.
@@ -597,72 +561,48 @@ def from_path(
             cp_exclusion,
             preemptive_behaviour,
             explain,
-            language_threshold,
-            enable_fallback,
         )
 
 
-def is_binary(
-    fp_or_path_or_payload: PathLike | str | BinaryIO | bytes,  # type: ignore[type-arg]
+def normalize(
+    path: PathLike,
     steps: int = 5,
     chunk_size: int = 512,
     threshold: float = 0.20,
-    cp_isolation: list[str] | None = None,
-    cp_exclusion: list[str] | None = None,
+    cp_isolation: List[str] = None,
+    cp_exclusion: List[str] = None,
     preemptive_behaviour: bool = True,
-    explain: bool = False,
-    language_threshold: float = 0.1,
-    enable_fallback: bool = False,
-) -> bool:
+) -> CharsetMatch:
     """
-    Detect if the given input (file, bytes, or path) points to a binary file. aka. not a string.
-    Based on the same main heuristic algorithms and default kwargs at the sole exception that fallbacks match
-    are disabled to be stricter around ASCII-compatible but unlikely to be a string.
+    Take a (text-based) file path and try to create another file next to it, this time using UTF-8.
     """
-    if isinstance(fp_or_path_or_payload, (str, PathLike)):
-        guesses = from_path(
-            fp_or_path_or_payload,
-            steps=steps,
-            chunk_size=chunk_size,
-            threshold=threshold,
-            cp_isolation=cp_isolation,
-            cp_exclusion=cp_exclusion,
-            preemptive_behaviour=preemptive_behaviour,
-            explain=explain,
-            language_threshold=language_threshold,
-            enable_fallback=enable_fallback,
-        )
-    elif isinstance(
-        fp_or_path_or_payload,
-        (
-            bytes,
-            bytearray,
-        ),
-    ):
-        guesses = from_bytes(
-            fp_or_path_or_payload,
-            steps=steps,
-            chunk_size=chunk_size,
-            threshold=threshold,
-            cp_isolation=cp_isolation,
-            cp_exclusion=cp_exclusion,
-            preemptive_behaviour=preemptive_behaviour,
-            explain=explain,
-            language_threshold=language_threshold,
-            enable_fallback=enable_fallback,
-        )
-    else:
-        guesses = from_fp(
-            fp_or_path_or_payload,
-            steps=steps,
-            chunk_size=chunk_size,
-            threshold=threshold,
-            cp_isolation=cp_isolation,
-            cp_exclusion=cp_exclusion,
-            preemptive_behaviour=preemptive_behaviour,
-            explain=explain,
-            language_threshold=language_threshold,
-            enable_fallback=enable_fallback,
+    results = from_path(
+        path,
+        steps,
+        chunk_size,
+        threshold,
+        cp_isolation,
+        cp_exclusion,
+        preemptive_behaviour,
+    )
+
+    filename = basename(path)
+    target_extensions = list(splitext(filename))
+
+    if len(results) == 0:
+        raise IOError(
+            'Unable to normalize "{}", no encoding charset seems to fit.'.format(
+                filename
+            )
         )
 
-    return not guesses
+    result = results.best()
+
+    target_extensions[0] += "-" + result.encoding  # type: ignore
+
+    with open(
+        "{}".format(str(path).replace(filename, "".join(target_extensions))), "wb"
+    ) as fp:
+        fp.write(result.output())  # type: ignore
+
+    return result  # type: ignore

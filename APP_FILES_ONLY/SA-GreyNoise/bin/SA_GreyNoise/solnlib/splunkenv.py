@@ -1,11 +1,11 @@
 #
-# Copyright 2021 Splunk Inc.
+# Copyright 2024 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,6 +31,7 @@ __all__ = [
     "get_splunk_host_info",
     "get_splunk_bin",
     "get_splunkd_access_info",
+    "get_scheme_from_hec_settings",
     "get_splunkd_uri",
     "get_conf_key_value",
     "get_conf_stanza",
@@ -198,6 +199,30 @@ def get_splunkd_access_info() -> Tuple[str, str, int]:
     return scheme, host, port
 
 
+def get_scheme_from_hec_settings() -> str:
+    """Get scheme from HEC global settings.
+
+    Returns:
+        scheme (str)
+    """
+    try:
+        ssl_enabled = get_conf_key_value("inputs", "http", "enableSSL")
+    except KeyError:
+        raise KeyError(
+            "Cannot get enableSSL setting form conf: 'inputs' and stanza: '[http]'. "
+            "Verify that your Splunk instance has the inputs.conf file with the correct [http] stanza. "
+            "For more information see: "
+            "https://docs.splunk.com/Documentation/Splunk/9.2.0/Data/UseHECusingconffiles"
+        )
+
+    if is_true(ssl_enabled):
+        scheme = "https"
+    else:
+        scheme = "http"
+
+    return scheme
+
+
 def get_splunkd_uri() -> str:
     """Get splunkd uri.
 
@@ -284,7 +309,7 @@ def get_conf_stanzas(conf_name: str) -> dict:
 
     parser = ConfigParser(**{"strict": False})
     parser.optionxform = str
-    parser.readfp(StringIO(out))
+    parser.read_file(StringIO(out))
 
     out = {}
     for section in parser.sections():

@@ -1,11 +1,11 @@
 #
-# Copyright 2021 Splunk Inc.
+# Copyright 2024 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -59,7 +59,7 @@ class ModularInput(metaclass=ABCMeta):
 
     Examples:
 
-       >>> Class TestModularInput(ModularInput):
+       >>> class TestModularInput(ModularInput):
        >>>     app = 'TestApp'
        >>>     name = 'test_modular_input'
        >>>     title = 'Test modular input'
@@ -107,6 +107,7 @@ class ModularInput(metaclass=ABCMeta):
     # Input name of Splunk HEC, must be overridden if use_hec_event_writer
     # is True
     hec_input_name = None
+    hec_global_settings_schema = False
 
     def __init__(self):
         # Validate properties
@@ -230,6 +231,7 @@ class ModularInput(metaclass=ABCMeta):
                     scheme=self.server_scheme,
                     host=self.server_host,
                     port=self.server_port,
+                    global_settings_schema=self.hec_global_settings_schema,
                 )
             except binding.HTTPError:
                 logging.error(
@@ -419,7 +421,7 @@ class ModularInput(metaclass=ABCMeta):
         other input instead `stdin`.
 
         Returns:
-            A dict object must contains `metadata` and `inputs`::
+            A dict object must contain `metadata` and `inputs`::
 
                 example: {
                     'metadata': {
@@ -445,7 +447,7 @@ class ModularInput(metaclass=ABCMeta):
         """Modular input entry.
 
         Examples:
-           >>> Class TestModularInput(ModularInput):
+           >>> class TestModularInput(ModularInput):
            >>>         ... .. .
            >>>
            >>> if __name__ == '__main__':

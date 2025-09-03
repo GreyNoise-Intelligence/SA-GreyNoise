@@ -3,18 +3,20 @@
 # Copyright (c) 2013 by Christian Heimes <christian@python.org>
 # Licensed to PSF under a Contributor Agreement.
 # See https://www.python.org/psf/license for licensing details.
-"""Defused xml.dom.minidom"""
-from __future__ import absolute_import, print_function
+"""Defused xml.dom.minidom
+"""
+from __future__ import print_function, absolute_import
 
 from xml.dom.minidom import _do_pulldom_parse
-
 from . import expatbuilder as _expatbuilder
 from . import pulldom as _pulldom
 
 __origin__ = "xml.dom.minidom"
 
 
-def parse(file, parser=None, bufsize=None, forbid_dtd=False, forbid_entities=True, forbid_external=True):
+def parse(
+    file, parser=None, bufsize=None, forbid_dtd=False, forbid_entities=True, forbid_external=True
+):
     """Parse a file into a DOM by filename or file object."""
     if parser is None and not bufsize:
         return _expatbuilder.parse(
@@ -37,7 +39,9 @@ def parse(file, parser=None, bufsize=None, forbid_dtd=False, forbid_entities=Tru
         )
 
 
-def parseString(string, parser=None, forbid_dtd=False, forbid_entities=True, forbid_external=True):
+def parseString(
+    string, parser=None, forbid_dtd=False, forbid_entities=True, forbid_external=True
+):
     """Parse a file into a DOM from a string."""
     if parser is None:
         return _expatbuilder.parseString(

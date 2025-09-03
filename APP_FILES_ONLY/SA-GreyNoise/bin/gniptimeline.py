@@ -11,29 +11,21 @@ from greynoise_constants import INTEGRATION_NAME
 from splunklib.searchcommands import Configuration, Option, dispatch
 
 
-def response_scroller(api_client, logger, ip_address, days, limit):
+def response_scroller(api_client, logger, ip_address, days, field, granularity):
     """Uses api_client instance of GreyNoise SDK to fetch query results and traverse them if result set is too large."""
-    event_count = 0
+    api_response = api_client.timeline(ip_address=ip_address, days=days, field=field, granularity=granularity)
 
-    api_response = api_client.timelinedaily(ip_address=ip_address, days=days, limit=limit)
+    results = api_response.get("results", [])
+    metadata = api_response.get("metadata", {})
 
-    if api_response.get("activity", None):
-        timeline_activity = api_response.get("activity", [])
-        activity_count = len(timeline_activity)
-
-        logger.debug("Processing {} timeline events for {}".format(activity_count, ip_address))
-
-        for activity in timeline_activity:
-            if event_count == 0:
-                yield event_generator.make_valid_event("timeline", activity, True)
-            else:
-                yield event_generator.make_valid_event("timeline", activity, False)
-            event_count = event_count + 1
+    if results:
+        for result in results:
+            result.update({"metadata": metadata})
+            yield event_generator.make_valid_event("timeline", result, True)
     else:
-        message = api_response.get("message", "")
-        ip = api_response.get("ip", "")
-        logger.info("No results returned for GreyNoise IP: {}, message: {}".format(str(ip), str(message)))
-        event = {"message": message, "ip": ip}
+        ip = metadata.get("ip", "")
+        logger.info(f"No results returned for GreyNoise IP: {ip}")
+        event = {"message": "No results returned", "ip": ip}
         yield event_generator.make_invalid_event("timeline", event, True)
         exit(1)
 
@@ -47,14 +39,14 @@ class GNIPTimelineCommand(BaseCommandHandler):
     Data pulled from /v3/timeline using GreyNoise Python SDK
 
     **Syntax**::
-    `| gniptimeline ip_address="1.2.3.4" days="30"`
-    `| gniptimeline ip_address="1.2.3.4" limit="50" days="30"`
+    `| gniptimeline ip_address="1.2.3.4" days="30" field="classification" granularity="1h"`
+    `| gniptimeline ip_address="1.2.3.4" days="30" granularity="1h"`
 
     **Description**::
     The `gniptimeline` command uses the `IP Address` provided in `ip_address` parameter to return GreyNoise
-    timeline results using method :method:`timelinedaily` from GreyNoise Python SDK.
+    timeline results using method :method:`timeline` from GreyNoise Python SDK.
     The optional parameter `days` can be used to provide the number of days to include in the timeline
-     The optional parameter `limit` can be used to control max number of results to return.
+    The optional parameter `field` can be used to provide the field to use to retrieve timeline information.
     """
 
     ip_address = Option(
@@ -72,12 +64,20 @@ class GNIPTimelineCommand(BaseCommandHandler):
         require=False,
     )
 
-    limit = Option(
-        doc="""**Syntax:** **limit=***<limit>*
-        **Description:**Max number of timeline IPs to return""",
-        default="50",
-        name="limit",
+    field = Option(
+        doc="""**Syntax:** **field=***<field>*
+        **Description:**Field to use to retrieve timeline information""",
+        default="classification",
+        name="field",
         require=False,
+    )
+
+    granularity = Option(
+        doc="""**Syntax:** **granularity=***<granularity>*
+        **Description:**Granularity of timeline events""",
+        default="1h",
+        name="granularity",
+        require=True,
     )
 
     def do_generate(self, api_key, proxy, logger):
@@ -91,7 +91,8 @@ class GNIPTimelineCommand(BaseCommandHandler):
         """
         ip_address = self.ip_address
         days = self.days
-        limit = self.limit
+        field = self.field
+        granularity = self.granularity
 
         logger.info("Started retrieving timeline results for ip: {}".format(str(ip_address)))
 
@@ -104,13 +105,9 @@ class GNIPTimelineCommand(BaseCommandHandler):
         if days:
             days = days.strip()
 
-        if limit:
-            limit = limit.strip()
-
         # Validating the given parameters
         try:
-            days = validator.Integer(option_name="days", minimum=1).validate(days)
-            limit = validator.Integer(option_name="limit", minimum=1).validate(limit)
+            days = validator.Integer(option_name="days", minimum=1, maximum=90).validate(days)
         except ValueError as e:
             # Validator will throw ValueError with error message when the parameters are not proper
             logger.error(str(e))
@@ -126,14 +123,14 @@ class GNIPTimelineCommand(BaseCommandHandler):
             api_client = GreyNoise(api_config)
 
         logger.info(
-            "Fetching timeline events for: {}, requested number of results: {}, days: {}".format(
-                str(ip_address), str(limit), str(days)
+            "Fetching timeline events for: {}, days: {}".format(
+                str(ip_address), str(days)
             )
         )
 
         # Keep generating the events till result_size is not reached or all the query results are sent to Splunk
         try:
-            for event in response_scroller(api_client, logger, ip_address, days, limit):
+            for event in response_scroller(api_client, logger, ip_address, days, field, granularity):
                 yield event
 
             logger.info("Successfully retrieved timeline results for the GreyNoise IP: {}".format(str(ip_address)))

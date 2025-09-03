@@ -18,14 +18,14 @@ from cim_actions import ModularAction
 
 
 class GreyNoiseQuickCheck(AlertBase):
-    """This alert checks noise status of an IP via the GreyNoise API."""
+    """This alert checks internet scanner status of an IP via the GreyNoise API."""
 
     def __init__(self, settings, logger, action_name=None):
         """Initialize ModAction Class."""
         super(GreyNoiseQuickCheck, self).__init__(settings, logger, action_name)
 
     def fetch_noise(self):
-        """Fetch the noise information from GryNoise and write the events to Splunk."""
+        """Fetch the internet scanner information from GryNoise and write the events to Splunk."""
         bulk_response = self.api_client.quick(list(self.ip_set), True)
 
         flag = False
@@ -51,7 +51,7 @@ def run():
         # Initialize the alert action class
         alert_base = GreyNoiseQuickCheck(sys.stdin.read(), logger, "greynoise_quick_check")
 
-        # fetch noise information
+        # fetch internet scanner information
         alert_base.fetch_noise()
 
     # This is standard chrome for outer exception handling

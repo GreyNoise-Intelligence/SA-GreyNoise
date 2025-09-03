@@ -46,7 +46,7 @@ IP_FIELDS = {
     "error": None,
 }
 
-# Dictionary of all the fields that are available in noise status of IP address
+# Dictionary of all the fields that are available in internet scanner status of IP address
 # fetched using quick method of the GreyNoise Python SDK
 QUICK_FIELDS = {
     "_raw": None,
@@ -179,20 +179,6 @@ GREYNOISE_RIOT_FIELDS = {
     "greynoise_reference": None,
     "greynoise_trust_level": None,
     "greynoise_error": None,
-}
-
-SIMILAR_FIELDS = {
-    "ip": None,
-    "actor": None,
-    "classification": None,
-    "first_seen": None,
-    "last_seen": None,
-    "asn": None,
-    "city": None,
-    "country": None,
-    "country_code": None,
-    "organization": None,
-    "similar_ips": None,
 }
 
 TIMELINE_FIELDS = {

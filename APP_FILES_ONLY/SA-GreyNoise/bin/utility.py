@@ -203,11 +203,15 @@ def nested_dict_iter(nested, prefix=""):
     parsed_dict = {}
     api_response = dict(nested)
 
-    def nester_method(api_response, prefix):
+    def nester_method(api_response, prefix, current_field=None):
         for key, value in list(api_response.items()):
             if isinstance(value, collections.Mapping):  # it's a Dictionary
                 # This will update the contents of the value dictionary into parsed_dict itself
-                nester_method(value, prefix)
+                if key in ["business_service_intelligence", "internet_scanner_intelligence"]:
+                    nester_method(value, prefix, key)
+                else:
+                    nester_method(value, prefix)
+
             if isinstance(value, list):  # it's a list
                 _list = value
                 for item in _list:
@@ -216,20 +220,24 @@ def nested_dict_iter(nested, prefix=""):
                         for n in range(0, dict_length):
                             current_key = list(item.keys())[n]
                             if key in ["destinations", "tags"]:
-                                current_key = key + "_" + current_key
+                                current_key = prefix + key + "_" + current_key
                                 if current_key in parsed_dict:
-                                    parsed_dict[prefix + current_key].append(list(item.values())[n])
+                                    parsed_dict[current_key].append(list(item.values())[n])
                                 else:
-                                    parsed_dict[prefix + current_key] = [list(item.values())[n]]
+                                    parsed_dict[current_key] = [list(item.values())[n]]
                             else:
+                                current_key = prefix + current_key
                                 if current_key in parsed_dict:
-                                    parsed_dict[prefix + current_key].append(list(item.values())[n])
+                                    parsed_dict[current_key].append(list(item.values())[n])
                                 else:
-                                    parsed_dict[prefix + current_key] = [list(item.values())[n]]
+                                    parsed_dict[current_key] = [list(item.values())[n]]
                     else:
                         parsed_dict[prefix + key] = value
             else:
-                parsed_dict[prefix + key] = value
+                if current_field in ["business_service_intelligence", "internet_scanner_intelligence"] and key == "found":
+                    parsed_dict[prefix + current_field + "_" + key] = value
+                else:
+                    parsed_dict[prefix + key] = value
         return parsed_dict
 
     return nester_method(api_response, prefix)
@@ -364,10 +372,7 @@ def get_response_for_generating(session_key, api_client, ip, method, logger):
     :return: response
     """
     cache_enabled, cache = get_caching(session_key, method, logger)
-    if method in ["riot", "greynoise_riot"]:
-        fetch_method = api_client.riot
-    else:
-        fetch_method = api_client.ip
+    fetch_method = api_client.ip
     if int(cache_enabled) == 1 and cache is not None:
         response = cache.query_kv_store([ip])
         if response is None:

@@ -3,11 +3,12 @@
 # Copyright (c) 2013 by Christian Heimes <christian@python.org>
 # Licensed to PSF under a Contributor Agreement.
 # See https://www.python.org/psf/license for licensing details.
-"""Defused xml.sax"""
-from __future__ import absolute_import, print_function
+"""Defused xml.sax
+"""
+from __future__ import print_function, absolute_import
 
-from xml.sax import ErrorHandler as _ErrorHandler
 from xml.sax import InputSource as _InputSource
+from xml.sax import ErrorHandler as _ErrorHandler
 
 from . import expatreader
 

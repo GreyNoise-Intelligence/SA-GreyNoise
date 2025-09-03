@@ -22,7 +22,7 @@ class GNStatsCommand(BaseCommandHandler):
 
     **Syntax**::
     `| gnstats query="classification: malicious" count="10"`
-    `| gnquick query="classification: benign"`
+    `| gnstats query="classification: benign"`
 
     **Description**::
     The `gnstats` command uses the `GNQL query` provided in `query` to return

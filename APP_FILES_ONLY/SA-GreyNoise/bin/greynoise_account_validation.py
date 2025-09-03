@@ -3,13 +3,14 @@ import json
 import os
 import time
 import traceback  # noqa # pylint: disable=unused-import
+import requests
 
 import app_greynoise_declare
 import splunk.admin as admin
 import splunk.clilib.cli_common
 import splunk.rest as rest
 import splunklib.client as client
-from greynoise_constants import BACKOFF_FACTOR, MAX_RETRIES
+from greynoise_constants import BACKOFF_FACTOR, MAX_RETRIES, VERIFY_INTERNAL_SSL
 from greynoise_exceptions import CachingException
 from saved_search_utils import (
     DATE,
@@ -19,6 +20,7 @@ from saved_search_utils import (
     is_api_configured,
 )
 from solnlib import conf_manager  # noqa # pylint: disable=unused-import
+from solnlib.splunkenv import get_splunkd_uri
 from splunklib.binding import HTTPError
 from splunktaucclib.rest_handler.endpoint import validator
 from splunktaucclib.rest_handler.endpoint.validator import Validator
@@ -518,6 +520,8 @@ class GreyNoiseFeedConfiguration(Validator):
             force_enable_ss = data.get("force_enable_ss", 0)
             job_id_feed = parameters.get("job_id_feed", None)
             job_id_feed_purge = parameters.get("job_id_feed_purge", None)
+            should_ingest_feed_to_index = data.get("ingest_feed_to_index", 0)
+            feed_index = data.get("feed_index", "main")
             feed_selection = data.get("feed_selection", "BENIGN")
             if feed_selection == "ALL":
                 query = "last_seen:1d"
@@ -536,6 +540,26 @@ class GreyNoiseFeedConfiguration(Validator):
             self.logger.debug("Creating Splunk Client object.")
             mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
             service = client.connect(port=mgmt_port, token=self.session_key_obj.session_key, app=APP_NAME)
+
+            try:
+                if bool(int(should_ingest_feed_to_index)):
+                    partial_feed_search = (
+                        "| spath input=_raw output=new_raw path=results "
+                        "| eval _raw = tostring(new_raw) "
+                        f"| collect index={feed_index} source=greynoise_feed sourcetype=greynoise_feed_indicators "
+                        "| spath output=tags path=internet_scanner_intelligence.tags{}.name "
+                    )
+                    service.post("properties/macros/greynoise_feed_partial_search", definition=partial_feed_search)
+                else:
+                    partial_feed_search = (
+                        "| spath output=cves path=results.internet_scanner_intelligence.cves{} "
+                        "| spath output=tags path=results.internet_scanner_intelligence.tags{}.name "
+                    )
+                    service.post("properties/macros/greynoise_feed_partial_search", definition=partial_feed_search)
+            except Exception as e:
+                self.logger.error("Error while updating macro greynoise_feed_partial_search: {}".format(str(e)))
+                self.put_msg("Error while updating macro greynoise_feed_partial_search: {}".format(str(e)))
+                return False
 
             if bool(int(enable_feed_import)):
                 try:
@@ -667,3 +691,43 @@ class GreyNoiseFeedConfiguration(Validator):
             return False
         else:
             return True
+
+class GreyNoiseESAppValidation(Validator):
+    """Validate the Splunk ES app exists."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the parameters."""
+        super(GreyNoiseESAppValidation, self).__init__(*args, **kwargs)
+        self._validator = validator
+        self._args = args
+        self._kwargs = kwargs
+        self.path = os.path.abspath(__file__)
+        self.session_key_obj = GetSessionKey()
+        self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context="es_app_validation")
+    
+    def validate(self, value, data):
+        try:
+            is_update_risk_score_to_splunk_es = data.get("update_risk_score_to_splunk_es", 0)
+
+            if not bool(int(is_update_risk_score_to_splunk_es)):
+                return True
+
+            self.logger.info("Validating the Splunk ES app exists.")
+            headers = {
+                "Authorization": "Splunk {}".format(self.session_key_obj.session_key),
+                "Content-Type": "application/json"
+            }
+            response = requests.get(
+                get_splunkd_uri() + "/servicesNS/-/SplunkEnterpriseSecuritySuite/",
+                headers=headers,
+                verify=VERIFY_INTERNAL_SSL
+            )
+            if response.status_code != 200:
+                self.logger.error("Splunk ES app does not exist.")
+                msg = "Configure the Splunk ES app to use 'Send Scan Result To Splunk ES' feature"
+                raise Exception(msg)
+            return True
+        except Exception as e:
+            self.logger.error("Error while validating the Splunk ES app exists: {}".format(str(e)))
+            self.put_msg(str(e))
+            return False

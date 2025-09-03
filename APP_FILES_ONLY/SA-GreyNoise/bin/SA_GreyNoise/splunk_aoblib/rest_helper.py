@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 import requests
 
 
@@ -15,8 +17,6 @@ class TARestHelper(object):
             'https://', requests.adapters.HTTPAdapter(max_retries=3))
         if proxy_uri:
             self.requests_proxy = {'http': proxy_uri, 'https': proxy_uri}
-            if self.logger:
-                self.logger.info('set the proxy as %s', self.requests_proxy)
 
     def send_http_request(self, url, method, parameters=None, payload=None, headers=None, cookies=None, verify=True,
                           cert=None, timeout=None, proxy_uri=None):

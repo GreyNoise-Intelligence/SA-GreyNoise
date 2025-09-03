@@ -7,27 +7,27 @@
 
 Also defuses gzip bomb
 """
-from __future__ import absolute_import, print_function
+from __future__ import print_function, absolute_import
 
 import io
 
-from .common import PY3, DTDForbidden, EntitiesForbidden, ExternalReferenceForbidden
+from .common import DTDForbidden, EntitiesForbidden, ExternalReferenceForbidden, PY3
 
 if PY3:
     __origin__ = "xmlrpc.client"
+    from xmlrpc.client import ExpatParser
     from xmlrpc import client as xmlrpc_client
     from xmlrpc import server as xmlrpc_server
-    from xmlrpc.client import ExpatParser
-    from xmlrpc.client import GzipDecodedResponse as _OrigGzipDecodedResponse
     from xmlrpc.client import gzip_decode as _orig_gzip_decode
+    from xmlrpc.client import GzipDecodedResponse as _OrigGzipDecodedResponse
 else:
     __origin__ = "xmlrpclib"
-    import xmlrpclib as xmlrpc_client
     from xmlrpclib import ExpatParser
+    import xmlrpclib as xmlrpc_client
 
     xmlrpc_server = None
-    from xmlrpclib import GzipDecodedResponse as _OrigGzipDecodedResponse
     from xmlrpclib import gzip_decode as _orig_gzip_decode
+    from xmlrpclib import GzipDecodedResponse as _OrigGzipDecodedResponse
 
 try:
     import gzip
@@ -124,7 +124,9 @@ class DefusedExpatParser(ExpatParser):
     def defused_start_doctype_decl(self, name, sysid, pubid, has_internal_subset):
         raise DTDForbidden(name, sysid, pubid)
 
-    def defused_entity_decl(self, name, is_parameter_entity, value, base, sysid, pubid, notation_name):
+    def defused_entity_decl(
+        self, name, is_parameter_entity, value, base, sysid, pubid, notation_name
+    ):
         raise EntitiesForbidden(name, value, base, sysid, pubid, notation_name)
 
     def defused_unparsed_entity_decl(self, name, base, sysid, pubid, notation_name):

@@ -85,11 +85,11 @@
     | eval asn = if(isnull("$tkn_asn_escaped$") OR "$tkn_asn_escaped$"=="", "", " metadata.asn:"."$tkn_asn_escaped$")
     | eval query = ip_address.classification.organization.actor.tag.os.category.country.asn.last_seen
     | return query ]
-    | spath output=noise path=results.internet_scanner_intelligence.found
-    | spath output=riot path=results.business_service_intelligence.found 
+    | spath output=internet_scanner path=results.internet_scanner_intelligence.found
+    | spath output=business_service path=results.business_service_intelligence.found 
     | spath output=tags path=results.internet_scanner_intelligence.tags{}.name
-    | table ip noise riot classification trust_level last_seen organization actor tags cves os category source_country asn message
-    | rename ip AS "IP Address" noise AS "Internet Scannner" riot as "Business Service" classification AS Classification trust_level AS "Trust Level" last_seen AS "Last Seen" organization AS Organization actor AS Actor tags AS Tags cves as CVEs os AS OS category AS Category source_country AS "Source Country" asn AS ASN</query>
+    | table ip internet_scanner business_service classification trust_level last_seen organization actor tags cves os category source_country asn message
+    | rename ip AS "IP Address" internet_scanner AS "Internet Scannner" business_service as "Business Service" classification AS Classification trust_level AS "Trust Level" last_seen AS "Last Seen" organization AS Organization actor AS Actor tags AS Tags cves as CVEs os AS OS category AS Category source_country AS "Source Country" asn AS ASN</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
         </search>
@@ -101,7 +101,7 @@
         <drilldown>
           <link target="_blank">
             <![CDATA[
-                /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=$row.IP Address$
+                /app/SA-GreyNoise/queried_ip_addresses?form.tkn_ip_address=$row.IP Address$
               ]]>
           </link>
         </drilldown>

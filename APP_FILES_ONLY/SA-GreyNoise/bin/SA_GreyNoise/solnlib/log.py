@@ -1,11 +1,11 @@
 #
-# Copyright 2021 Splunk Inc.
+# Copyright 2024 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,10 @@
 import logging
 import logging.handlers
 import os.path as op
+import traceback
+from functools import partial
 from threading import Lock
+from typing import Dict, Any
 
 from .pattern import Singleton
 from .splunkenv import make_splunkhome_path
@@ -64,7 +67,7 @@ class Logs(metaclass=Singleton):
     """A singleton class that manage all kinds of logger.
 
     Examples:
-      >>> from solnlib.import log
+      >>> from solnlib import log
       >>> log.Logs.set_context(directory='/var/log/test',
                                namespace='test')
       >>> logger = log.Logs().get_logger('mymodule')
@@ -76,7 +79,7 @@ class Logs(metaclass=Singleton):
     _default_directory = None
     _default_namespace = None
     _default_log_format = (
-        "%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s "
+        "%(asctime)s log_level=%(levelname)s pid=%(process)d tid=%(threadName)s "
         "file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s"
     )
     _default_log_level = logging.INFO
@@ -217,3 +220,154 @@ class Logs(metaclass=Singleton):
                 for logger in list(self._loggers.values()):
                     logger.setLevel(level)
                 logging.getLogger().setLevel(level)
+
+
+def log_event(
+    logger: logging.Logger, key_values: Dict[str, Any], log_level: int = logging.INFO
+):
+    """General function to log any event in key-value format."""
+    message = " ".join([f"{k}={v}" for k, v in key_values.items()])
+    logger.log(log_level, message)
+
+
+def modular_input_start(logger: logging.Logger, modular_input_name: str):
+    """Specific function to log the start of the modular input."""
+    log_event(
+        logger,
+        {
+            "action": "started",
+            "modular_input_name": modular_input_name,
+        },
+    )
+
+
+def modular_input_end(logger: logging.Logger, modular_input_name: str):
+    """Specific function to log the end of the modular input."""
+    log_event(
+        logger,
+        {
+            "action": "ended",
+            "modular_input_name": modular_input_name,
+        },
+    )
+
+
+def _base_error_log(
+    logger,
+    exc: Exception,
+    exe_label,
+    full_msg: bool = True,
+    msg_before: str = None,
+    msg_after: str = None,
+):
+    log_exception(
+        logger,
+        exc,
+        exc_label=exe_label,
+        full_msg=full_msg,
+        msg_before=msg_before,
+        msg_after=msg_after,
+    )
+
+
+log_connection_error = partial(_base_error_log, exe_label="Connection Error")
+log_configuration_error = partial(_base_error_log, exe_label="Configuration Error")
+log_permission_error = partial(_base_error_log, exe_label="Permission Error")
+log_authentication_error = partial(_base_error_log, exe_label="Authentication Error")
+log_server_error = partial(_base_error_log, exe_label="Server Error")
+
+
+def events_ingested(
+    logger: logging.Logger,
+    modular_input_name: str,
+    sourcetype: str,
+    n_events: int,
+    index: str,
+    account: str = None,
+    host: str = None,
+    license_usage_source: str = None,
+):
+    """Specific function to log the basic information of events ingested for
+    the monitoring dashboard.
+
+    Arguments:
+        logger: Add-on logger.
+        modular_input_name: Full name of the modular input. It needs to be in a format `<input_type>://<input_name>`.
+            In case of invalid format ValueError is raised.
+        sourcetype: Source type used to write event.
+        n_events: Number of ingested events.
+        index: Index used to write event.
+        license_usage_source: source used to match data with license_usage.log.
+        account: Account used to write event. (optional)
+        host: Host used to write event. (optional)
+    """
+
+    if "://" in modular_input_name:
+        input_name = modular_input_name.split("/")[-1]
+    else:
+        raise ValueError(
+            f"Invalid modular input name: {modular_input_name}. "
+            f"It should be in format <input_type>://<input_name>"
+        )
+
+    result = {
+        "action": "events_ingested",
+        "modular_input_name": license_usage_source
+        if license_usage_source
+        else modular_input_name,
+        "sourcetype_ingested": sourcetype,
+        "n_events": n_events,
+        "event_input": input_name,
+        "event_index": index,
+    }
+
+    if account:
+        result["event_account"] = account
+
+    if host:
+        result["event_host"] = host
+
+    log_event(logger, result)
+
+
+def log_exception(
+    logger: logging.Logger,
+    e: Exception,
+    exc_label: str,
+    full_msg: bool = True,
+    msg_before: str = None,
+    msg_after: str = None,
+    log_level: int = logging.ERROR,
+):
+    """General function to log exceptions.
+
+    Arguments:
+        logger: Add-on logger.
+        e: Exception to log.
+        exc_label: label for the error to categorize it.
+        full_msg: if set to True, full traceback will be logged. Default: True
+        msg_before: custom message before exception traceback. Default: None
+        msg_after: custom message after exception traceback. Default: None
+        log_level: Log level to log exception. Default: ERROR.
+    """
+
+    msg = _get_exception_message(e, full_msg, msg_before, msg_after)
+    logger.log(log_level, f'exc_l="{exc_label}" {msg}')
+
+
+def _get_exception_message(
+    e: Exception,
+    full_msg: bool = True,
+    msg_before: str = None,
+    msg_after: str = None,
+) -> str:
+    exc_type, exc_value, exc_traceback = type(e), e, e.__traceback__
+    if full_msg:
+        error = traceback.format_exception(exc_type, exc_value, exc_traceback)
+    else:
+        error = traceback.format_exception_only(exc_type, exc_value)
+
+    msg_start = msg_before if msg_before is not None else ""
+    msg_mid = "".join(error)
+    msg_end = msg_after if msg_after is not None else ""
+    return f"{msg_start}\n{msg_mid}\n{msg_end}"

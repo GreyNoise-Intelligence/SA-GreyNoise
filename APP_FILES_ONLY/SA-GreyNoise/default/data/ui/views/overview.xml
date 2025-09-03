@@ -25,7 +25,7 @@
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*
+              /app/SA-GreyNoise/queried_ip_addresses?form.tkn_ip_address=*
             ]]>
           </link>
         </drilldown>
@@ -69,9 +69,9 @@
   <row>
     <panel>
       <single>
-        <title># of Noise IPs in the deployment</title>
+        <title># of Internet Scanner IPs in the deployment</title>
         <search>
-          <query>| inputlookup gn_scan_deployment_ip_lookup where (noise="1")
+          <query>| inputlookup gn_scan_deployment_ip_lookup where (internet_scanner_intelligence="1")
 | stats count</query>
           <earliest>0</earliest>
           <latest></latest>
@@ -81,7 +81,7 @@
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*&form.tkn_noise=1
+              /app/SA-GreyNoise/queried_ip_addresses?form.tkn_ip_address=*&form.tkn_scanner=1
             ]]>
           </link>
         </drilldown>
@@ -89,13 +89,13 @@
     </panel>
     <panel>
       <single>
-        <title>Percentage of Noise IPs in the deployment</title>
+        <title>Percentage of Internet Scanner IPs in the deployment</title>
         <search>
           <query>| inputlookup gn_scan_deployment_ip_lookup
-| stats count(eval(noise=1)) AS noisy_ips, count(eval(noise=1 OR noise=0)) AS total_ips
-| eval noise_percent=((noisy_ips/total_ips)*100)
-| eval noise_percent = if(noise_percent&gt;0, noise_percent, 0)
-| table noise_percent</query>
+| stats count(eval(internet_scanner_intelligence=1)) AS noisy_ips, count(eval(internet_scanner_intelligence=1 OR internet_scanner_intelligence=0)) AS total_ips
+| eval internet_scanner_percent=((noisy_ips/total_ips)*100)
+| eval internet_scanner_percent = if(internet_scanner_percent&gt;0, internet_scanner_percent, 0)
+| table internet_scanner_percent</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
@@ -107,9 +107,9 @@
     </panel>
     <panel>
       <table>
-        <title># of Noise IPs by Classification</title>
+        <title># of Internet Scanner IPs by Classification</title>
         <search>
-          <query>| inputlookup gn_scan_deployment_ip_lookup where (noise="1")
+          <query>| inputlookup gn_scan_deployment_ip_lookup where (internet_scanner_intelligence="1")
 | stats count by classification
 | sort -count</query>
           <earliest>0</earliest>
@@ -129,9 +129,9 @@
   <row>
     <panel>
       <single>
-        <title># of RIOT IPs in the deployment</title>
+        <title># of Business Service IPs in the deployment</title>
         <search>
-          <query>| inputlookup gn_scan_deployment_ip_lookup where (RIOT="1")
+          <query>| inputlookup gn_scan_deployment_ip_lookup where (business_service_intelligence="1")
 | stats count</query>
           <earliest>0</earliest>
           <latest></latest>
@@ -141,7 +141,7 @@
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*&form.tkn_riot=1
+              /app/SA-GreyNoise/queried_ip_addresses?form.tkn_ip_address=*&form.tkn_bizserv=1
             ]]>
           </link>
         </drilldown>
@@ -149,13 +149,13 @@
     </panel>
     <panel>
       <single>
-        <title>Percentage of RIOT IPs in the deployment</title>
+        <title>Percentage of Business Service IPs in the deployment</title>
         <search>
           <query>| inputlookup gn_scan_deployment_ip_lookup
-| stats count(eval(RIOT=1)) AS riot_ips, count(eval(RIOT=1 OR RIOT=0)) AS total_ips
-| eval riot_percent=((riot_ips/total_ips)*100)
-| eval riot_percent = if(riot_percent&gt;0, riot_percent, 0)
-| table riot_percent</query>
+| stats count(eval(business_service_intelligence=1)) AS business_service_ips, count(eval(business_service_intelligence=1 OR business_service_intelligence=0)) AS total_ips
+| eval business_service_percent=((business_service_ips/total_ips)*100)
+| eval business_service_percent = if(business_service_percent&gt;0, business_service_percent, 0)
+| table business_service_percent</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
@@ -167,9 +167,9 @@
     </panel>
     <panel>
       <table>
-        <title># of RIOT IPs by Trust Level</title>
+        <title># of Business Service IPs by Trust Level</title>
         <search>
-          <query>| inputlookup gn_scan_deployment_ip_lookup where (RIOT="1")
+          <query>| inputlookup gn_scan_deployment_ip_lookup where (business_service_intelligence="1")
 | eval trust_level_string = tostring(trust_level)
 | rename trust_level_string as "Trust Level"
 | stats count by "Trust Level"

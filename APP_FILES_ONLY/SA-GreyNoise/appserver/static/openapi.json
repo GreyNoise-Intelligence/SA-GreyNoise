@@ -1,0 +1,724 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "SA-GreyNoise",
+        "version": "3.0.0",
+        "description": "GreyNoise App for Splunk",
+        "contact": {
+            "name": "GreyNoise",
+            "email": "support@greynoise.io"
+        }
+    },
+    "servers": [
+        {
+            "url": "https://{domain}:{port}/servicesNS/-/SA-GreyNoise",
+            "variables": {
+                "domain": {
+                    "default": "localhost"
+                },
+                "port": {
+                    "default": "8089"
+                }
+            },
+            "description": "Access via management interface"
+        }
+    ],
+    "components": {
+        "schemas": {
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "api_key": {
+                        "type": "string",
+                        "format": "password"
+                    }
+                }
+            },
+            "parameters_without_name": {
+                "type": "object",
+                "properties": {
+                    "api_key": {
+                        "type": "string",
+                        "format": "password"
+                    }
+                }
+            },
+            "scan_deployment": {
+                "type": "object",
+                "properties": {
+                    "ip_indexes": {
+                        "type": "string"
+                    },
+                    "cim_ip_fields": {
+                        "type": "string"
+                    },
+                    "other_ip_fields": {
+                        "type": "string"
+                    },
+                    "scan_start_time": {
+                        "type": "string",
+                        "enum": [
+                            "NOW",
+                            "LAST_FIVE_MINS",
+                            "LAST_SIXTY_MINS",
+                            "LAST_TWENTY_FOUR_HOURS",
+                            "LAST_SEVEN_DAYS",
+                            "LAST_THIRTY_DAYS",
+                            "LAST_SIXTY_DAYS"
+                        ]
+                    },
+                    "enable_ss": {
+                        "type": "string"
+                    },
+                    "force_enable_ss": {
+                        "type": "string"
+                    },
+                    "update_risk_score_to_splunk_es": {
+                        "type": "string"
+                    },
+                    "malicious_score": {
+                        "type": "string"
+                    },
+                    "suspicious_score": {
+                        "type": "string"
+                    },
+                    "unknown_score": {
+                        "type": "string"
+                    },
+                    "benign_score": {
+                        "type": "string"
+                    }
+                }
+            },
+            "scan_deployment_without_name": {
+                "type": "object",
+                "properties": {
+                    "ip_indexes": {
+                        "type": "string"
+                    },
+                    "cim_ip_fields": {
+                        "type": "string"
+                    },
+                    "other_ip_fields": {
+                        "type": "string"
+                    },
+                    "scan_start_time": {
+                        "type": "string",
+                        "enum": [
+                            "NOW",
+                            "LAST_FIVE_MINS",
+                            "LAST_SIXTY_MINS",
+                            "LAST_TWENTY_FOUR_HOURS",
+                            "LAST_SEVEN_DAYS",
+                            "LAST_THIRTY_DAYS",
+                            "LAST_SIXTY_DAYS"
+                        ]
+                    },
+                    "enable_ss": {
+                        "type": "string"
+                    },
+                    "force_enable_ss": {
+                        "type": "string"
+                    },
+                    "update_risk_score_to_splunk_es": {
+                        "type": "string"
+                    },
+                    "malicious_score": {
+                        "type": "string"
+                    },
+                    "suspicious_score": {
+                        "type": "string"
+                    },
+                    "unknown_score": {
+                        "type": "string"
+                    },
+                    "benign_score": {
+                        "type": "string"
+                    }
+                }
+            },
+            "feed_configuration": {
+                "type": "object",
+                "properties": {
+                    "enable_feed_import": {
+                        "type": "string"
+                    },
+                    "force_enable_ss": {
+                        "type": "string"
+                    },
+                    "feed_selection": {
+                        "type": "string",
+                        "enum": [
+                            "BENIGN",
+                            "MALICIOUS",
+                            "SUSPICIOUS",
+                            "MALICIOUS_BENIGN",
+                            "MALICIOUS_SUSPICIOUS_BENIGN",
+                            "ALL"
+                        ]
+                    },
+                    "ingest_feed_to_index": {
+                        "type": "string"
+                    },
+                    "feed_index": {
+                        "type": "string"
+                    }
+                }
+            },
+            "feed_configuration_without_name": {
+                "type": "object",
+                "properties": {
+                    "enable_feed_import": {
+                        "type": "string"
+                    },
+                    "force_enable_ss": {
+                        "type": "string"
+                    },
+                    "feed_selection": {
+                        "type": "string",
+                        "enum": [
+                            "BENIGN",
+                            "MALICIOUS",
+                            "SUSPICIOUS",
+                            "MALICIOUS_BENIGN",
+                            "MALICIOUS_SUSPICIOUS_BENIGN",
+                            "ALL"
+                        ]
+                    },
+                    "ingest_feed_to_index": {
+                        "type": "string"
+                    },
+                    "feed_index": {
+                        "type": "string"
+                    }
+                }
+            },
+            "caching": {
+                "type": "object",
+                "properties": {
+                    "enable_caching": {
+                        "type": "string"
+                    },
+                    "ttl": {
+                        "type": "string"
+                    },
+                    "purge_cache": {
+                        "type": "string"
+                    }
+                }
+            },
+            "caching_without_name": {
+                "type": "object",
+                "properties": {
+                    "enable_caching": {
+                        "type": "string"
+                    },
+                    "ttl": {
+                        "type": "string"
+                    },
+                    "purge_cache": {
+                        "type": "string"
+                    }
+                }
+            },
+            "logging": {
+                "type": "object",
+                "properties": {
+                    "loglevel": {
+                        "type": "string",
+                        "enum": [
+                            "DEBUG",
+                            "INFO",
+                            "WARNING",
+                            "ERROR",
+                            "CRITICAL"
+                        ]
+                    }
+                }
+            },
+            "logging_without_name": {
+                "type": "object",
+                "properties": {
+                    "loglevel": {
+                        "type": "string",
+                        "enum": [
+                            "DEBUG",
+                            "INFO",
+                            "WARNING",
+                            "ERROR",
+                            "CRITICAL"
+                        ]
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "BasicAuth": {
+                "type": "http",
+                "scheme": "basic"
+            }
+        }
+    },
+    "paths": {
+        "/app_greynoise_settings/parameters": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get list of items for parameters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/parameters_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get list of items for parameters",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Create item in parameters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/parameters_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Create item in parameters",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/parameters"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/app_greynoise_settings/scan_deployment": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get list of items for scan_deployment",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/scan_deployment_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get list of items for scan_deployment",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Create item in scan_deployment",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/scan_deployment_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Create item in scan_deployment",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/scan_deployment"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/app_greynoise_settings/feed_configuration": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get list of items for feed_configuration",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/feed_configuration_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get list of items for feed_configuration",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Create item in feed_configuration",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/feed_configuration_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Create item in feed_configuration",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/feed_configuration"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/app_greynoise_settings/caching": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get list of items for caching",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/caching_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get list of items for caching",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Create item in caching",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/caching_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Create item in caching",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/caching"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/app_greynoise_settings/logging": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get list of items for logging",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/logging_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get list of items for logging",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Create item in logging",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/logging_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Create item in logging",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/logging"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        }
+    },
+    "security": [
+        {
+            "BasicAuth": []
+        }
+    ]
+}

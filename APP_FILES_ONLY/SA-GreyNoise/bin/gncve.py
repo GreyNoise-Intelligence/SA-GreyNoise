@@ -6,7 +6,7 @@ import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
 import utility
 import validator
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise.util import validate_cve_id
 from greynoise_constants import INTEGRATION_NAME
@@ -56,14 +56,52 @@ class GNCVECommand(EventingCommand):
 
     api_validation_flag = False
 
+    def __init__(self):
+        """Initialize custom command class."""
+        super(GNCVECommand, self).__init__()
+        self.api_key = None
+        self.proxy = None
+        self.api_client = None
+
+    def initialize_api(self, session_key, logger):
+        """Initialize API key, proxy and validate API key."""
+        try:
+            message = ""
+            self.proxy = utility.get_proxy(session_key, logger=logger)
+            self.api_key = utility.get_api_key(session_key, logger=logger)
+        except APIKeyNotFoundError as e:
+            message = str(e)
+        except HTTPError as e:
+            message = str(e)
+
+        if message:
+            logger.error("Error occurred while retrieving Proxy and/or API key details, Error: {}".format(message))
+            raise Exception(message)
+
+        # API key validation
+        if not self.api_validation_flag:
+            api_key_validation, message = utility.validate_api_key(self.api_key, logger, self.proxy)
+            logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
+            self.api_validation_flag = True
+            if not api_key_validation:
+                logger.info(message)
+                raise Exception(message)
+
+        # Initialize API client
+        if "http" in self.proxy:
+            api_config = APIConfig(
+                api_key=self.api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=self.proxy
+            )
+        else:
+            api_config = APIConfig(api_key=self.api_key, timeout=120, integration_name=INTEGRATION_NAME)
+        self.api_client = GreyNoise(api_config)
+
     def transform(self, records):
         """Method that processes and yield event records to the Splunk events pipeline."""
         cve_id = self.cve
         cve_field = self.cve_field
-        api_key = ""
         events_per_chunk = 1
         threads = 3
-        use_cache = False
         logger = utility.setup_logger(
             session_key=self._metadata.searchinfo.session_key, log_context=self._metadata.searchinfo.command
         )
@@ -79,19 +117,13 @@ class GNCVECommand(EventingCommand):
             )
             exit(1)
 
-        try:
-            message = ""
-            api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
-            proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
-        except APIKeyNotFoundError as e:
-            message = str(e)
-        except HTTPError as e:
-            message = str(e)
-
-        if message:
-            self.write_error(message)
-            logger.error("Error occurred while retrieving API key, Error: {}".format(message))
-            exit(1)
+        # Initialize API if not already done
+        if not self.api_client:
+            try:
+                self.initialize_api(self._metadata.searchinfo.session_key, logger)
+            except Exception as e:
+                self.write_error(str(e))
+                exit(1)
 
         if cve_id and not cve_field:
             # This piece of code will work as generating command and will not use the Splunk events.
@@ -100,18 +132,11 @@ class GNCVECommand(EventingCommand):
 
             logger.info("Started retrieving results")
             try:
-                logger.debug(
-                    "Initiating to CVE lookup for CVE ID(s): {}".format(str(cve_ids))
-                )
-
-                if "http" in proxy:
-                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
-                else:
-                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+                logger.debug("Initiating to CVE lookup for CVE ID(s): {}".format(str(cve_ids)))
 
                 cve_responses = []
                 for cve_id in cve_ids:
-                    cve_response = api_client.cve(cve_id)
+                    cve_response = self.api_client.cve(cve_id)
                     cve_responses.append(cve_response)
                 logger.info("Retrieved results successfully")
 
@@ -153,9 +178,7 @@ class GNCVECommand(EventingCommand):
 
             except RateLimitError:
                 logger.error(
-                    "Rate limit error occurred while fetching the context information for cves={}".format(
-                        str(cve_id)
-                    )
+                    "Rate limit error occurred while fetching the context information for cves={}".format(str(cve_id))
                 )
                 self.write_error("The Rate Limit has been exceeded. Please contact the Administrator")
             except RequestFailure as e:
@@ -206,50 +229,19 @@ class GNCVECommand(EventingCommand):
                         self.write_error(str(e))
                         exit(1)
 
-                    # API key validation
-                    if not self.api_validation_flag:
-                        proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
-                        api_key_validation, message = utility.validate_api_key(api_key, logger, proxy)
-                        logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
-                        self.api_validation_flag = True
-                        if not api_key_validation:
-                            logger.info(message)
-                            self.write_error(message)
-                            exit(1)
-
                     # This piece of code will work as transforming command and will use
                     # the Splunk ingested events and field which is specified in ip_field.
-                    chunk_dict = event_generator.batch(records, cve_field, events_per_chunk, logger, optimize_requests=False)
-
-                    # This means there are only 1000 or below IPs to call in the entire bunch of records
-                    # Use one thread with single thread with caching mechanism enabled for the chunk
-                    if len(chunk_dict) == 1:
-                        logger.info(
-                            "Less then 1000 distinct CVEs are present, "
-                            "optimizing the CVE requests call to GreyNoise API..."
-                        )
-                        threads = 1
-                        use_cache = True
-
-                    if "http" in proxy:
-                        api_client = GreyNoise(
-                            api_key=api_key,
-                            timeout=120,
-                            use_cache=use_cache,
-                            integration_name=INTEGRATION_NAME,
-                            proxy=proxy,
-                        )
-                    else:
-                        api_client = GreyNoise(
-                            api_key=api_key, timeout=120, use_cache=use_cache, integration_name=INTEGRATION_NAME
-                        )
+                    chunk_dict = event_generator.batch(
+                        records, cve_field, events_per_chunk, logger, optimize_requests=False
+                    )
+                    logger.debug(f"Successfully divided events into {len(chunk_dict)} chunk(s)")
 
                     # When no records found, batch will return {0:([],[])}
                     tot_time_start = time.time()
                     if len(chunk_dict) > 0:
                         for event in event_generator.get_all_events(
                             self._metadata.searchinfo.session_key,
-                            api_client,
+                            self.api_client,
                             "cve",
                             cve_field,
                             chunk_dict,
@@ -275,10 +267,6 @@ class GNCVECommand(EventingCommand):
         else:
             logger.error("Please specify exactly one parameter from cve and cve_field with some value.")
             self.write_error("Please specify exactly one parameter from cve and cve_field with some value.")
-
-    def __init__(self):
-        """Initialize custom command class."""
-        super(GNCVECommand, self).__init__()
 
 
 dispatch(GNCVECommand, sys.argv, sys.stdin, sys.stdout, __name__)

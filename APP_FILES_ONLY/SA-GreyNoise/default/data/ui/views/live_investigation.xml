@@ -60,8 +60,18 @@
       <title></title>
       <table rejects="$message$">
         <search id="gnquery_results">
-          <query>
-    $token_search_trigger$ | gnquery
+          <done>
+            <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;no results&quot;">
+              <set token="message">GreyNoise has not observed any recent activity with the provided parameters</set>
+            </condition>
+            <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;bad query&quot;">
+              <set token="message">No results were returned due to improper values in the parameters</set>
+            </condition>
+            <condition match="$job.resultCount$ == 1 AND len($result.message$) &gt; 0">
+              <set token="message">No results were returned due to an unexpected reason: $result.message$</set>
+            </condition>
+          </done>
+          <query>$token_search_trigger$ | gnquery
     [| makeresults
     | eval last_seen = " last_seen:"."["."$tkn_start_time$"." TO "."$tkn_end_time$"."]"
     | eval ip_address = if(isnull("$tkn_ip_address_escaped$") OR "$tkn_ip_address_escaped$"=="", "", " ip:"."$tkn_ip_address_escaped$")
@@ -75,33 +85,26 @@
     | eval asn = if(isnull("$tkn_asn_escaped$") OR "$tkn_asn_escaped$"=="", "", " metadata.asn:"."$tkn_asn_escaped$")
     | eval query = ip_address.classification.organization.actor.tag.os.category.country.asn.last_seen
     | return query ]
-| eval noise = if(seen == "1", "True", "False")
-| table ip noise classification last_seen organization actor tags os category country asn message
-| rename ip AS "IP Address" noise AS "Noise" classification AS Classification last_seen AS "Last Seen" organization AS Organization actor AS Actor tags AS Tags os AS OS category AS Category country AS Country asn AS ASN
- </query>
-          <done>
-            <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;no results&quot;">
-              <set token="message">GreyNoise has not observed any recent activity with the provided parameters</set>
-            </condition>
-            <condition match="$job.resultCount$ == 1 AND $result.message$ == &quot;bad query&quot;">
-              <set token="message">No results were returned due to improper values in the parameters</set>
-            </condition>
-            <condition match="$job.resultCount$ == 1 AND len($result.message$) &gt; 0">
-              <set token="message">No results were returned due to an unexpected reason: $result.message$</set>
-            </condition>
-          </done>
+    | spath output=internet_scanner path=results.internet_scanner_intelligence.found
+    | spath output=business_service path=results.business_service_intelligence.found 
+    | spath output=tags path=results.internet_scanner_intelligence.tags{}.name
+    | table ip internet_scanner business_service classification trust_level last_seen organization actor tags cves os category source_country asn message
+    | rename ip AS "IP Address" internet_scanner AS "Internet Scannner" business_service as "Business Service" classification AS Classification trust_level AS "Trust Level" last_seen AS "Last Seen" organization AS Organization actor AS Actor tags AS Tags cves as CVEs os AS OS category AS Category source_country AS "Source Country" asn AS ASN</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
         </search>
-        <option name="rowNumbers">true</option>
         <option name="count">50</option>
         <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <fields>["IP Address","Internet Scannner","Business Service","Classification","Trust Level","Last Seen","Organization","Actor","Tags","CVEs","OS","Category","Source Country","ASN"]</fields>
         <drilldown>
           <link target="_blank">
             <![CDATA[
-                /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=$row.IP Address$
+                /app/SA-GreyNoise/queried_ip_addresses?form.tkn_ip_address=$row.IP Address$
               ]]>
           </link>
         </drilldown>
-        <fields>"IP Address", Noise, Classification, "Last Seen", Organization, Actor, Tags, OS, Category, Country, ASN</fields>
       </table>
       <html depends="$message$">
          <div class="custom-result-value">$message$</div>

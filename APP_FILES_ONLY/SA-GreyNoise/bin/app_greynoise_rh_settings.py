@@ -3,6 +3,7 @@ from greynoise_account_validation import (
     GreyNoiseAPIValidation,
     GreyNoiseFeedConfiguration,
     GreyNoiseScanDeployment,
+    GreyNoiseESAppValidation,
     PurgeHandler,
     TtlHandler,
 )
@@ -37,6 +38,8 @@ fields_feed_configuration = [
     field.RestField("feed_selection", required=False, encrypted=False, validator=None),
     field.RestField("enable_feed_import", required=False, encrypted=False, validator=GreyNoiseFeedConfiguration()),
     field.RestField("force_enable_ss", required=False, encrypted=False, default=None, validator=None),
+    field.RestField("ingest_feed_to_index", required=False, encrypted=False, default="0", validator=None),
+    field.RestField("feed_index", required=True, encrypted=False, default="main", validator=None),
 ]
 model_feed_configuration = RestModel(fields_feed_configuration, name="feed_configuration")
 
@@ -61,6 +64,11 @@ fields_scan_deployment = [
             max_len=8192,
         ),
     ),
+    field.RestField("update_risk_score_to_splunk_es", required=False, encrypted=False, default=None, validator=GreyNoiseESAppValidation()),
+    field.RestField("malicious_score", required=True, encrypted=False, default="80", validator=None),
+    field.RestField("suspicious_score", required=True, encrypted=False, default="50", validator=None),
+    field.RestField("unknown_score", required=True, encrypted=False, default="30", validator=None),
+    field.RestField("benign_score", required=True, encrypted=False, default="10", validator=None),
     field.RestField("enable_ss", required=False, encrypted=False, default=None, validator=GreyNoiseScanDeployment()),
     field.RestField("other_ip_fields", required=False, encrypted=False, default=None, validator=None),
     field.RestField("scan_start_time", required=True, encrypted=False, default=None, validator=None),

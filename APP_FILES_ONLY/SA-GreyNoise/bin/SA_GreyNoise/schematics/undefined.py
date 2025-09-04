@@ -3,7 +3,7 @@ A type and singleton value (like None) to represent fields that
 have not been initialized.
 """
 
-from __future__ import unicode_literals, absolute_import
+from __future__ import absolute_import, unicode_literals
 
 
 class UndefinedType(object):
@@ -11,10 +11,10 @@ class UndefinedType(object):
     _instance = None
 
     def __str__(self):
-        return 'Undefined'
+        return "Undefined"
 
     def __repr__(self):
-        return 'Undefined'
+        return "Undefined"
 
     def __eq__(self, other):
         return self is other
@@ -28,20 +28,21 @@ class UndefinedType(object):
     __nonzero__ = __bool__
 
     def __lt__(self, other):
-        self._cmp_err(other, '<')
+        self._cmp_err(other, "<")
 
     def __gt__(self, other):
-        self._cmp_err(other, '>')
+        self._cmp_err(other, ">")
 
     def __le__(self, other):
-        self._cmp_err(other, '<=')
+        self._cmp_err(other, "<=")
 
     def __ge__(self, other):
-        self._cmp_err(other, '>=')
+        self._cmp_err(other, ">=")
 
     def _cmp_err(self, other, op):
-        raise TypeError("unorderable types: {0}() {1} {2}()".format(
-                        self.__class__.__name__, op, other.__class__.__name__))
+        raise TypeError(
+            "unorderable types: {0}() {1} {2}()".format(self.__class__.__name__, op, other.__class__.__name__)
+        )
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:

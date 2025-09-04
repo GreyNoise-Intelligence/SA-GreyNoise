@@ -6,7 +6,7 @@ import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
 import utility
 import validator
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise.util import validate_ip
 from greynoise_constants import INTEGRATION_NAME
@@ -22,8 +22,8 @@ class GNQuickCommand(EventingCommand):
     gnquick - Generating and Transforming Command.
 
     This command can be used as generating command as well as transforming command,
-    When used as generating command, it returns noise and RIOT status of the given IP addresses,
-    When used as transforming command, it adds the noise and RIOT status information to
+    When used as generating command, it returns Internet Scanner and Business Service Intelligence status of the given IP addresses,
+    When used as transforming command, it adds the Internet Scanner and Business Service Intelligence status information to
     the events that are returned from Splunk search.
     Data pulled from /v2/noise/multi/quick?ips=<ip_address1>,<ip_address2> using GreyNoise Python SDK
 
@@ -35,14 +35,14 @@ class GNQuickCommand(EventingCommand):
     **Description**::
     When used as generating command, gnquick command uses the IP address or
     IP addresses provided in ip field to return
-    Noise and Riot status, when used as transforming command, gnquick command uses the field representing IP address
-    presented by ip_field to add the noise and RIOT information to each events.
-    The Noise and Riot status is pulled using method :method:quick from GreyNoise Python SDK.
+    Internet Scanner and Business Service Intelligence status, when used as transforming command, gnquick command uses the field representing IP address
+    presented by ip_field to add the Internet Scanner and Business Service Intelligence information to each events.
+    The Internet Scanner and Business Service Intelligence status is pulled using method :method:quick from GreyNoise Python SDK.
     """
 
     ip = Option(
         doc="""**Syntax:** **ip=***<ip_address>*
-        **Description:** IP address(es) for which noise and RIOT status needs to be retrieved from GreyNoise""",
+        **Description:** IP address(es) for which Internet Scanner and Business Service Intelligence status needs to be retrieved from GreyNoise""",
         name="ip",
         require=False,
     )
@@ -57,14 +57,52 @@ class GNQuickCommand(EventingCommand):
 
     api_validation_flag = False
 
+    def __init__(self):
+        """Initialize custom command class."""
+        super(GNQuickCommand, self).__init__()
+        self.api_key = None
+        self.proxy = None
+        self.api_client = None
+
+    def initialize_api(self, session_key, logger):
+        """Initialize API key, proxy and validate API key."""
+        try:
+            message = ""
+            self.proxy = utility.get_proxy(session_key, logger=logger)
+            self.api_key = utility.get_api_key(session_key, logger=logger)
+        except APIKeyNotFoundError as e:
+            message = str(e)
+        except HTTPError as e:
+            message = str(e)
+
+        if message:
+            logger.error("Error occurred while retrieving Proxy and/or API key details, Error: {}".format(message))
+            raise Exception(message)
+
+        # API key validation
+        if not self.api_validation_flag:
+            api_key_validation, message = utility.validate_api_key(self.api_key, logger, self.proxy)
+            logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
+            self.api_validation_flag = True
+            if not api_key_validation:
+                logger.info(message)
+                raise Exception(message)
+
+        # Initialize API client
+        if "http" in self.proxy:
+            api_config = APIConfig(
+                api_key=self.api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=self.proxy
+            )
+        else:
+            api_config = APIConfig(api_key=self.api_key, timeout=120, integration_name=INTEGRATION_NAME)
+        self.api_client = GreyNoise(api_config)
+
     def transform(self, records):
         """Method that processes and yield event records to the Splunk events pipeline."""
         ip_addresses = self.ip
         ip_field = self.ip_field
-        api_key = ""
         EVENTS_PER_CHUNK = 5000
         THREADS = 3
-        USE_CACHE = False
         logger = utility.setup_logger(
             session_key=self._metadata.searchinfo.session_key, log_context=self._metadata.searchinfo.command
         )
@@ -80,19 +118,13 @@ class GNQuickCommand(EventingCommand):
             )
             exit(1)
 
-        try:
-            message = ""
-            api_key = utility.get_api_key(self._metadata.searchinfo.session_key, logger=logger)
-            proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
-        except APIKeyNotFoundError as e:
-            message = str(e)
-        except HTTPError as e:
-            message = str(e)
-
-        if message:
-            self.write_error(message)
-            logger.error("Error occurred while retrieving API key, Error: {}".format(message))
-            exit(1)
+        # Initialize API if not already done
+        if not self.api_client:
+            try:
+                self.initialize_api(self._metadata.searchinfo.session_key, logger)
+            except Exception as e:
+                self.write_error(str(e))
+                exit(1)
 
         if ip_addresses and not ip_field:
             # This piece of code will work as generating command and will not use the Splunk events.
@@ -102,13 +134,8 @@ class GNQuickCommand(EventingCommand):
             logger.info("Started retrieving results")
             try:
                 logger.debug(
-                    "Initiating to fetch noise and RIOT status for IP address(es): {}".format(str(ip_addresses))
+                    "Initiating to fetch Internet Scanner and Business Service Intelligence status for IP address(es): {}".format(str(ip_addresses))
                 )
-
-                if "http" in proxy:
-                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
-                else:
-                    api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
 
                 # CACHING START
                 cache_enabled, cache_client = utility.get_caching(
@@ -123,14 +150,14 @@ class GNQuickCommand(EventingCommand):
                             response = cache_client.query_kv_store(ips_in_cache)
                         if response is None:
                             logger.debug("KVStore is not ready. Skipping caching mechanism.")
-                            noise_status = api_client.quick(ip_addresses)
+                            noise_status = self.api_client.quick(ip_addresses)
                         elif not response:
                             noise_status = utility.fetch_response_from_api(
-                                api_client.quick, cache_client, ip_addresses, logger
+                                self.api_client.quick, cache_client, ip_addresses, logger
                             )
                         else:
                             noise_status = utility.fetch_response_from_api(
-                                api_client.quick, cache_client, ips_not_in_cache, logger
+                                self.api_client.quick, cache_client, ips_not_in_cache, logger
                             )
                             noise_status.extend(response)
                     except Exception:
@@ -141,12 +168,11 @@ class GNQuickCommand(EventingCommand):
                         )
                     logger.debug("Generating command with caching took {} seconds.".format(time.time() - cache_start))
                 else:
-                    # Opting timeout 120 seconds for the requests
-                    noise_status = api_client.quick(ip_addresses)
+                    noise_status = self.api_client.quick(ip_addresses)
                 logger.info("Retrieved results successfully")
                 # CACHING END
 
-                # Process the API response and send the noise and RIOT status information of IP with extractions
+                # Process the API response and send the Internet Scanner and Business Service Intelligence status information of IP with extractions
                 # to the Splunk, Using this flag to handle the field extraction issue in custom commands
                 # Only the fields extracted from the first event of generated by custom command
                 # will be extracted from all events
@@ -160,7 +186,7 @@ class GNQuickCommand(EventingCommand):
                             yield event_generator.make_valid_event("quick", sample, first_record_flag)
                             if first_record_flag:
                                 first_record_flag = False
-                            logger.debug("Fetched noise and RIOT status for ip={} from GreyNoise API".format(str(ip)))
+                            logger.debug("Fetched Internet Scanner and Business Service Intelligence status for ip={} from GreyNoise API".format(str(ip)))
                             break
                     else:
                         erroneous_ip_present = True
@@ -168,7 +194,7 @@ class GNQuickCommand(EventingCommand):
                             validate_ip(ip, strict=True)
                         except ValueError as e:
                             error_msg = str(e).split(":")
-                            logger.debug("Generating noise and RIOT status for ip={} manually".format(str(ip)))
+                            logger.debug("Generating Internet Scanner and Business Service Intelligence status for ip={} manually".format(str(ip)))
                             event = {"ip": ip, "error": error_msg[0]}
                             yield event_generator.make_invalid_event("quick", event, first_record_flag)
 
@@ -176,7 +202,7 @@ class GNQuickCommand(EventingCommand):
                                 first_record_flag = False
 
                 if erroneous_ip_present:
-                    logger.warn("Value of one or more IP address(es) is either invalid or non-routable")
+                    logger.warning("Value of one or more IP address(es) is either invalid or non-routable")
                     self.write_warning(
                         "Value of one or more IP address(es) passed to {command_name} "
                         "is either invalid or non-routable".format(command_name=str(self._metadata.searchinfo.command))
@@ -218,7 +244,7 @@ class GNQuickCommand(EventingCommand):
             except Exception:
                 logger.error("Exception: {} ".format(str(traceback.format_exc())))
                 self.write_error(
-                    "Exception occurred while fetching the noise and RIOT status of the IP address(es). "
+                    "Exception occurred while fetching the Internet Scanner and Business Service Intelligence status of the IP address(es). "
                     "See greynoise_main.log for more details."
                 )
 
@@ -237,50 +263,17 @@ class GNQuickCommand(EventingCommand):
                         self.write_error(str(e))
                         exit(1)
 
-                    # API key validation
-                    if not self.api_validation_flag:
-                        proxy = utility.get_proxy(self._metadata.searchinfo.session_key, logger=logger)
-                        api_key_validation, message = utility.validate_api_key(api_key, logger, proxy)
-                        logger.debug("API validation status: {}, message: {}".format(api_key_validation, str(message)))
-                        self.api_validation_flag = True
-                        if not api_key_validation:
-                            logger.info(message)
-                            self.write_error(message)
-                            exit(1)
-
                     # This piece of code will work as transforming command and will use
                     # the Splunk ingested events and field which is specified in ip_field.
                     chunk_dict = event_generator.batch(records, ip_field, EVENTS_PER_CHUNK, logger)
-
-                    # This means there are only 1000 or below IPs to call in the entire bunch of records
-                    # Use one thread with single thread with caching mechanism enabled for the chunk
-                    if len(chunk_dict) == 1:
-                        logger.info(
-                            "Less then 1000 distinct IPs are present, "
-                            "optimizing the IP requests call to GreyNoise API..."
-                        )
-                        THREADS = 1
-                        USE_CACHE = True
-
-                    if "http" in proxy:
-                        api_client = GreyNoise(
-                            api_key=api_key,
-                            timeout=120,
-                            use_cache=USE_CACHE,
-                            integration_name=INTEGRATION_NAME,
-                            proxy=proxy,
-                        )
-                    else:
-                        api_client = GreyNoise(
-                            api_key=api_key, timeout=120, use_cache=USE_CACHE, integration_name=INTEGRATION_NAME
-                        )
+                    logger.debug(f"Successfully divided events into {len(chunk_dict)} chunk(s)")
 
                     # When no records found, batch will return {0:([],[])}
                     tot_time_start = time.time()
                     if len(list(chunk_dict.values())[0][0]) >= 1:
                         for event in event_generator.get_all_events(
                             self._metadata.searchinfo.session_key,
-                            api_client,
+                            self.api_client,
                             "multi",
                             ip_field,
                             chunk_dict,
@@ -294,22 +287,18 @@ class GNQuickCommand(EventingCommand):
                     logger.debug("Total execution time => {}".format(tot_time_end - tot_time_start))
                 except Exception:
                     logger.info(
-                        "Exception occurred while adding the noise and RIOT status to the events, Error: {}".format(
+                        "Exception occurred while adding the Internet Scanner and Business Service Intelligence status to the events, Error: {}".format(
                             traceback.format_exc()
                         )
                     )
                     self.write_error(
-                        "Exception occurred while adding the noise and RIOT status of "
+                        "Exception occurred while adding the Internet Scanner and Business Service Intelligence status of "
                         "the IP addresses to events. See greynoise_main.log for more details."
                     )
 
         else:
             logger.error("Please specify exactly one parameter from ip and ip_field with some value.")
             self.write_error("Please specify exactly one parameter from ip and ip_field with some value.")
-
-    def __init__(self):
-        """Initialize custom command class."""
-        super(GNQuickCommand, self).__init__()
 
 
 dispatch(GNQuickCommand, sys.argv, sys.stdin, sys.stdout, __name__)

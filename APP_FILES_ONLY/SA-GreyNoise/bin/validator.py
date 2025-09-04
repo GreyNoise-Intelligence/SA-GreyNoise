@@ -1,4 +1,5 @@
 """This file contains classes that can be used for validation of the parameters given to the Custom commands by user."""
+
 import re
 
 import app_greynoise_declare  # noqa # pylint: disable=unused-import

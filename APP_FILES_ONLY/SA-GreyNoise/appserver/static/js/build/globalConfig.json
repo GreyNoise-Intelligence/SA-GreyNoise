@@ -1,19 +1,19 @@
 {
-    "pages": { 
+    "pages": {
         "configuration": {
-            "description": "Set up your add-on", 
-            "title": "Configuration", 
-            "tabs": [ 
+            "description": "Set up your add-on",
+            "title": "Configuration",
+            "tabs": [
                 {
                     "name": "parameters",
                     "title": "GreyNoise Setup",
                     "entity": [
                         {
-                            "encrypted": true, 
-                            "required": true, 
-                            "type": "text", 
+                            "encrypted": true,
+                            "required": true,
+                            "type": "text",
                             "label": "API Key",
-                            "field": "api_key", 
+                            "field": "api_key",
                             "defaultValue": "",   
                             "validators": [
                                 {
@@ -22,10 +22,7 @@
                                     "errorMsg": "The length of the API Key should be between 1 and 8192", 
                                     "type": "string"
                                 }
-                            ],  
-                            "options": {
-                                "placeholder": ""
-                            },
+                            ],
                             "help": "Enter the API key of GreyNoise."
                         }
                     ]
@@ -33,136 +30,133 @@
                 {
                     "entity": [
                         {
-                            "required": true, 
-                            "type": "multipleSelect", 
-                            "label": "Indexes", 
+                            "required": true,
+                            "type": "multipleSelect",
+                            "label": "Indexes",
                             "field": "ip_indexes",
-                            "defaultValue": "main", 
-                            "options": { 
-                                "blackList": "^_.*$", 
-                                "delimiter": ",", 
+                            "defaultValue": "main",
+                            "options": {
+                                "denyList": "^_.*$",
+                                "delimiter": ",",
                                 "endpointUrl": "data/indexes"
-                            }, 
+                            },
                             "help" : "Select the indexes to be scanned in the deployment."
                         },
                         {
-                            "required": true, 
-                            "type": "multipleSelect", 
-                            "label": "CIM Fields", 
-                            "field": "cim_ip_fields",      
-                            "defaultValue": "all", 
+                            "required": true,
+                            "type": "multipleSelect",
+                            "label": "CIM Fields",
+                            "field": "cim_ip_fields",
+                            "defaultValue": "all",
                             "options": {
-                                "delimiter": ",", 
+                                "delimiter": ",",
                                 "items": [
                                     {
-                                        "value": "all", 
+                                        "value": "all",
                                         "label": "All"
-                                    }, 
+                                    },
                                     {
-                                        "value": "dest", 
+                                        "value": "dest",
                                         "label": "dest"
-                                    }, 
+                                    },
                                     {
-                                        "value": "dvc", 
+                                        "value": "dvc",
                                         "label": "dvc"
-                                    }, 
+                                    },
                                     {
-                                        "value": "src", 
+                                        "value": "src",
                                         "label": "src"
-                                    }, 
+                                    },
                                     {
-                                        "value": "dest_ip", 
+                                        "value": "dest_ip",
                                         "label": "dest_ip"
-                                    }, 
+                                    },
                                     {
-                                        "value": "src_ip", 
+                                        "value": "src_ip",
                                         "label": "src_ip"
-                                    }, 
+                                    },
                                     {
-                                        "value": "dvc_ip", 
+                                        "value": "dvc_ip",
                                         "label": "dvc_ip"
                                     },
                                     {
-                                        "value": "orig_src", 
+                                        "value": "orig_src",
                                         "label": "orig_src"
                                     },
                                     {
-                                        "value": "orig_dest", 
+                                        "value": "orig_dest",
                                         "label": "orig_dest"
                                     },
                                     {
-                                        "value": "host", 
+                                        "value": "host",
                                         "label": "host"
                                     },
                                     {
-                                        "value": "source", 
+                                        "value": "source",
                                         "label": "source"
                                     },
                                     {
-                                        "value": "dest_translated_ip", 
+                                        "value": "dest_translated_ip",
                                         "label": "dest_translated_ip"
                                     },
                                     {
-                                        "value": "src_translated_ip", 
+                                        "value": "src_translated_ip",
                                         "label": "src_translated_ip"
                                     }
                                 ]
                             },
-                            "help": "Select the CIM fields containing IP address to scan for noise status."
+                            "help": "Select the CIM fields containing IP address to scan for internet scanner status."
                         },
                         {
                             "required": false,
                             "type": "text",
                             "label": "Other Fields",
-                            "field": "other_ip_fields", 
-                            "defaultValue": "", 
-                            "options": {
-                                "placeholder": "Example: ip_field1,ip_field2"
-                            },  
-                            "help": "Enter other comma(,) separated fields containing IP address to scan for noise status.",
+                            "field": "other_ip_fields",
+                            "defaultValue": "",
+                            "help": "Enter other comma(,) separated fields containing IP address to scan for internet scanner status. Example: ip_field1,ip_field2",
                             "validators": [
-                                { 
+                                {
                                     "maxLength": 8192,
-                                    "minLength": 1, 
-                                    "errorMsg": "The length of the fields should be atleast 1", 
+                                    "minLength": 1,
+                                    "errorMsg": "The length of the fields should be atleast 1",
                                     "type": "string"
                                 }
                             ]
                         },
                         {
                             "required": true,
-                            "type": "singleSelect", 
+                            "type": "singleSelect",
                             "label": "Scan Start Time",
-                            "field": "scan_start_time", 
-                            "defaultValue": "LAST_SEVEN_DAYS", 
+                            "field": "scan_start_time",
+                            "defaultValue": "LAST_SEVEN_DAYS",
                             "options": {
                                 "autoCompleteFields": [
                                     {
-                                        "label": "Now", 
+                                        "label": "Now",
                                         "value": "NOW"
                                     },
                                     {
-                                        "label": "Last 5 minutes", 
+                                        "label": "Last 5 minutes",
                                         "value": "LAST_FIVE_MINS"
                                     },
                                     {
-                                        "label": "Last 60 minutes", 
+                                        "label": "Last 60 minutes",
                                         "value": "LAST_SIXTY_MINS"
                                     },
                                     {
-                                        "label": "Last 24 hours", 
+                                        "label": "Last 24 hours",
                                         "value": "LAST_TWENTY_FOUR_HOURS"
                                     },
                                     {
-                                        "label": "Last 7 days", 
+                                        "label": "Last 7 days",
                                         "value": "LAST_SEVEN_DAYS"
-                                    },  
+                                    },
                                     {
-                                        "label": "Last 30 days", 
+                                        "label": "Last 30 days",
                                         "value": "LAST_THIRTY_DAYS"
                                     },
                                     {
-                                        "label": "Last 60 days", 
+                                        "label": "Last 60 days",
                                         "value": "LAST_SIXTY_DAYS"
                                     }
                                 ],
@@ -171,21 +165,125 @@
                             "help": "Specify the time range for scanning the indexed Splunk data."
                         },
                         {
-                            "field": "enable_ss", 
-                            "label": "Enable Scan Deployment", 
-                            "type": "checkbox", 
-                            "help": "Select this checkbox to enable scanning of the deployment.", 
+                            "field": "enable_ss",
+                            "label": "Enable Scan Deployment",
+                            "type": "checkbox",
+                            "help": "Select this checkbox to enable scanning of the deployment.",
                             "required": false
                         },
                         {
-                            "field": "force_enable_ss", 
-                            "label": "Force Scan Deployment", 
-                            "type": "checkbox", 
-                            "help": "Select this checkbox to stop the current scan and forcefully initialize a new scan.", 
+                            "field": "force_enable_ss",
+                            "label": "Force Scan Deployment",
+                            "type": "checkbox",
+                            "help": "Select this checkbox to stop the current scan and forcefully initialize a new scan.",
                             "required": false
+                        },
+                        {
+                            "field": "update_risk_score_to_splunk_es",
+                            "type": "checkbox",
+                            "label": "Update Risk Score To Splunk ES",
+                            "defaultValue": 0,
+                            "required": false,
+                            "help": "Select this checkbox to update the risk score to Splunk ES risk index."
+                        },
+                        {
+                            "field": "malicious_score",
+                            "type": "text",
+                            "label": "Malicious",
+                            "defaultValue": "80",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        100
+                                    ],
+                                    "errorMsg": "Score must be a number [0-100]"
+                                },
+                                {
+                                    "pattern": "^\\d{1,3}$",
+                                    "errorMsg": "Score should be a valid integer only",
+                                    "type": "regex"
+                                }
+                            ],
+                            "help": "Enter the risk score threshold for Malicious classification"
+                        },
+                        {
+                            "field": "suspicious_score",
+                            "type": "text",
+                            "label": "Suspicious",
+                            "defaultValue": "50",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        100
+                                    ],
+                                    "errorMsg": "Score must be a number [0-100]"
+                                },
+                                {
+                                    "pattern": "^\\d{1,3}$",
+                                    "errorMsg": "Score should be a valid integer only",
+                                    "type": "regex"
+                                }
+                            ],
+                            "help": "Enter the risk score threshold for Suspicious classification"
+                        },
+                        {
+                            "field": "unknown_score",
+                            "type": "text",
+                            "label": "Unknown",
+                            "defaultValue": "30",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        100
+                                    ],
+                                    "errorMsg": "Score must be a number [0-100]"
+                                },
+                                {
+                                    "pattern": "^\\d{1,3}$",
+                                    "errorMsg": "Score should be a valid integer only",
+                                    "type": "regex"
+                                }
+                            ],
+                            "help": "Enter the risk score threshold for Unknown classification"
+                        },
+                        {
+                            "field": "benign_score",
+                            "type": "text",
+                            "label": "Benign",
+                            "defaultValue": "10",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        100
+                                    ],
+                                    "errorMsg": "Score must be a number [0-100]"
+                                },
+                                {
+                                    "pattern": "^\\d{1,3}$",
+                                    "errorMsg": "Score should be a valid integer only",
+                                    "type": "regex"
+                                }
+                            ],
+                            "help": "Enter the risk score threshold for Benign classification"
                         }
                     ], 
-                    "title": "Scan Deployment", 
+                    "hook": {
+                        "type": "external",
+                        "src": "ScanDeploymentHook"
+                    },
+                    "title": "Scan Deployment",
                     "name": "scan_deployment"
                 },
                 {
@@ -241,8 +339,32 @@
                                 "disableSearch": true
                             },
                             "help": "Select which GreyNoise feed type to ingest."
+                        },
+                        {
+                            "field": "ingest_feed_to_index",
+                            "type": "checkbox",
+                            "label": "Ingest Feed To Index",
+                            "defaultValue": 0,
+                            "required": false,
+                            "help": "Selecting this checkbox will ingest data into the Splunk index. Please check your licensing as this feature will consume license capacity. Enable this option only if you need to map feed data to Splunk CIM data models for specific use cases."
+                        },
+                        {
+                            "required": true,
+                            "type": "singleSelect",
+                            "label": "Index",
+                            "field": "feed_index",
+                            "defaultValue": "main",
+                            "options": {
+                                "denyList": "^_.*$",
+                                "endpointUrl": "data/indexes"
+                            },
+                            "help" : "Select the index to add feed."
                         }
-                    ], 
+                    ],
+                    "hook": {
+                        "type": "external",
+                        "src": "FeedConfigurationHook"
+                    },
                     "title": "Feed Configuration",
                     "name": "feed_configuration"
                 },
@@ -294,47 +416,49 @@
                     "entity": [
                         {
                             "type": "singleSelect",
-                            "label": "Log level", 
-                            "field": "loglevel", 
+                            "label": "Log level",
+                            "field": "loglevel",
                             "defaultValue": "INFO",
                             "options": {
                                 "autoCompleteFields": [
                                     {
-                                        "label": "DEBUG", 
+                                        "label": "DEBUG",
                                         "value": "DEBUG"
-                                    }, 
+                                    },
                                     {
-                                        "label": "INFO", 
+                                        "label": "INFO",
                                         "value": "INFO"
-                                    }, 
+                                    },
                                     {
-                                        "label": "WARNING", 
+                                        "label": "WARNING",
                                         "value": "WARNING"
-                                    }, 
+                                    },
                                     {
-                                        "label": "ERROR", 
+                                        "label": "ERROR",
                                         "value": "ERROR"
-                                    }, 
+                                    },
                                     {
-                                        "label": "CRITICAL", 
+                                        "label": "CRITICAL",
                                         "value": "CRITICAL"
                                     }
                                 ], 
                                 "disableSearch": true
-                            }                             
+                            }
                         }
-                    ], 
-                    "title": "Logging", 
+                    ],
+                    "title": "Logging",
                     "name": "logging"
-                }            
+                }
             ]
         }
-    }, 
+    },
     "meta": {
-        "displayName": "GreyNoise App for Splunk", 
-        "version": "2.3.0",
-        "restRoot": "app_greynoise", 
-        "name": "SA-GreyNoise", 
-        "apiVersion": "3.0.0"
+        "displayName": "GreyNoise App for Splunk",
+        "version": "3.0.0",
+        "restRoot": "app_greynoise",
+        "name": "SA-GreyNoise",
+        "apiVersion": "3.0.0",
+        "schemaVersion": "0.0.8",
+        "_uccVersion": "5.48.0"
     }
 }

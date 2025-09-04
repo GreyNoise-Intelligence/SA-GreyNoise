@@ -1,27 +1,24 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals, absolute_import
+from __future__ import absolute_import, unicode_literals
 
-from copy import deepcopy
 import inspect
 from collections import OrderedDict
+from copy import deepcopy
 from types import FunctionType
 
+from . import schema
 from .common import *
-from .compat import str_compat, repr_compat, _dict
-from .datastructures import Context, ChainMap, MappingProxyType
+from .compat import _dict, repr_compat, str_compat
+from .datastructures import ChainMap, Context, MappingProxyType
 from .exceptions import *
 from .iteration import atoms
-from .transforms import (
-    export_loop, convert,
-    to_native, to_primitive,
-)
-from .validate import validate, prepare_validator
+from .transforms import convert, export_loop, to_native, to_primitive
 from .types import BaseType
 from .types.serializable import Serializable
 from .undefined import Undefined
 from .util import get_ident
-from . import schema
+from .validate import prepare_validator, validate
 
 __all__ = []
 
@@ -85,14 +82,14 @@ class ModelMeta(type):
 
         # Accumulate metas info from parent classes
         for base in reversed(bases):
-            if hasattr(base, '_schema'):
+            if hasattr(base, "_schema"):
                 fields.update(deepcopy(base._schema.fields))
                 options_members.update(dict(base._schema.options))
                 validator_functions.update(base._schema.validators)
 
         # Parse this class's attributes into schema structures
         for key, value in iteritems(attrs):
-            if key.startswith('validate_') and isinstance(value, (FunctionType, classmethod)):
+            if key.startswith("validate_") and isinstance(value, (FunctionType, classmethod)):
                 validator_functions[key[9:]] = prepare_validator(value, 4)
             if isinstance(value, BaseType):
                 fields[key] = value
@@ -100,10 +97,12 @@ class ModelMeta(type):
                 fields[key] = value
 
         # Convert declared fields into descriptors for new class
-        fields = OrderedDict(sorted(
-            (kv for kv in fields.items()),
-            key=lambda i: i[1]._position_hint,
-        ))
+        fields = OrderedDict(
+            sorted(
+                (kv for kv in fields.items()),
+                key=lambda i: i[1]._position_hint,
+            )
+        )
         for key, field in iteritems(fields):
             if isinstance(field, BaseType):
                 attrs[key] = FieldDescriptor(key)
@@ -117,8 +116,13 @@ class ModelMeta(type):
         options = mcs._read_options(name, bases, attrs, options_members)
 
         # Parse meta data into new schema
-        klass._schema = schema.Schema(name, model=klass, options=options,
-            validators=validator_functions, *(schema.Field(k, t) for k, t in iteritems(fields)))
+        klass._schema = schema.Schema(
+            name,
+            model=klass,
+            options=options,
+            validators=validator_functions,
+            *(schema.Field(k, t) for k, t in iteritems(fields))
+        )
 
         return klass
 
@@ -127,9 +131,9 @@ class ModelMeta(type):
         """
         Parses model `Options` class into a `SchemaOptions` instance.
         """
-        options_class = attrs.get('__optionsclass__', schema.SchemaOptions)
-        if 'Options' in attrs:
-            for key, value in inspect.getmembers(attrs['Options']):
+        options_class = attrs.get("__optionsclass__", schema.SchemaOptions)
+        if "Options" in attrs:
+            for key, value in inspect.getmembers(attrs["Options"]):
                 if key.startswith("__"):
                     continue
                 elif key.startswith("_"):
@@ -147,7 +151,7 @@ class ModelMeta(type):
 
 class ModelDict(ChainMap):
 
-    __slots__ = ['_unsafe', '_converted', '__valid', '_valid']
+    __slots__ = ["_unsafe", "_converted", "__valid", "_valid"]
 
     def __init__(self, unsafe=None, converted=None, valid=None):
         self._unsafe = unsafe if unsafe is not None else {}
@@ -200,7 +204,6 @@ class ModelDict(ChainMap):
 
 @metaclass(ModelMeta)
 class Model(object):
-
     """
     Enclosure for fields and validation. Same pattern deployed by Django
     models, SQLAlchemy declarative extension and other developer friendly
@@ -218,21 +221,38 @@ class Model(object):
         Complain about unrecognized keys. Default: True
     """
 
-    def __init__(self, raw_data=None, trusted_data=None, deserialize_mapping=None,
-                 init=True, partial=True, strict=True, validate=False, app_data=None,
-                 lazy=False, **kwargs):
-        kwargs.setdefault('init_values', init)
-        kwargs.setdefault('apply_defaults', init)
+    def __init__(
+        self,
+        raw_data=None,
+        trusted_data=None,
+        deserialize_mapping=None,
+        init=True,
+        partial=True,
+        strict=True,
+        validate=False,
+        app_data=None,
+        lazy=False,
+        **kwargs
+    ):
+        kwargs.setdefault("init_values", init)
+        kwargs.setdefault("apply_defaults", init)
 
         if lazy:
             self._data = ModelDict(unsafe=raw_data, valid=trusted_data)
             return
 
         self._data = ModelDict(valid=trusted_data)
-        data = self._convert(raw_data,
-            trusted_data=trusted_data, mapping=deserialize_mapping,
-            partial=partial, strict=strict, validate=validate, new=True,
-            app_data=app_data, **kwargs)
+        data = self._convert(
+            raw_data,
+            trusted_data=trusted_data,
+            mapping=deserialize_mapping,
+            partial=partial,
+            strict=strict,
+            validate=validate,
+            new=True,
+            app_data=app_data,
+            **kwargs
+        )
         self._data.converted = data
         if validate:
             self.validate(partial=partial, app_data=app_data, **kwargs)
@@ -254,8 +274,7 @@ class Model(object):
         if not self._data.converted and partial:
             return  # no new input data to validate
         try:
-            data = self._convert(validate=True,
-                partial=partial, convert=convert, app_data=app_data, **kwargs)
+            data = self._convert(validate=True, partial=partial, convert=convert, app_data=app_data, **kwargs)
             self._data.valid = data
         except DataError as e:
             valid = dict(self._data.valid)
@@ -274,7 +293,7 @@ class Model(object):
         """
         data = self._convert(raw_data, trusted_data=_dict(self), recursive=recursive, **kwargs)
         self._data.converted.update(data)
-        if kwargs.get('validate'):
+        if kwargs.get("validate"):
             self.validate(convert=False)
         return self
 
@@ -287,20 +306,19 @@ class Model(object):
             New data to be imported and converted
         """
         raw_data = _dict(raw_data) if raw_data else self._data.converted
-        kwargs['trusted_data'] = kwargs.get('trusted_data') or {}
-        kwargs['convert'] = getattr(context, 'convert', kwargs.get('convert', True))
+        kwargs["trusted_data"] = kwargs.get("trusted_data") or {}
+        kwargs["convert"] = getattr(context, "convert", kwargs.get("convert", True))
         if self._data.unsafe:
             self._data.unsafe.update(raw_data)
             raw_data = self._data.unsafe
             self._data.unsafe = {}
-            kwargs['convert'] = True
-        should_validate = getattr(context, 'validate', kwargs.get('validate', False))
+            kwargs["convert"] = True
+        should_validate = getattr(context, "validate", kwargs.get("validate", False))
         func = validate if should_validate else convert
         return func(self._schema, self, raw_data=raw_data, oo=True, context=context, **kwargs)
 
     def export(self, field_converter=None, role=None, app_data=None, **kwargs):
-        return export_loop(self._schema, self, field_converter=field_converter,
-                           role=role, app_data=app_data, **kwargs)
+        return export_loop(self._schema, self, field_converter=field_converter, role=role, app_data=app_data, **kwargs)
 
     def to_native(self, role=None, app_data=None, **kwargs):
         return to_native(self._schema, self, role=role, app_data=app_data, **kwargs)
@@ -327,8 +345,9 @@ class Model(object):
         return atoms(self._schema, self)
 
     def __iter__(self):
-        return (k for k in self._schema.fields if k in self._data
-            and getattr(self._schema.fields[k], 'fset', None) is None)
+        return (
+            k for k in self._schema.fields if k in self._data and getattr(self._schema.fields[k], "fset", None) is None
+        )
 
     def keys(self):
         return list(iter(self))
@@ -365,18 +384,18 @@ class Model(object):
         :param dict overrides: overrides for the model
         """
         context = Context._make(context)
-        context._setdefault('memo', set())
+        context._setdefault("memo", set())
         context.memo.add(cls)
         values = {}
         for name, field in cls.fields.items():
             if name in overrides:
                 continue
-            if getattr(field, 'model_class', None) in context.memo:
+            if getattr(field, "model_class", None) in context.memo:
                 continue
             try:
                 values[name] = field.mock(context)
             except MockCreationError as exc:
-                raise MockCreationError('%s: %s' % (name, exc.message))
+                raise MockCreationError("%s: %s" % (name, exc.message))
         values.update(overrides)
         return cls(values)
 
@@ -399,8 +418,7 @@ class Model(object):
             raise UnknownFieldError(self, name)
 
     def __contains__(self, name):
-        return (name in self._data and getattr(self, name, Undefined) is not Undefined) \
-            or name in self._serializables
+        return (name in self._data and getattr(self, name, Undefined) is not Undefined) or name in self._serializables
 
     def __len__(self):
         return len(self._data)
@@ -430,9 +448,9 @@ class Model(object):
         model = self.__class__.__name__
         info = self._repr_info()
         if info:
-            return '<%s: %s>' % (model, info)
+            return "<%s: %s>" % (model, info)
         else:
-            return '<%s instance>' % model
+            return "<%s instance>" % model
 
     def _repr_info(self):
         """

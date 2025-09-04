@@ -1,20 +1,28 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals, absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import json
+from collections import Mapping, Sequence
 
-from collections import Sequence, Mapping
-
-from .translator import LazyText
 from .common import *
-from .compat import string_type, str_compat
+from .compat import str_compat, string_type
 from .datastructures import FrozenDict, FrozenList
+from .translator import LazyText
 
 __all__ = [
-    'BaseError', 'ErrorMessage', 'FieldError', 'ConversionError',
-    'ValidationError', 'StopValidationError', 'CompoundError', 'DataError',
-    'MockCreationError', 'UndefinedValueError', 'UnknownFieldError']
+    "BaseError",
+    "ErrorMessage",
+    "FieldError",
+    "ConversionError",
+    "ValidationError",
+    "StopValidationError",
+    "CompoundError",
+    "DataError",
+    "MockCreationError",
+    "UndefinedValueError",
+    "UnknownFieldError",
+]
 
 
 @str_compat
@@ -52,7 +60,7 @@ class BaseError(Exception):
 
     @staticmethod
     def _freeze(obj):
-        """ freeze common data structures to something immutable. """
+        """freeze common data structures to something immutable."""
         if isinstance(obj, dict):
             return FrozenDict(obj)
         elif isinstance(obj, list):
@@ -62,15 +70,13 @@ class BaseError(Exception):
 
     @classmethod
     def _to_primitive(cls, obj):
-        """ recursive to_primitive for basic data types. """
+        """recursive to_primitive for basic data types."""
         if isinstance(obj, string_type):
             return obj
         if isinstance(obj, Sequence):
             return [cls._to_primitive(e) for e in obj]
         elif isinstance(obj, Mapping):
-            return dict(
-                (k, cls._to_primitive(v)) for k, v in obj.items()
-            )
+            return dict((k, cls._to_primitive(v)) for k, v in obj.items())
         else:
             return str(obj)
 
@@ -103,17 +109,13 @@ class ErrorMessage(object):
         self.info = info
 
     def __repr__(self):
-        return "%s(%s, %s)" % (
-            self.__class__.__name__,
-            repr(self.summary),
-            repr(self.info)
-        )
+        return "%s(%s, %s)" % (self.__class__.__name__, repr(self.summary), repr(self.info))
 
     def __str__(self):
         if self.info:
-            return '%s: %s' % (self.summary, self._info_as_str())
+            return "%s: %s" % (self.summary, self._info_as_str())
         else:
-            return '%s' % self.summary
+            return "%s" % self.summary
 
     def _info_as_str(self):
         if isinstance(self.info, int):
@@ -125,11 +127,7 @@ class ErrorMessage(object):
 
     def __eq__(self, other):
         if isinstance(other, ErrorMessage):
-            return (
-                self.summary == other.summary and
-                self.type == other.type and
-                self.info == other.info
-            )
+            return self.summary == other.summary and self.type == other.type and self.info == other.info
         elif isinstance(other, string_type):
             return self.summary == other
         else:
@@ -173,8 +171,11 @@ class FieldError(BaseError, Sequence):
             elif isinstance(item, self.__class__):
                 errors.extend(item.errors)
             else:
-                raise TypeError("'{0}()' object is neither a {1} nor an error message."\
-                                .format(type(item).__name__, type(self).__name__))
+                raise TypeError(
+                    "'{0}()' object is neither a {1} nor an error message.".format(
+                        type(item).__name__, type(self).__name__
+                    )
+                )
         for error in errors:
             error.type = self.type or type(self)
 
@@ -194,17 +195,20 @@ class FieldError(BaseError, Sequence):
 
 
 class ConversionError(FieldError, TypeError):
-    """ Exception raised when data cannot be converted to the correct python type """
+    """Exception raised when data cannot be converted to the correct python type"""
+
     pass
 
 
 class ValidationError(FieldError, ValueError):
     """Exception raised when invalid data is encountered."""
+
     pass
 
 
 class StopValidationError(ValidationError):
     """Exception raised when no more validation need occur."""
+
     type = ValidationError
 
 
@@ -230,11 +234,13 @@ class DataError(CompoundError):
 
 class MockCreationError(ValueError):
     """Exception raised when a mock value cannot be generated."""
+
     pass
 
 
 class UndefinedValueError(AttributeError, KeyError):
     """Exception raised when accessing a field with an undefined value."""
+
     def __init__(self, model, name):
         msg = "'%s' instance has no value for field '%s'" % (model.__class__.__name__, name)
         super(UndefinedValueError, self).__init__(msg)
@@ -242,6 +248,7 @@ class UndefinedValueError(AttributeError, KeyError):
 
 class UnknownFieldError(KeyError):
     """Exception raised when attempting to access a nonexistent field using the subscription syntax."""
+
     def __init__(self, model, name):
         msg = "Model '%s' has no field named '%s'" % (model.__class__.__name__, name)
         super(UnknownFieldError, self).__init__(msg)
@@ -249,4 +256,4 @@ class UnknownFieldError(KeyError):
 
 if PY2:
     # Python 2 names cannot be unicode
-    __all__ = [n.encode('ascii') for n in __all__]
+    __all__ = [n.encode("ascii") for n in __all__]

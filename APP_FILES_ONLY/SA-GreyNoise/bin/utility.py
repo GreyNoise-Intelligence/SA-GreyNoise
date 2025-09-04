@@ -3,6 +3,7 @@ utility.py .
 
 Helper file containing useful methods
 """
+
 import collections
 import logging
 import traceback
@@ -11,7 +12,7 @@ import app_greynoise_declare
 import fields
 import splunk.rest
 from caching import Caching
-from greynoise import GreyNoise
+from greynoise.api import APIConfig, GreyNoise
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise_constants import INTEGRATION_NAME
 from greynoise_exceptions import APIKeyNotFoundError, CachingException
@@ -202,11 +203,15 @@ def nested_dict_iter(nested, prefix=""):
     parsed_dict = {}
     api_response = dict(nested)
 
-    def nester_method(api_response, prefix):
+    def nester_method(api_response, prefix, current_field=None):
         for key, value in list(api_response.items()):
             if isinstance(value, collections.Mapping):  # it's a Dictionary
                 # This will update the contents of the value dictionary into parsed_dict itself
-                nester_method(value, prefix)
+                if key in ["business_service_intelligence", "internet_scanner_intelligence"]:
+                    nester_method(value, prefix, key)
+                else:
+                    nester_method(value, prefix)
+
             if isinstance(value, list):  # it's a list
                 _list = value
                 for item in _list:
@@ -215,20 +220,24 @@ def nested_dict_iter(nested, prefix=""):
                         for n in range(0, dict_length):
                             current_key = list(item.keys())[n]
                             if key in ["destinations", "tags"]:
-                                current_key = key + "_" + current_key
+                                current_key = prefix + key + "_" + current_key
                                 if current_key in parsed_dict:
-                                    parsed_dict[prefix + current_key].append(list(item.values())[n])
+                                    parsed_dict[current_key].append(list(item.values())[n])
                                 else:
-                                    parsed_dict[prefix + current_key] = [list(item.values())[n]]
+                                    parsed_dict[current_key] = [list(item.values())[n]]
                             else:
+                                current_key = prefix + current_key
                                 if current_key in parsed_dict:
-                                    parsed_dict[prefix + current_key].append(list(item.values())[n])
+                                    parsed_dict[current_key].append(list(item.values())[n])
                                 else:
-                                    parsed_dict[prefix + current_key] = [list(item.values())[n]]
+                                    parsed_dict[current_key] = [list(item.values())[n]]
                     else:
                         parsed_dict[prefix + key] = value
             else:
-                parsed_dict[prefix + key] = value
+                if current_field in ["business_service_intelligence", "internet_scanner_intelligence"] and key == "found":
+                    parsed_dict[prefix + current_field + "_" + key] = value
+                else:
+                    parsed_dict[prefix + key] = value
         return parsed_dict
 
     return nester_method(api_response, prefix)
@@ -248,9 +257,11 @@ def validate_api_key(api_key, logger=None, proxy=None):
 
     try:
         if proxy and "http" in proxy:
-            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_config = APIConfig(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME, proxy=proxy)
+            api_client = GreyNoise(api_config)
         else:
-            api_client = GreyNoise(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+            api_config = APIConfig(api_key=api_key, timeout=120, integration_name=INTEGRATION_NAME)
+            api_client = GreyNoise(api_config)
 
         api_client.test_connection()
 
@@ -361,10 +372,7 @@ def get_response_for_generating(session_key, api_client, ip, method, logger):
     :return: response
     """
     cache_enabled, cache = get_caching(session_key, method, logger)
-    if method in ["riot", "greynoise_riot"]:
-        fetch_method = api_client.riot
-    else:
-        fetch_method = api_client.ip
+    fetch_method = api_client.ip
     if int(cache_enabled) == 1 and cache is not None:
         response = cache.query_kv_store([ip])
         if response is None:
@@ -389,7 +397,7 @@ def get_ips_not_in_cache(cache, ips, logger):
     """
     try:
         ips_not_in_cache = []
-        for ipz in list(chunkgen(ips)):
+        for ipz in list(chunkgen(ips, chunk_size=10000)):
             cached = cache.query_kv_store(ipz, fetch_ips_only=True)
             ips_from_cache = []
             if cached is not None and len(cached) >= 1:

@@ -12,7 +12,7 @@ from six.moves import range
 from splunklib.binding import HTTPError
 
 APP_NAME = app_greynoise_declare.ta_name
-EPOCH = datetime.datetime.utcfromtimestamp(0)
+EPOCH = datetime.datetime.fromtimestamp(0, datetime.timezone.utc)
 
 
 class Caching(object):
@@ -60,7 +60,7 @@ class Caching(object):
             raise CachingException(str(e))
 
     def _get_age(self):
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         return int((now - EPOCH).total_seconds())
 
     def _groom(self, data):
@@ -75,7 +75,7 @@ class Caching(object):
             "age": current UTC time.
         }
         """
-        if type(data) == dict:
+        if isinstance(data, dict):
             data = [data]
         dict_array = []
         temp_dict = {}
@@ -155,24 +155,31 @@ class Caching(object):
         :param ips: list of ip addresses.
         :returns: All querired response objects if present in the cache.
         """
-        query_list = []
-        temp = {}
-        for each in ips:
-            temp["_key"] = each
-            query_list.append(temp)
-            temp = {}
         response = []
         try:
-            query = json.dumps({"$or": query_list})
-            partial_call = partial(self.collection.data.query, query=query)
-            if fetch_ips_only:
-                res = partial_call(fields="_key")
-                for each in res:
-                    response.append(each["_key"])
-            else:
-                res = partial_call()
-                for each in res:
-                    response.append(each["response"])
+            # Process IPs in chunks of 1000 to avoid URL length limits
+            chunk_size = 1000
+            for i in range(0, len(ips), chunk_size):
+                chunk_ips = ips[i : i + chunk_size]
+                query_list = []
+                temp = {}
+                for each in chunk_ips:
+                    temp["_key"] = each
+                    query_list.append(temp)
+                    temp = {}
+
+                query = json.dumps({"$or": query_list})
+                partial_call = partial(self.collection.data.query, query=query)
+                if fetch_ips_only:
+                    res = partial_call(fields="_key")
+                    for each in res:
+                        response.append(each["_key"])
+                else:
+                    res = partial_call()
+                    for each in res:
+                        response.append(each["response"])
+
+            if not fetch_ips_only:
                 self.logger.debug("Fetched {} ips from cache successfully.".format(len(response)))
         except Exception:
             self.logger.error("An exception occurred while querying KVStore: {}".format(traceback.format_exc()))

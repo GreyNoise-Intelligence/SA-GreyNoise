@@ -1,12 +1,10 @@
-
-import warnings
 import functools
-
+import warnings
 from collections import OrderedDict
 
+from . import transforms
 from .compat import iteritems
 from .types.serializable import Serializable
-from . import transforms
 
 
 class SchematicsDeprecationWarning(DeprecationWarning):
@@ -19,9 +17,10 @@ def deprecated(func):
         warnings.warn(
             "Call to deprecated function {0}.".format(func.__name__),
             category=SchematicsDeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         return func(*args, **kwargs)
+
     return new_func
 
 
@@ -107,8 +106,7 @@ class ModelCompatibilityMixin(object):
     @classmethod
     @deprecated
     def convert(cls, raw_data, context=None, **kw):
-        return transforms.convert(cls._schema, raw_data, oo=True,
-            context=context, **kw)
+        return transforms.convert(cls._schema, raw_data, oo=True, context=context, **kw)
 
 
 class BaseErrorV1Mixin(object):
@@ -116,17 +114,19 @@ class BaseErrorV1Mixin(object):
     @property
     @deprecated
     def messages(self):
-        """ an alias for errors, provided for compatibility with V1. """
+        """an alias for errors, provided for compatibility with V1."""
         return self.errors
 
 
 def patch_models():
     global models_Model
-    from . import schema
-    from . import models
+    from . import models, schema
+
     models_Model = models.Model
+
     class Model(ModelCompatibilityMixin, models.Model):
         __doc__ = models.Model.__doc__
+
     models.Model = Model
     models.ModelOptions = schema.SchemaOptions  # deprecated alias
 
@@ -134,14 +134,18 @@ def patch_models():
 def patch_schema():
     global schema_Schema
     from . import schema
+
     schema_Schema = schema.Schema
+
     class Schema(SchemaCompatibilityMixin, schema.Schema):
         __doc__ = schema.Schema.__doc__
+
     schema.Schema = Schema
 
 
 def patch_exceptions():
     from . import exceptions
+
     exceptions.BaseError.messages = BaseErrorV1Mixin.messages
     exceptions.ModelConversionError = exceptions.DataError  # v1
     exceptions.ModelValidationError = exceptions.DataError  # v1

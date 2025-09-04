@@ -46,7 +46,7 @@ IP_FIELDS = {
     "error": None,
 }
 
-# Dictionary of all the fields that are available in noise status of IP address
+# Dictionary of all the fields that are available in internet scanner status of IP address
 # fetched using quick method of the GreyNoise Python SDK
 QUICK_FIELDS = {
     "_raw": None,
@@ -54,10 +54,10 @@ QUICK_FIELDS = {
     "source": None,
     "sourcetype": None,
     "ip": None,
-    "code": None,
-    "code_message": None,
-    "noise": None,
-    "riot": None,
+    "internet_scanner_intelligence_found": None,
+    "internet_scanner_intelligence_classification": None,
+    "business_service_intelligence_found": None,
+    "business_service_intelligence_trust_level": None,
     "error": None,
 }
 
@@ -106,19 +106,19 @@ QUERY_FIELDS = {
 
 MULTI_FIELDS = {
     "greynoise_ip": None,
-    "greynoise_code": None,
-    "greynoise_code_message": None,
-    "greynoise_noise": None,
-    "greynoise_riot": None,
+    "greynoise_internet_scanner_intelligence_found": None,
+    "greynoise_business_service_intelligence_found": None,
+    "greynoise_business_service_intelligence_trust_level": None,
+    "greynoise_internet_scanner_intelligence_classification": None,
     "greynoise_error": None,
 }
 
 FILTER_FIELDS = {
     "greynoise_ip": None,
-    "greynoise_code": None,
-    "greynoise_code_message": None,
-    "greynoise_noise": None,
-    "greynoise_riot": None,
+    "greynoise_internet_scanner_intelligence_found": None,
+    "greynoise_business_service_intelligence_found": None,
+    "greynoise_business_service_intelligence_trust_level": None,
+    "greynoise_internet_scanner_intelligence_classification": None,
     "greynoise_error": None,
 }
 
@@ -181,20 +181,6 @@ GREYNOISE_RIOT_FIELDS = {
     "greynoise_error": None,
 }
 
-SIMILAR_FIELDS = {
-    "ip": None,
-    "actor": None,
-    "classification": None,
-    "first_seen": None,
-    "last_seen": None,
-    "asn": None,
-    "city": None,
-    "country": None,
-    "country_code": None,
-    "organization": None,
-    "similar_ips": None,
-}
-
 TIMELINE_FIELDS = {
     "ip": None,
     "end_time": None,
@@ -223,29 +209,29 @@ TIMELINE_FIELDS = {
 }
 
 SIMILAR_FIELDS = {
-    'ip': None,
-    'actor': None,
-    'classification': None,
-    'first_seen': None,
-    'last_seen': None,
-    'asn': None,
-    'city': None,
-    'country': None,
-    'country_code': None,
-    'organization': None,
-    'similar_ips': None
+    "ip": None,
+    "actor": None,
+    "classification": None,
+    "first_seen": None,
+    "last_seen": None,
+    "asn": None,
+    "city": None,
+    "country": None,
+    "country_code": None,
+    "organization": None,
+    "similar_ips": None,
 }
 
 GREYNOISE_SIMILAR_FIELDS = {
-    'greynoise_ip': None,
-    'greynoise_actor': None,
-    'greynoise_classification': None,
-    'greynoise_first_seen': None,
-    'greynoise_last_seen': None,
-    'greynoise_asn': None,
-    'greynoise_city': None,
-    'greynoise_country': None,
-    'greynoise_country_code': None,
-    'greynoise_organization': None,
-    'greynoise_similar_ips': None
+    "greynoise_ip": None,
+    "greynoise_actor": None,
+    "greynoise_classification": None,
+    "greynoise_first_seen": None,
+    "greynoise_last_seen": None,
+    "greynoise_asn": None,
+    "greynoise_city": None,
+    "greynoise_country": None,
+    "greynoise_country_code": None,
+    "greynoise_organization": None,
+    "greynoise_similar_ips": None,
 }

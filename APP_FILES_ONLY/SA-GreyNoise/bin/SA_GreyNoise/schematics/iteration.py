@@ -2,7 +2,8 @@
 Core loop over the data structures according to a defined schema.
 """
 
-from __future__ import unicode_literals, absolute_import
+from __future__ import absolute_import, unicode_literals
+
 from collections import namedtuple
 
 from .compat import iteritems
@@ -11,13 +12,15 @@ from .undefined import Undefined
 try:
     # optional type checking
     import typing
+
     if typing.TYPE_CHECKING:
-        from typing import Mapping, Tuple, Callable, Optional, Any, Iterable
+        from typing import Any, Callable, Iterable, Mapping, Optional, Tuple
+
         from .schema import Schema
 except ImportError:
     pass
 
-Atom = namedtuple('Atom', ('name', 'field', 'value'))
+Atom = namedtuple("Atom", ("name", "field", "value"))
 Atom.__new__.__defaults__ = (None,) * len(Atom._fields)
 
 
@@ -50,11 +53,11 @@ def atoms(schema, mapping, keys=tuple(Atom._fields), filter=None):
     :rtype: Iterable[Atom]
     """
     if not set(keys).issubset(Atom._fields):
-        raise TypeError('invalid key specified')
+        raise TypeError("invalid key specified")
 
-    has_name = 'name' in keys
-    has_field = 'field' in keys
-    has_value = (mapping is not None) and ('value' in keys)
+    has_name = "name" in keys
+    has_field = "field" in keys
+    has_value = (mapping is not None) and ("value" in keys)
 
     for field_name, field in iteritems(schema.fields):
         value = Undefined
@@ -65,10 +68,7 @@ def atoms(schema, mapping, keys=tuple(Atom._fields), filter=None):
             except Exception:
                 value = Undefined
 
-        atom_tuple = Atom(
-            name=field_name if has_name else None,
-            field=field if has_field else None,
-            value=value)
+        atom_tuple = Atom(name=field_name if has_name else None, field=field if has_field else None, value=value)
         if filter is None:
             yield atom_tuple
         elif filter(atom_tuple):
@@ -80,7 +80,7 @@ class atom_filter:
 
     @staticmethod
     def has_setter(atom):
-        return getattr(atom.field, 'fset', None) is not None
+        return getattr(atom.field, "fset", None) is not None
 
     @staticmethod
     def not_setter(atom):

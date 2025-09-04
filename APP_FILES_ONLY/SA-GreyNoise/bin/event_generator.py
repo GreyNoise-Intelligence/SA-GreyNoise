@@ -1,10 +1,12 @@
 """This file helps custom commands generate events by passing simple API responses to it."""
+
 import threading  # noqa # pylint: disable=unused-import
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
+import flatten_json
 import six
 from greynoise.exceptions import RateLimitError, RequestFailure
 from greynoise.util import validate_ip
@@ -172,10 +174,8 @@ def get_all_events(session_key, api_client, method, field_name, chunk_dict, logg
     """
     cache_enabled, cache = get_caching(session_key, method, logger)
 
-    if method in ["ip", "enrich"]:
+    if method in ["ip", "enrich", "greynoise_riot"]:
         fetch_method = api_client.ip
-    elif method == "greynoise_riot":
-        fetch_method = api_client.riot
     elif method == "ip_multi":
         fetch_method = api_client.ip_multi
     elif method == "cve":
@@ -188,7 +188,7 @@ def get_all_events(session_key, api_client, method, field_name, chunk_dict, logg
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
         # Doing this to pass the multiple arguments to method used in map method
-        if method in ["enrich", "greynoise_riot"]:
+        if method in ["greynoise_riot"]:
             ips = []
             ips_not_in_cache = []
             if int(cache_enabled) == 1 and cache is not None:
@@ -310,7 +310,7 @@ def event_processor(records_dict, result, method, field_name, logger):
     # This will either have API response for the chunk or
     # the exception message denoting exception occurred while fetching the data
     if result["response"]:
-        if type(result["response"][0]) == list:
+        if isinstance(result["response"][0], list):
             api_results = []
             for each in result["response"][0]:
                 api_results.append(each)
@@ -339,7 +339,7 @@ def event_processor(records_dict, result, method, field_name, logger):
         if error_flag:
             # Exception has occurred while fetching the data
             if field_name in record and record[field_name]:
-                event = {"ip": record[ip_field], "error": api_results}
+                event = {"ip": record[field_name], "error": api_results}
                 yield make_invalid_event(method, event, True, record)
             else:
                 # Either the record is not having IP field or the value of the IP field is ''
@@ -350,7 +350,7 @@ def event_processor(records_dict, result, method, field_name, logger):
             if field_name in record and record[field_name]:
                 if method in ["cve"]:
                     if isinstance(record[field_name], six.string_types) and record[field_name] in cve_lookup:
-                        yield make_valid_event(method, cve_lookup[record[field_name]], True, record)
+                        yield make_valid_event(method, cve_lookup[record[field_name]], True, record, logger)
                 # Check if the IP field is not an iterable to avoid any error while referencing ip in ip_lookup
                 elif isinstance(record[field_name], six.string_types) and record[field_name] in ip_lookup:
                     # Deleting the raw_data from the response when the request method is enrich
@@ -361,7 +361,7 @@ def event_processor(records_dict, result, method, field_name, logger):
                     if method == "ip_multi" and "raw_data" in ip_lookup[record[field_name]]:
                         del ip_lookup[record[field_name]]["raw_data"]
 
-                    yield make_valid_event(method, ip_lookup[record[field_name]], True, record)
+                    yield make_valid_event(method, ip_lookup[record[field_name]], True, record, logger)
                 else:
                     # Meaning ip is either invalid or not returned by the API,
                     # happens when quick method is used while retrieving data
@@ -378,7 +378,7 @@ def event_processor(records_dict, result, method, field_name, logger):
                 yield make_invalid_event(method, {}, True, record)
 
 
-def make_valid_event(method, data, first_event=False, record=None):
+def make_valid_event(method, data, first_event=False, record=None, logger=None):
     """
     Returns the event in the JSON format from the data passed to the method.
 
@@ -405,6 +405,14 @@ def make_valid_event(method, data, first_event=False, record=None):
         results["_raw"] = {"results": data}
 
         return results
+    elif method in ["multi", "quick"]:
+        data_flattened = flatten_json.flatten(data)
+        results = dict(get_dict(method))
+        results.update(nested_dict_iter(data_flattened, prefix="greynoise_"))
+
+        record.update(results)
+
+        return record
     else:
         # Irrespective of first_record_flag, we will always retrieve the default dictionary for the generating commands
         results = dict(get_dict(method))
@@ -487,7 +495,7 @@ def batch(iterable, field_name, events_per_chunk, logger, optimize_requests=True
         if len(value_set) == events_per_chunk:
             chunk_dict[chunk_index] = (records, list(value_set))
 
-            if not len(all_unique_values) > 5001:
+            if not len(all_unique_values) >= events_per_chunk:
                 all_unique_values.update(value_set)
 
             chunk_index = chunk_index + 1
@@ -498,10 +506,10 @@ def batch(iterable, field_name, events_per_chunk, logger, optimize_requests=True
     if len(records) > 0:
         chunk_dict[chunk_index] = (records, list(value_set))
 
-        if not len(all_unique_values) > 5000:
+        if not len(all_unique_values) > events_per_chunk:
             all_unique_values.update(value_set)
 
-    if optimize_requests and len(all_unique_values) <= 5000:
+    if optimize_requests and len(all_unique_values) <= events_per_chunk:
         all_records = []
         # Return records in only one chunk if the deployment less than 1000 unique IP addresses
         for records, _ in list(chunk_dict.values()):

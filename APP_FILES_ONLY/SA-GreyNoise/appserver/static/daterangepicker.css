@@ -1,9 +1,9 @@
 .daterangepicker {
   position: absolute;
   color: inherit;
-  background-color: #fff;
+  background-color: rgb(23, 29, 33);
   border-radius: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid #383838;
   width: 278px;
   max-width: none;
   padding: 0;
@@ -115,10 +115,13 @@
 
 .daterangepicker .drp-calendar.left {
   padding: 8px 0 8px 8px;
+  color: black;
 }
 
 .daterangepicker .drp-calendar.right {
   padding: 8px 45px 8px 8px;
+  color: black;
+  background-color: rgb(23, 29, 33);
 }
 
 .daterangepicker .drp-calendar.single .calendar-table {
@@ -170,6 +173,7 @@
   margin: 0;
   border-spacing: 0;
   border-collapse: collapse;
+  background-color: rgb(242, 244, 245);
 }
 
 .daterangepicker td.available:hover, .daterangepicker th.available:hover {
@@ -323,10 +327,13 @@
   font-size: 12px;
   padding: 8px 12px;
   cursor: pointer;
+  background-color: rgb(23, 29, 33);
+  color: rgb(242, 244, 245);
 }
 
 .daterangepicker .ranges li:hover {
-  background-color: #eee;
+  background-color: rgb(60, 68, 77);
+  color: rgb(242, 244, 245);
 }
 
 .daterangepicker .ranges li.active {

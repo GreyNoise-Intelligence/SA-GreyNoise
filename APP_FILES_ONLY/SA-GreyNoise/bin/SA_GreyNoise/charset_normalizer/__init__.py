@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf_8 -*-
 """
 Charset-Normalizer
 ~~~~~~~~~~~~~~
@@ -21,8 +21,14 @@ at <https://github.com/Ousret/charset_normalizer>.
 """
 import logging
 
-from .api import from_bytes, from_fp, from_path, is_binary
-from .legacy import detect
+from .api import from_bytes, from_fp, from_path, normalize
+from .legacy import (
+    CharsetDetector,
+    CharsetDoctor,
+    CharsetNormalizerMatch,
+    CharsetNormalizerMatches,
+    detect,
+)
 from .models import CharsetMatch, CharsetMatches
 from .utils import set_logging_handler
 from .version import VERSION, __version__
@@ -31,10 +37,14 @@ __all__ = (
     "from_fp",
     "from_path",
     "from_bytes",
-    "is_binary",
+    "normalize",
     "detect",
     "CharsetMatch",
     "CharsetMatches",
+    "CharsetNormalizerMatch",
+    "CharsetNormalizerMatches",
+    "CharsetDetector",
+    "CharsetDoctor",
     "__version__",
     "VERSION",
     "set_logging_handler",

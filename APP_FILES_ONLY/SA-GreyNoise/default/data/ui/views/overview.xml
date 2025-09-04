@@ -1,28 +1,31 @@
 <form isDashboard="true" version="1.1" theme="dark">
   <label>Overview</label>
+  <fieldset submitButton="false" autoRun="true"></fieldset>
   <row>
+    <panel>
       <html>
-        <center><h1>The tiles below represent data about the Scan Deployment and Feed functions of this app and deployment.</h1></center>
+        <center>
+          <h1>The tiles below represent data about the Scan Deployment and Feed functions of this app and deployment.</h1>
+        </center>
       </html>
+    </panel>
   </row>
   <row>
     <panel>
       <single>
         <title># of IPs scanned in the deployment</title>
         <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup
-            | stats count
-          </query>
+          <query>| inputlookup gn_scan_deployment_ip_lookup
+| stats count</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
-        <option name="refresh.display">progressbar</option>
         <option name="drilldown">all</option>
+        <option name="refresh.display">preview</option>
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*
+              /app/SA-GreyNoise/queried_ip_addresses?form.tkn_ip_address=*
             ]]>
           </link>
         </drilldown>
@@ -32,37 +35,53 @@
       <single>
         <title># of indicators in GreyNoise Feed lookup</title>
         <search>
-          <query>
-            | inputlookup greynoise_indicators.csv
-            | stats count
-          </query>
+          <query>| inputlookup greynoise_indicators
+| stats count</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
         <option name="drilldown">all</option>
         <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
-        <option name="refresh.display">progressbar</option>
+        <option name="refresh.display">preview</option>
       </single>
+    </panel>
+    <panel>
+      <table>
+        <title># Indicators by Classification in Feed Lookup</title>
+        <search>
+          <query>| inputlookup greynoise_indicators
+| stats count by classification
+| sort -count</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">preview</option>
+        <format type="color" field="classification">
+          <colorPalette type="map">{"benign":#118832,"malicious":#D41F1F,"suspicious":#CBA700}</colorPalette>
+        </format>
+        <format type="number" field="count">
+          <option name="precision">0</option>
+        </format>
+      </table>
     </panel>
   </row>
   <row>
     <panel>
       <single>
-        <title># of Noise IPs in the deployment</title>
+        <title># of Internet Scanner IPs in the deployment</title>
         <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup where (noise="1")
-            | stats count
-          </query>
+          <query>| inputlookup gn_scan_deployment_ip_lookup where (internet_scanner_intelligence="1")
+| stats count</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
-        <option name="refresh.display">progressbar</option>
         <option name="drilldown">all</option>
+        <option name="refresh.display">preview</option>
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*&form.tkn_noise=1
+              /app/SA-GreyNoise/queried_ip_addresses?form.tkn_ip_address=*&form.tkn_scanner=1
             ]]>
           </link>
         </drilldown>
@@ -70,43 +89,59 @@
     </panel>
     <panel>
       <single>
-        <title>Percentage of Noise IPs in the deployment</title>
+        <title>Percentage of Internet Scanner IPs in the deployment</title>
         <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup
-            | stats count(eval(noise=1)) AS noisy_ips, count(eval(noise=1 OR noise=0)) AS total_ips
-            | eval noise_percent=((noisy_ips/total_ips)*100)
-            | eval noise_percent = if(noise_percent&gt;0, noise_percent, 0)
-            | table noise_percent
-          </query>
+          <query>| inputlookup gn_scan_deployment_ip_lookup
+| stats count(eval(internet_scanner_intelligence=1)) AS noisy_ips, count(eval(internet_scanner_intelligence=1 OR internet_scanner_intelligence=0)) AS total_ips
+| eval internet_scanner_percent=((noisy_ips/total_ips)*100)
+| eval internet_scanner_percent = if(internet_scanner_percent&gt;0, internet_scanner_percent, 0)
+| table internet_scanner_percent</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
         <option name="drilldown">none</option>
         <option name="numberPrecision">0.00</option>
-        <option name="refresh.display">progressbar</option>
+        <option name="refresh.display">preview</option>
         <option name="unit">%</option>
       </single>
+    </panel>
+    <panel>
+      <table>
+        <title># of Internet Scanner IPs by Classification</title>
+        <search>
+          <query>| inputlookup gn_scan_deployment_ip_lookup where (internet_scanner_intelligence="1")
+| stats count by classification
+| sort -count</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">preview</option>
+        <format type="color" field="classification">
+          <colorPalette type="map">{"benign":#118832,"malicious":#D41F1F,"suspicious":#CBA700}</colorPalette>
+        </format>
+        <format type="number" field="count">
+          <option name="precision">0</option>
+        </format>
+      </table>
     </panel>
   </row>
   <row>
     <panel>
       <single>
-        <title># of RIOT IPs in the deployment</title>
+        <title># of Business Service IPs in the deployment</title>
         <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup where (RIOT="1")
-            | stats count
-          </query>
+          <query>| inputlookup gn_scan_deployment_ip_lookup where (business_service_intelligence="1")
+| stats count</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
-        <option name="refresh.display">progressbar</option>
         <option name="drilldown">all</option>
+        <option name="refresh.display">preview</option>
         <drilldown>
           <link target="_blank">
             <![CDATA[
-              /app/SA-GreyNoise/noise_ip_addresses?form.tkn_ip_address=*&form.tkn_riot=1
+              /app/SA-GreyNoise/queried_ip_addresses?form.tkn_ip_address=*&form.tkn_bizserv=1
             ]]>
           </link>
         </drilldown>
@@ -114,29 +149,56 @@
     </panel>
     <panel>
       <single>
-        <title>Percentage of RIOT IPs in the deployment</title>
+        <title>Percentage of Business Service IPs in the deployment</title>
         <search>
-          <query>
-            | inputlookup gn_scan_deployment_ip_lookup
-            | stats count(eval(RIOT=1)) AS riot_ips, count(eval(RIOT=1 OR RIOT=0)) AS total_ips
-            | eval riot_percent=((riot_ips/total_ips)*100)
-            | eval riot_percent = if(riot_percent&gt;0, riot_percent, 0)
-            | table riot_percent
-          </query>
+          <query>| inputlookup gn_scan_deployment_ip_lookup
+| stats count(eval(business_service_intelligence=1)) AS business_service_ips, count(eval(business_service_intelligence=1 OR business_service_intelligence=0)) AS total_ips
+| eval business_service_percent=((business_service_ips/total_ips)*100)
+| eval business_service_percent = if(business_service_percent&gt;0, business_service_percent, 0)
+| table business_service_percent</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
         <option name="drilldown">none</option>
         <option name="numberPrecision">0.00</option>
-        <option name="refresh.display">progressbar</option>
+        <option name="refresh.display">preview</option>
         <option name="unit">%</option>
       </single>
     </panel>
+    <panel>
+      <table>
+        <title># of Business Service IPs by Trust Level</title>
+        <search>
+          <query>| inputlookup gn_scan_deployment_ip_lookup where (business_service_intelligence="1")
+| eval trust_level_string = tostring(trust_level)
+| rename trust_level_string as "Trust Level"
+| stats count by "Trust Level"
+| sort -count</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">preview</option>
+        <format type="color" field="trust_level">
+          <colorPalette type="map">{"1":#55C169,"2":#CBA700}</colorPalette>
+        </format>
+        <format type="number" field="count">
+          <option name="precision">0</option>
+        </format>
+        <format type="color" field="Trust Level">
+          <colorPalette type="map">{"1":#0099E0,"2":#65778A}</colorPalette>
+        </format>
+      </table>
+    </panel>
   </row>
-    <row>
+  <row>
+    <panel>
       <html>
-        <center><h1>The information below represents the state of the GreyNoise service today.</h1></center>
+        <center>
+          <h1>The information below represents the state of the GreyNoise service today.</h1>
+        </center>
       </html>
+    </panel>
   </row>
   <row>
     <panel>

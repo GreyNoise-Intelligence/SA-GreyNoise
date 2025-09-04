@@ -17,9 +17,7 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
  - OS: Platform independent
  - Vendor Products: GreyNoise API
 
-
 # RELEASE NOTES (Version 3.0.0) #
-
  - Implemented CIM (Common Information Model) mapping for better data normalization and integration with Splunk ES
  - Introduced support to update the Risk Score in Splunk Enterprise Security (ES) based on classification
  - Added the capability to ingest GreyNoise feed data into a Splunk index
@@ -212,7 +210,6 @@ Follow the below-listed steps to install an app from the bundle:
 # UPGRADES #
 After applying an update to the app, ensure that the GreyNoise API key is re-entered on the Configuration page.
 
-
 # CONFIGURATION #
 The app can be configured in the following way:
 
@@ -255,7 +252,7 @@ This feature allows users to ingest GreyNoise indicators into a lookup table to 
     - Ingest Feed To Index: Selecting this checkbox will ingest data into the Splunk index. Please check your licensing as this feature will consume license capacity. Enable this option only if you need to map feed data to Splunk CIM data models for specific use cases. Refer this document to understand how to create index: https://docs.splunk.com/Documentation/Splunk/latest/Indexer/Setupmultipleindexes#Create_events_indexes
     - Index: Select the index to ingest the feed to.
 
-# Caching #
+# CACHING #
 This feature helps user to enable/disable caching for all the custom commands and saved searches. It can be configured in the
 following way:
 
@@ -268,7 +265,7 @@ following way:
 
 *Note: Configuration can only be done by admin but other custom commands can be used by admin and the users with list_storage_passwords capability.*
 
-# Proxy Support #
+# PROXY SUPPORT #
 To enable proxy support, modify the app_greynoise_settings.conf and add a proxy entry to the parameters section.
 
 Example:
@@ -278,6 +275,12 @@ proxy = http://proxy.acme.com:8080
 # CUSTOM COMMANDS #
 The following commands are included as a part of the app:
 
+ - gnenrich
+    - Search format: `SPL_QUERY | gnenrich ip_field="<ip_field>"`
+    - Purpose: Enrich the Splunk events returned by given SPL_QUERY with the context information of IP address represented by ip_field in Splunk Search.
+ - gnmulti
+    - Search format: `SPL_QUERY | gnmulti ip_field="<ip_field>"`
+    - Purpose: Retrieves Internet Scanner and Business Service Intelligence status of the IP addresses represented by ip_field parameter present in each event, and adds the Internet Scanner and Business Service Intelligence information to each event.
  - gnip
     - Search format: `| gnip ip="<ip_address>"`
     - Purpose: Retrieves context information for a given IP address from the GreyNoise.
@@ -299,9 +302,6 @@ The following commands are included as a part of the app:
  - gnfilter
     - Search format: `SPL_QUERY | gnfilter ip_field="<ip_field>" noise_events="<true/false>"`
     - Purpose: Filter Splunk events returned by given SPL_QUERY based on the Internet Scanner status of IP address present in ip_field of the events. noise_events is an optional parameter with default value true. So, it will return events with Queried IP Addresses by default.
- - gnenrich
-    - Search format: `SPL_QUERY | gnenrich ip_field="<ip_field>"`
-    - Purpose: Enrich the Splunk events returned by given SPL_QUERY with the context information of IP address represented by ip_field in Splunk Search.
  - gniptimeline
     - Search format: `| gniptimeline ip_address="<ip_address>" days=<days> limit=<limit>`
     - Purpose: Retrieves Timeline information for a given IP address from the GreyNoise Timeline API.
@@ -337,7 +337,6 @@ This app contains the following three dashboards:
 
 # SAVED SEARCHES #
 This app contains the following saved searches, which are used for populating data in the dashboard:
-
  - greynoise_scan_deployment_once: Used to populate `gn_scan_deployment_ip_lookup` lookup and is triggered after configuring Scan Deployment feature.
  - greynoise_scan_deployment: Used to populate `gn_scan_deployment_ip_lookup` lookup and is triggered at an interval of 60 minutes and scans the data of previous 70 minutes.
  - greynoise_overview_once: Used to populate `gn_overview_lookup` lookup, and is triggered after configuring the API key.
@@ -358,7 +357,6 @@ This app contains the following saved searches, which are used for populating da
 
 # Macros #
 This app contains the following macros:
-
  - greynoise_fields: Used to update fields.
  - greynoise_indexes: Used to update indexes.
  - greynoise_caching: Used to update caching.
@@ -368,14 +366,12 @@ This app contains the following macros:
 
 # UNINSTALL APP #
 To uninstall app, user can follow below steps:
-
  - SSH to the Splunk instance
  - Go to folder apps($SPLUNK_HOME/etc/apps)
  - Remove the SA-GreyNoise folder from apps directory
  - Restart Splunk
 
 # TROUBLESHOOTING #
-
  - Alerts fail to write to index=main sourcetype=greynoise and Enterprise Security is not installed.
     -  Ensure that the Splunk Common Information Model (CIM) Add-on has been installed. No configuration of this add-on is necessary.
  - Data in Overview dashboard is not being populated.
@@ -406,11 +402,9 @@ To uninstall app, user can follow below steps:
       ```
 
 # SUPPORT #
-
  - Email: support@greynoise.io
  - Hours: 9AM-5PM EDT Monday-Friday
  - Observed Holidays: Major US Holidays
 
 # COPYRIGHT #
-
  - Copyright (C) 2025 GreyNoise Intelligence Inc. All Rights Reserved.

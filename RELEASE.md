@@ -26,6 +26,6 @@ Then:
 
 Correct any issues identified. Once validation and inspection are clean, run the following to create the package:
 
-`slim package . `
+`slim package .`
 
 Move the created .tar.gz file to the spl_files folder at the repo root, then use this file to test in Splunk and Submit to Splunkbase for publishing.

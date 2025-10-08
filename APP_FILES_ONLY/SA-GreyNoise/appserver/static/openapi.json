@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "SA-GreyNoise",
-        "version": "3.0.0",
+        "version": "3.0.1",
         "description": "GreyNoise App for Splunk",
         "contact": {
             "name": "GreyNoise",

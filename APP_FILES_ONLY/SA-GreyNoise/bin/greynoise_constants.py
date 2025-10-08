@@ -1,4 +1,4 @@
-INTEGRATION_NAME = "greynoise-splunk-app-v3.0.0"
+INTEGRATION_NAME = "greynoise-splunk-app-v3.0.1"
 BACKOFF_FACTOR = 30
 MAX_RETRIES = 3
 SENDALERT_COMMAND = '| makeresults | eval risk_object="{}", risk_object_type="{}", risk_score="{}", description="{}" | sendalert risk param.risk_object="$risk_object$" param.risk_object_type="$risk_object_type$" param.risk_score="$risk_score$"'

@@ -6,10 +6,10 @@ from functools import partial
 import app_greynoise_declare
 import splunk.clilib.cli_common
 import splunk.rest as rest
-import splunklib.client as client
 from greynoise_exceptions import CachingException
 from six.moves import range
 from splunklib.binding import HTTPError
+from service_utils import create_service
 
 APP_NAME = app_greynoise_declare.ta_name
 EPOCH = datetime.datetime.fromtimestamp(0, datetime.timezone.utc)
@@ -35,12 +35,11 @@ class Caching(object):
             "quick": "multi",
             "ip_multi": "context",
         }
-        self.mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
         self.session_key = ssnkey
         self.collection_name = command_map[command]
         self.logger = logger
         try:
-            service = client.connect(port=self.mgmt_port, token=self.session_key, app=APP_NAME)
+            service = create_service(self.session_key)
             if self.collection_name in service.kvstore:
                 self.collection = service.kvstore[self.collection_name]
                 self.collection.data.query_by_id("item1")
@@ -105,8 +104,7 @@ class Caching(object):
     @staticmethod
     def get_cache_settings(session_key):
         """Method to get cache_enabled flag from configuration."""
-        mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
-        service = client.connect(port=mgmt_port, token=session_key, app=APP_NAME)
+        service = create_service(session_key)
         cache_settings = service.get("properties/macros/greynoise_caching/definition").body.read()
         return cache_settings
 

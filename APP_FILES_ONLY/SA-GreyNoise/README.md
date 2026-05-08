@@ -6,16 +6,19 @@ This is an app powered by the Splunk Add-on Builder.
 GreyNoise Splunk app provides multiple dashboards to effectively analyse and visualize the contextual and statistical data provided by GreyNoise. It also includes custom commands and alert actions which can be used along with Splunk searches to leverage GreyNoise APIs for custom use cases. It periodically scans the Splunk deployment through saved search to indicate the Internet Scanner and Business Service Intelligence IPs in the complete Splunk deployment. Along with this, the workflow action provided can be used to obtain live context information of any CIM compliant field containing an IP address.
 
  - Author: GreyNoise Intelligence Inc
- - Version: 3.0.1
+ - Version: 3.0.2
  - Creates Index: False
  - Has index-time operation: True
  - Implements summarization: False
  - Prerequisites: GreyNoise API Key, Search heads without Enterprise Security requires the Splunk Common Information Model (CIM) Add-on to for the Modular Alerts to function.
 
 # COMPATIBILITY MATRIX #
- - Splunk Enterprise version: 10.0.x, 9.4.x, and 9.3.x
+ - Splunk Enterprise version: 10.2.x, 10.0.x, 9.4.x, and 9.3.x
  - OS: Platform independent
  - Vendor Products: GreyNoise API
+
+# RELEASE NOTES (Version 3.0.2) #
+ - Fixed connection failures on RHEL systems caused by IPv6 resolution issues
 
 # RELEASE NOTES (Version 3.0.1) #
  - Fixed Python file formatting
@@ -410,4 +413,4 @@ To uninstall app, user can follow below steps:
  - Observed Holidays: Major US Holidays
 
 # COPYRIGHT #
- - Copyright (C) 2025 GreyNoise Intelligence Inc. All Rights Reserved.
+ - Copyright (C) 2026 GreyNoise Intelligence Inc. All Rights Reserved.

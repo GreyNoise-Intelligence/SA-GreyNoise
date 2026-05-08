@@ -9,7 +9,6 @@ import app_greynoise_declare
 import splunk.admin as admin
 import splunk.clilib.cli_common
 import splunk.rest as rest
-import splunklib.client as client
 from greynoise_constants import BACKOFF_FACTOR, MAX_RETRIES, VERIFY_INTERNAL_SSL
 from greynoise_exceptions import CachingException
 from saved_search_utils import (
@@ -25,6 +24,7 @@ from splunklib.binding import HTTPError
 from splunktaucclib.rest_handler.endpoint import validator
 from splunktaucclib.rest_handler.endpoint.validator import Validator
 from utility import get_conf_file, make_error_message, setup_logger, validate_api_key
+from service_utils import create_service
 
 APP_NAME = app_greynoise_declare.ta_name
 
@@ -52,8 +52,7 @@ class EnableCachingHandler(Validator):
 
     def validate(self, value, data):
         """Method to call all enable caching helpers."""
-        mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
-        service = client.connect(port=mgmt_port, token=self.session_key_obj.session_key, app=APP_NAME)
+        service = create_service(self.session_key_obj.session_key)
         try:
             # Update Macro for enable caching
             service.post("properties/macros/greynoise_caching", definition=str(data["enable_caching"]))
@@ -75,8 +74,7 @@ class TtlHandler(Validator):
         self._kwargs = kwargs
         self.path = os.path.abspath(__file__)
         self.session_key_obj = GetSessionKey()
-        mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
-        self.service = client.connect(port=mgmt_port, token=self.session_key_obj.session_key, app=APP_NAME)
+        self.service = create_service(self.session_key_obj.session_key)
         self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context="api_validation")
 
     def validate(self, value, data):
@@ -209,8 +207,7 @@ class GreyNoiseAPIValidation(Validator):
 
             # Creating client for connecting to server
             self.logger.debug("Creating Splunk Client object.")
-            mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
-            service = client.connect(port=mgmt_port, token=self.session_key_obj.session_key)
+            service = create_service(self.session_key_obj.session_key)
 
             # Retrive saved search
             overview_savedsearch = service.saved_searches["greynoise_overview"]
@@ -303,8 +300,7 @@ class GreyNoiseScanDeployment(Validator):
 
             # Creating client for connecting server
             self.logger.debug("Creating Splunk Client object.")
-            mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
-            service = client.connect(port=mgmt_port, token=self.session_key_obj.session_key, app=APP_NAME)
+            service = create_service(self.session_key_obj.session_key)
 
             if bool(int(enable_ss)):
                 try:
@@ -468,7 +464,7 @@ class GreyNoiseFeedConfiguration(Validator):
         self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context="feed_configuration")
 
         try:
-            service = client.connect(port=self.mgmt_port, token=self.session_key, app=APP_NAME)
+            service = create_service(self.session_key)
             if self.collection_name in service.kvstore:
                 self.collection = service.kvstore[self.collection_name]
                 self.collection.data.query_by_id("item1")
@@ -538,8 +534,7 @@ class GreyNoiseFeedConfiguration(Validator):
 
             # Creating client for connecting server
             self.logger.debug("Creating Splunk Client object.")
-            mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
-            service = client.connect(port=mgmt_port, token=self.session_key_obj.session_key, app=APP_NAME)
+            service = create_service(self.session_key_obj.session_key)
 
             try:
                 if bool(int(should_ingest_feed_to_index)):

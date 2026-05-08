@@ -7,6 +7,7 @@ import requests
 import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
 import utility
+from service_utils import create_service
 import validator
 from greynoise.api import APIConfig, GreyNoise
 from greynoise_constants import INTEGRATION_NAME, SENDALERT_COMMAND, VERIFY_INTERNAL_SSL, IPV4_REGEX, IPV6_REGEX
@@ -14,7 +15,6 @@ from greynoise_exceptions import APIKeyNotFoundError
 from splunklib.binding import HTTPError
 from splunklib.searchcommands import Configuration, EventingCommand, Option, dispatch
 from solnlib.splunkenv import get_splunkd_uri
-from SA_GreyNoise.splunklib import client as splunk_client
 
 
 @Configuration()
@@ -166,12 +166,7 @@ class GNMultiCommand(EventingCommand):
                 # Get session info
                 session_key = self._metadata.searchinfo.session_key
                 # Connect to Splunk using the SDK
-                service = splunk_client.connect(
-                    token=session_key,
-                    owner="nobody",
-                    app="SA-GreyNoise",
-                    autologin=True
-                )
+                service = create_service(session_key, "nobody")
 
                 is_es_app_exists = self.check_es_app_exists(logger)
                 if is_es_app_exists:

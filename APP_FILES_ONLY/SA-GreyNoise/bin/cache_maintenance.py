@@ -3,8 +3,8 @@ import traceback  # noqa # pylint: disable=unused-import
 
 import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import splunk.clilib.cli_common
-import splunklib.client as client
 import utility
+from service_utils import create_service
 from caching import Caching
 from splunklib.searchcommands import Configuration, EventingCommand, dispatch
 
@@ -35,8 +35,7 @@ class CacheMaintenance(EventingCommand):
             context_cache_client = Caching(session_key, logger, "context")
             riot_cache_client = Caching(session_key, logger, "greynoise_riot")
             cache_clients = [multi_cache_client, context_cache_client, riot_cache_client]
-            mgmt_port = splunk.clilib.cli_common.getMgmtUri().split(":")[-1]
-            service = client.connect(port=mgmt_port, token=session_key, app=APP_NAME)
+            service = create_service(session_key)
             ttl = abs(int(service.get("properties/macros/greynoise_ttl/definition")["body"].read()))
         except ValueError:
             logger.warn("Invalid value found for TTL. Using a default value of '24'.")

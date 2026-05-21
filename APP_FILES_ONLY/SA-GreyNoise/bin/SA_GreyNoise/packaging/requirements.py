@@ -1,14 +1,24 @@
 # This file is dual licensed under the terms of the Apache License, Version
 # 2.0, and the BSD License. See the LICENSE file in the root of this repository
 # for complete details.
+from __future__ import annotations
 
-from typing import Any, Iterator, Optional, Set
+from typing import Iterator
 
 from ._parser import parse_requirement as _parse_requirement
 from ._tokenizer import ParserSyntaxError
 from .markers import Marker, _normalize_extra_values
 from .specifiers import SpecifierSet
 from .utils import canonicalize_name
+
+__all__ = [
+    "InvalidRequirement",
+    "Requirement",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__
 
 
 class InvalidRequirement(ValueError):
@@ -23,6 +33,16 @@ class Requirement:
     Parse a given requirement string into its parts, such as name, specifier,
     URL, and extras. Raises InvalidRequirement on a badly-formed requirement
     string.
+
+    Instances are safe to serialize with :mod:`pickle`. They use a stable
+    format so the same pickle can be loaded in future packaging releases.
+
+    .. versionchanged:: 26.2
+
+        Added a stable pickle format. Pickles created with packaging 26.2+ can
+        be unpickled with future releases.  Backward compatibility with pickles
+        from packaging < 26.2 is supported but may be removed in a future
+        release.
     """
 
     # TODO: Can we test whether something is contained within a requirement?
@@ -37,10 +57,10 @@ class Requirement:
             raise InvalidRequirement(str(e)) from e
 
         self.name: str = parsed.name
-        self.url: Optional[str] = parsed.url or None
-        self.extras: Set[str] = set(parsed.extras or [])
+        self.url: str | None = parsed.url or None
+        self.extras: set[str] = set(parsed.extras or [])
         self.specifier: SpecifierSet = SpecifierSet(parsed.specifier)
-        self.marker: Optional[Marker] = None
+        self.marker: Marker | None = None
         if parsed.marker is not None:
             self.marker = Marker.__new__(Marker)
             self.marker._markers = _normalize_extra_values(parsed.marker)
@@ -56,28 +76,47 @@ class Requirement:
             yield str(self.specifier)
 
         if self.url:
-            yield f"@ {self.url}"
+            yield f" @ {self.url}"
             if self.marker:
                 yield " "
 
         if self.marker:
             yield f"; {self.marker}"
 
+    def __getstate__(self) -> str:
+        # Return the requirement string for compactness and stability.
+        # Re-parsed on load to reconstruct all fields.
+        return str(self)
+
+    def __setstate__(self, state: object) -> None:
+        if isinstance(state, str):
+            # New format (26.2+): just the requirement string.
+            try:
+                tmp = Requirement(state)
+            except InvalidRequirement as exc:
+                raise TypeError(f"Cannot restore Requirement from {state!r}") from exc
+            self.name = tmp.name
+            self.url = tmp.url
+            self.extras = tmp.extras
+            self.specifier = tmp.specifier
+            self.marker = tmp.marker
+            return
+        if isinstance(state, dict):
+            # Old format (packaging <= 26.1, no __slots__): plain __dict__.
+            self.__dict__.update(state)
+            return
+        raise TypeError(f"Cannot restore Requirement from {state!r}")
+
     def __str__(self) -> str:
         return "".join(self._iter_parts(self.name))
 
     def __repr__(self) -> str:
-        return f"<Requirement('{self}')>"
+        return f"<{self.__class__.__name__}({str(self)!r})>"
 
     def __hash__(self) -> int:
-        return hash(
-            (
-                self.__class__.__name__,
-                *self._iter_parts(canonicalize_name(self.name)),
-            )
-        )
+        return hash(tuple(self._iter_parts(canonicalize_name(self.name))))
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Requirement):
             return NotImplemented
 

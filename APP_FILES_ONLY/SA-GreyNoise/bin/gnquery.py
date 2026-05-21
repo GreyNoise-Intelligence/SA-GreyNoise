@@ -11,7 +11,7 @@ from greynoise_constants import INTEGRATION_NAME
 from splunklib.searchcommands import Configuration, Option, dispatch
 
 
-def response_scroller(api_client, logger, query, result_size, page_size, exclude_raw):
+def response_scroller(api_client, logger, query, result_size, page_size, exclude_raw, exclude_fields=None):
     """Uses api_client instance of GreyNoise SDK to fetch query results and traverse them if result set is too large."""
     # This will keep the count of how many events are remaining to be sent to Splunk
     remaining_chunk_size = result_size
@@ -41,7 +41,13 @@ def response_scroller(api_client, logger, query, result_size, page_size, exclude
             logger.debug("No GreyNoise query results remaining to be sent, completing the search...")
             break
 
-        api_response = api_client.query(query=query, exclude_raw=exclude_raw, size=size, scroll=scroll)
+        api_response = api_client.query(
+            query=query,
+            exclude_raw=exclude_raw,
+            size=size,
+            scroll=scroll,
+            exclude_fields=exclude_fields,
+        )
 
         if "request_metadata" in api_response:
             # If this is the last page of API response, the scroll will not be present
@@ -88,13 +94,15 @@ class GNQueryCommand(BaseCommandHandler):
 
     **Syntax**::
     `| gnquery query="classification:malicious" result_size="50"`
-    `| gnquery query="classification:benign page_size="500"`
+    `| gnquery query="classification:benign" page_size="500"`
 
     **Description**::
     The `gnquery` command uses the `GNQL query` provided in `query` parameter to return GreyNoise
     query results using method :method:`query` from GreyNoise Python SDK.
     The optional parameter `result_size` can be used to limit number of the results retrieved.
      The optional parameter `page_size` can be used to control the number of results returned per API request.
+    The optional parameter `exclude_fields` can be used to omit named fields from each GNQL hit (comma-separated,
+    passed through to the GreyNoise API).
     """
 
     query = Option(
@@ -128,6 +136,14 @@ class GNQueryCommand(BaseCommandHandler):
         require=False,
     )
 
+    exclude_fields = Option(
+        doc="""**Syntax:** **exclude_fields=***<comma-separated field names>*
+        **Description:** Fields to omit from each GNQL query response.""",
+        default="",
+        name="exclude_fields",
+        require=False,
+    )
+
     def do_generate(self, api_key, proxy, logger):
         """
         Method to fetch the api response and process and send the response with extractions in the Splunk.
@@ -139,6 +155,7 @@ class GNQueryCommand(BaseCommandHandler):
         result_size = self.result_size
         page_size = self.page_size
         exclude_raw = self.exclude_raw
+        exclude_fields = self.exclude_fields
 
         logger.info("Started retrieving results for query: {}".format(str(query)))
 
@@ -154,11 +171,19 @@ class GNQueryCommand(BaseCommandHandler):
         if page_size:
             page_size = page_size.strip()
 
+        if exclude_fields:
+            exclude_fields = exclude_fields.strip()
+
         # Validating the given parameters
         try:
             result_size = validator.Integer(option_name="result_size", minimum=1).validate(result_size)
             page_size = validator.Integer(option_name="page_size", minimum=1, maximum=10000).validate(page_size)
             exclude_raw = validator.Boolean(option_name="exclude_raw").validate(exclude_raw)
+            exclude_fields_param = None
+            if exclude_fields:
+                exclude_fields_param = ",".join(part.strip() for part in exclude_fields.split(",") if part.strip())
+                if not exclude_fields_param:
+                    exclude_fields_param = None
         except ValueError as e:
             # Validator will throw ValueError with error message when the parameters are not proper
             logger.error(str(e))
@@ -180,7 +205,15 @@ class GNQueryCommand(BaseCommandHandler):
         )
 
         # Keep generating the events till result_size is not reached or all the query results are sent to Splunk
-        for event in response_scroller(api_client, logger, query, result_size, page_size, exclude_raw):
+        for event in response_scroller(
+            api_client,
+            logger,
+            query,
+            result_size,
+            page_size,
+            exclude_raw,
+            exclude_fields=exclude_fields_param,
+        ):
             yield event
 
         logger.info("Successfully retrieved results for the GreyNoise query: {}".format(str(query)))

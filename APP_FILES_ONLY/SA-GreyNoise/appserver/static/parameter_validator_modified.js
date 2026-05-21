@@ -19,60 +19,71 @@ require([
     // Get token models
     var tokens = mvc.Components.getInstance("default");
     var tokensSub = mvc.Components.getInstance("submitted");
-    
-    var last_7_days = tokens.get("form.last_7_days");
 
-    var start_date = moment.utc()
-    var end_date =  moment.utc()
+    var min_date = "";
+    var max_date = "";
 
-    if(last_7_days=="true")
-    {
-        start_date =  moment.utc().subtract(6, 'days')
-        end_date =  moment.utc()
-        // Setting the token to null so that on reload it will not auto run the process_inputs
-        tokens.set("form.last_7_days", null);
-        tokensSub.set("last_7_days", null)
-    }
+    if ($("#daterange").length) {
+        var last_7_days = tokens.get("form.last_7_days");
 
-    // setting token for the selected default date in text box
-    tokens.set("form.daterange", start_date.format('YYYY-MM-DD') + ' to ' + end_date.format('YYYY-MM-DD'))
-    
-    var min_date = ""
-    var max_date = ""
-    function setdatetimerange(start, end) {
-                // setting token for the selected date in text box
-                tokens.set("form.daterange",start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'))
-                min_date = start.format('YYYY-MM-DD')
-                max_date = end.format('YYYY-MM-DD')
-            }
+        var start_date = moment.utc();
+        var end_date = moment.utc();
 
-           $('#daterange').daterangepicker({
-            startDate: start,
-            endDate: end,
-            opens: 'left',
-            locale: {
-                format: 'YYYY-MM-DD'
+        if (last_7_days == "true") {
+            start_date = moment.utc().subtract(6, "days");
+            end_date = moment.utc();
+            // Setting the token to null so that on reload it will not auto run the process_inputs
+            tokens.set("form.last_7_days", null);
+            tokensSub.set("last_7_days", null);
+        }
+
+        // setting token for the selected default date in text box
+        tokens.set("form.daterange", start_date.format("YYYY-MM-DD") + " to " + end_date.format("YYYY-MM-DD"));
+
+        function setdatetimerange(start, end) {
+            // setting token for the selected date in text box
+            tokens.set("form.daterange", start.format("YYYY-MM-DD") + " to " + end.format("YYYY-MM-DD"));
+            min_date = start.format("YYYY-MM-DD");
+            max_date = end.format("YYYY-MM-DD");
+        }
+
+        $("#daterange").daterangepicker(
+            {
+                startDate: start_date,
+                endDate: end_date,
+                opens: "left",
+                locale: {
+                    format: "YYYY-MM-DD",
+                },
+                ranges: {
+                    Today: [moment.utc(), moment.utc()],
+                    Yesterday: [moment.utc().subtract(1, "days"), moment.utc().subtract(1, "days")],
+                    "Last 7 Days": [moment.utc().subtract(6, "days"), moment.utc()],
+                    "Last 30 Days": [moment.utc().subtract(29, "days"), moment.utc()],
+                    "This Month": [moment.utc().startOf("month"), moment.utc().endOf("month")],
+                    "Last Month": [
+                        moment.utc().subtract(1, "month").startOf("month"),
+                        moment.utc().subtract(1, "month").endOf("month"),
+                    ],
+                },
             },
-            ranges: {
-               'Today': [moment.utc(), moment.utc()],
-               'Yesterday': [moment.utc().subtract(1, 'days'), moment.utc().subtract(1, 'days')],
-               'Last 7 Days': [moment.utc().subtract(6, 'days'), moment.utc()],
-               'Last 30 Days': [moment.utc().subtract(29, 'days'), moment.utc()],
-               'This Month': [moment.utc().startOf('month'), moment.utc().endOf('month')],
-               'Last Month': [moment.utc().subtract(1, 'month').startOf('month'), moment.utc().subtract(1, 'month').endOf('month')]
-            }
-        }, setdatetimerange);
-        
-    // Set tokens for start time and end time
-    setdatetimerange(start_date, end_date);
+            setdatetimerange
+        );
 
-    // Setting token for initializing the default value on load of dashboard
-    tokens.set("tkn_start_time", start_date);
-    tokens.set("tkn_end_time", end_date);
-    $('#daterange').data('daterangepicker').setStartDate(start_date);
-    $('#daterange').data('daterangepicker').setEndDate(end_date);
-    $('#daterange :input').attr('readonly', 'true');
-    $('#daterange :input').css('cursor', 'text');
+        // Set tokens for start time and end time
+        setdatetimerange(start_date, end_date);
+
+        // Setting token for initializing the default value on load of dashboard
+        tokens.set("tkn_start_time", start_date);
+        tokens.set("tkn_end_time", end_date);
+        var picker = $("#daterange").data("daterangepicker");
+        if (picker) {
+            picker.setStartDate(start_date);
+            picker.setEndDate(end_date);
+        }
+        $("#daterange :input").attr("readonly", "true");
+        $("#daterange :input").css("cursor", "text");
+    }
 
     function process_inputs(){
         // Unset tokens which may be set previously
@@ -87,7 +98,8 @@ require([
         var is_invalid = 1;
         var requiredFields = ["tkn_ip_address", "tkn_organization", "tkn_actor", "tkn_tag", "tkn_asn"]
         for (i = 0; i < requiredFields.length; i++) {
-            if (!re.test(tokens.get(requiredFields[i]).trim())) {
+            var raw = tokens.get(requiredFields[i]);
+            if (!re.test(String(raw == null ? "" : raw).trim())) {
                 is_invalid = 0;
                 break;
             }
@@ -104,7 +116,7 @@ require([
         for (i = 0; i < tokensToEscapeSpecialCharacter.length; i++) {
             let tokenVal = tokens.get(tokensToEscapeSpecialCharacter[i]);
             if (tokenVal) {
-                tokenValTrim = tokenVal.trim();
+                var tokenValTrim = tokenVal.trim();
                 tokenValTrim = tokenValTrim.replace(new RegExp('"','g'),'\\\\\\\"');
                 tokens.set(tokensToEscapeSpecialCharacter[i] + "_escaped",tokenValTrim);
                 tokensSub.set(tokensToEscapeSpecialCharacter[i] + "_escaped",tokenValTrim);
@@ -131,7 +143,9 @@ require([
         // Setting the token to null so that on reload it will not auto run the process_inputs
         tokens.set("form.redirect", null);
         tokensSub.set("redirect", null)
-        $('.applyBtn.btn.btn-sm.btn-primary').click();
+        if ($("#daterange").length) {
+            $('.applyBtn.btn.btn-sm.btn-primary').click();
+        }
         $("#submit .btn.btn-primary").click();        
     }
 });

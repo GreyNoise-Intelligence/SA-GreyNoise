@@ -16,6 +16,20 @@ class BaseCommandHandler(GeneratingCommand):
     it will call the custom `do_generate` method from the respective command's python script.
     """
 
+    def _execute_chunk_v2(self, process, chunk):
+        """Stream generated records to Splunk without materializing a full result chunk in memory."""
+        count = 0
+        maxrows = self._record_writer._maxresultrows
+        write_record = self._record_writer.write_record
+
+        for row in process:
+            write_record(row)
+            count += 1
+            if count == maxrows:
+                break
+
+        self._finished = count != maxrows
+
     def generate(self):
         """Method which calls the custom `do_generate` method that yields records to the Splunk processing pipeline."""
         try:

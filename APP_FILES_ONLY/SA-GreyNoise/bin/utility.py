@@ -205,7 +205,7 @@ def nested_dict_iter(nested, prefix=""):
 
     def nester_method(api_response, prefix, current_field=None):
         for key, value in list(api_response.items()):
-            if isinstance(value, collections.Mapping):  # it's a Dictionary
+            if isinstance(value, collections.abc.Mapping):  # it's a Dictionary
                 # This will update the contents of the value dictionary into parsed_dict itself
                 if key in ["business_service_intelligence", "internet_scanner_intelligence"]:
                     nester_method(value, prefix, key)
@@ -215,7 +215,7 @@ def nested_dict_iter(nested, prefix=""):
             if isinstance(value, list):  # it's a list
                 _list = value
                 for item in _list:
-                    if isinstance(item, collections.Mapping):  # it's a dict inside a list
+                    if isinstance(item, collections.abc.Mapping):  # it's a dict inside a list
                         dict_length = int(len(list(item.keys())))
                         for n in range(0, dict_length):
                             current_key = list(item.keys())[n]

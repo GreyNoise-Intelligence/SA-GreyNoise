@@ -1,20 +1,26 @@
+import re
 import sys
 import time  # noqa # pylint: disable=unused-import
 import traceback
-import re
-import requests
 
 import app_greynoise_declare  # noqa # pylint: disable=unused-import
 import event_generator
+import requests
 import utility
-from service_utils import create_service
 import validator
 from greynoise.api import APIConfig, GreyNoise
-from greynoise_constants import INTEGRATION_NAME, SENDALERT_COMMAND, VERIFY_INTERNAL_SSL, IPV4_REGEX, IPV6_REGEX
+from greynoise_constants import (
+    INTEGRATION_NAME,
+    IPV4_REGEX,
+    IPV6_REGEX,
+    SENDALERT_COMMAND,
+    VERIFY_INTERNAL_SSL,
+)
 from greynoise_exceptions import APIKeyNotFoundError
+from service_utils import create_service
+from solnlib.splunkenv import get_splunkd_uri
 from splunklib.binding import HTTPError
 from splunklib.searchcommands import Configuration, EventingCommand, Option, dispatch
-from solnlib.splunkenv import get_splunkd_uri
 
 
 @Configuration()
@@ -22,8 +28,8 @@ class GNMultiCommand(EventingCommand):
     """
     gnmulti - Transforming Command.
 
-    Transforming command that adds the Internet Scanner and Business Service Intelligence status information to each event.
-    Data pulled from: /v3/ip
+    Transforming command that adds the Internet Scanner and Business Service Intelligence status
+    information to each event. Data pulled from: /v3/ip
 
     **Syntax**::
     `index=firewall | gnmulti ip_field="ip"
@@ -82,46 +88,36 @@ class GNMultiCommand(EventingCommand):
         else:
             api_config = APIConfig(api_key=self.api_key, timeout=120, integration_name=INTEGRATION_NAME)
         self.api_client = GreyNoise(api_config)
-    
+
     def check_es_app_exists(self, logger):
         """Check if ES app exists."""
         try:
             logger.info("message=check_es_app_exists | started checking if ES app exists.")
             headers = {
                 "Authorization": "Splunk {}".format(self._metadata.searchinfo.session_key),
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
             response = requests.get(
                 get_splunkd_uri() + "/servicesNS/-/SplunkEnterpriseSecuritySuite/",
                 headers=headers,
-                verify=VERIFY_INTERNAL_SSL
+                verify=VERIFY_INTERNAL_SSL,
             )
             if response.status_code != 200:
-                logger.debug(
-                    "message=response_returned | {} : {}".format(
-                        response.status_code,
-                        response.text
-                    )
-                )
+                logger.debug("message=response_returned | {} : {}".format(response.status_code, response.text))
                 return False
             return True
         except Exception:
             logger.error(
-                "message=failed_to_check_es_app | Failed to check ES app exists : {}".format(
-                    traceback.format_exc()
-                )
+                "message=failed_to_check_es_app | Failed to check ES app exists : {}".format(traceback.format_exc())
             )
             return False
-    
+
     def generate_es_alert(self, event, service, classification, classification_to_score, logger):
         """Generate alert in ES."""
         try:
             risk_object = event.get("gn_ip", "")
             risk_description = f"Adjusted by the GreyNoise for {classification} classification."
-            logger.info(
-                "message=generate_es_alert "
-                f"| started generating Splunk ES alert for IP: {risk_object}"
-            )
+            logger.info("message=generate_es_alert " f"| started generating Splunk ES alert for IP: {risk_object}")
             # Prepare SPL
             calculated_score = classification_to_score.get(classification, classification_to_score.get("unknown"))
             risk_object_type = None
@@ -138,7 +134,7 @@ class GNMultiCommand(EventingCommand):
                 # Run SPL as a search job
                 job = service.jobs.create(spl)
                 while not job.is_done():
-                    time.sleep(.2)
+                    time.sleep(0.2)
 
         except Exception as e:
             logger.error(f"message=generate_es_alert | Failed to run sendalert command: {e}")
@@ -170,30 +166,23 @@ class GNMultiCommand(EventingCommand):
 
                 is_es_app_exists = self.check_es_app_exists(logger)
                 if is_es_app_exists:
-                    logger.info(
-                        "message=es_app_exists "
-                        "| ES app exists."
-                    )
+                    logger.info("message=es_app_exists " "| ES app exists.")
                 else:
                     logger.warning(
-                        "message=es_app_does_not_exist "
-                        "| ES app does not exist. Skipping ES alert generation."
+                        "message=es_app_does_not_exist " "| ES app does not exist. Skipping ES alert generation."
                     )
             except Exception:
-                logger.error(
-                    "message=unknown_error | Unknown error occured: {}".format(
-                        traceback.format_exc()
-                    )
-                )
+                logger.error("message=unknown_error | Unknown error occured: {}".format(traceback.format_exc()))
 
         # Enter the mechanism only when the Search is complete and all the events are available
         if self.search_results_info and not self.metadata.preview:
-            EVENTS_PER_CHUNK = 50000
+            EVENTS_PER_CHUNK = 10000
             THREADS = 1
             ip_field = self.ip_field
 
             logger.info(
-                "Started retrieving Internet Scanner and Business Service Intelligence status of the IP addresses present in field: {}".format(ip_field)
+                "Started retrieving Internet Scanner and Business Service Intelligence status of the "
+                "IP addresses present in field: {}".format(ip_field)
             )
 
             try:
@@ -247,15 +236,13 @@ class GNMultiCommand(EventingCommand):
 
             except Exception:
                 logger.info(
-                    "Exception occurred while adding the Internet Scanner and Business Service Intelligence status to the events, Error: {}".format(
-                        traceback.format_exc()
-                    )
+                    "Exception occurred while adding the Internet Scanner and Business Service "
+                    "Intelligence status to the events, Error: {}".format(traceback.format_exc())
                 )
                 self.write_error(
-                    "Exception occurred while adding the Internet Scanner and Business Service Intelligence status of the "
-                    "IP addresses to events. See greynoise_main.log for more details."
+                    "Exception occurred while adding the Internet Scanner and Business Service Intelligence status "
+                    "of the IP addresses to events. See greynoise_main.log for more details."
                 )
 
 
 dispatch(GNMultiCommand, sys.argv, sys.stdin, sys.stdout, __name__)
-

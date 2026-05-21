@@ -19,6 +19,10 @@ GreyNoise Splunk app provides multiple dashboards to effectively analyse and vis
 
 # RELEASE NOTES (Version 3.0.2) #
  - Fixed connection failures on RHEL systems caused by IPv6 resolution issues
+ - Fixed issue with Live Investigation
+ - Updated GreyNoise SDK to v3.0.3
+ - Updated `gnquery` to include `excluded_fields` param
+ - Updated Feed Import functionality to use new `excluded_fields` param, includes updates to the default savedsearches
 
 # RELEASE NOTES (Version 3.0.1) #
  - Fixed Python file formatting

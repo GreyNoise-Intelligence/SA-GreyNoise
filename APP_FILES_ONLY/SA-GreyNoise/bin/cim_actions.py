@@ -178,7 +178,7 @@ class ModularAction(object):
     # {0} - orig_action-name, {1} - orig_sid, {2} - orig_rid, {3} - sourcetype
     DEFAULT_IDLINE = "***Common Action Model*** %s %s %s %s"
     DEFAULT_INDEX = "summary"
-    DEFAULT_CHUNK = 50000
+    DEFAULT_CHUNK = 10000
 
     SHORT_FORMAT = "%(asctime)s %(levelname)s %(message)s"
 

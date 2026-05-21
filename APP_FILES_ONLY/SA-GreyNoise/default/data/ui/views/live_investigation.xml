@@ -51,8 +51,17 @@
       <default></default>
       <initialValue></initialValue>
     </input>
-    <input type="text" id="daterange" token="daterange">
-      <label>Date Range (in UTC)</label>
+    <input type="dropdown" token="tkn_last_seen_range">
+      <label>Date Range (Relative)</label>
+      <choice value="1d">Last 1 Day</choice>
+      <choice value="3d">Last 3 Days</choice>
+      <choice value="7d">Last 7 Days</choice>
+      <choice value="14d">Last 14 Days</choice>
+      <choice value="30d">Last 30 Days</choice>
+      <choice value="60d">Last 60 Days</choice>
+      <choice value="90d">Last 90 Days</choice>
+      <default>7d</default>
+      <initialValue>7d</initialValue>
     </input>
   </fieldset>
   <row>
@@ -73,7 +82,7 @@
           </done>
           <query>$token_search_trigger$ | gnquery
     [| makeresults
-    | eval last_seen = " last_seen:"."["."$tkn_start_time$"." TO "."$tkn_end_time$"."]"
+    | eval last_seen = " last_seen:"."$tkn_last_seen_range$"
     | eval ip_address = if(isnull("$tkn_ip_address_escaped$") OR "$tkn_ip_address_escaped$"=="", "", " ip:"."$tkn_ip_address_escaped$")
     | eval classification = " classification:"."$tkn_classification$"
     | eval organization = if(isnull("$tkn_organization_escaped$") OR "$tkn_organization_escaped$"=="", "", " metadata.organization:"."$tkn_organization_escaped$")

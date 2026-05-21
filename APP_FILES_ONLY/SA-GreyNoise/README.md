@@ -160,7 +160,7 @@ The GreyNoise App for Splunk provides integration with Enterprise Security (ES) 
      - `lookup://greynoise_ip_intel_suspicious`  
      - `lookup://greynoise_ip_intel_unknown`
 9. The lookup data can be viewed under: **Analytics > Security Intelligence > Threat Intelligence > Indicators**
-10. Findings related to the indicators can be reviewed under: **Analytics > Security Intelligence > Threat Intelligence > Findings (Threat Findings)**
+10. Risk analysis against the indicators can be reviewed under: **Analytics > Security Intelligence > Risk Analysis**
 
 # Support to Update Risk Score in Splunk Enterprise Security (ES) #
 

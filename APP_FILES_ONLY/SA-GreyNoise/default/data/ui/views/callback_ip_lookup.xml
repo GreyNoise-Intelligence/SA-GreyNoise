@@ -1,0 +1,97 @@
+<form stylesheet="error_msg.css,daterangepicker.css" script="parameter_validator_modified.js" isDashboard="true" version="1.1" theme="dark">
+  <label>Callback IP Lookup</label>
+  <description>Allows an analyst to query GreyNoise Callback intelligence for a submitted IP, including stage indicators, observation dates, source workspaces, and enrichment details. Requires a Callback-enabled GreyNoise license.</description>
+  <fieldset submitButton="true" autoRun="false">
+    <input type="text" token="tkn_ip_address">
+      <label>IP Address</label>
+      <default></default>
+      <initialValue></initialValue>
+    </input>
+    <input type="text" token="tkn_source_workspace">
+      <label>Source Workspace</label>
+      <default>all</default>
+      <initialValue>all</initialValue>
+    </input>
+  </fieldset>
+  <search id="gncallback_results">
+    <query>
+    $token_search_trigger$
+    | makeresults
+    | eval ip = if(isnull("$tkn_ip_address_escaped$") OR "$tkn_ip_address_escaped$"=="", "", "$tkn_ip_address_escaped$")
+    | gncallback
+        [| makeresults
+        | eval ip_field = "ip"
+        | eval source_workspace = if(isnull("$tkn_source_workspace_escaped$") OR "$tkn_source_workspace_escaped$"=="", "all", "$tkn_source_workspace_escaped$")
+        | return ip_field source_workspace ]
+    </query>
+    <done>
+      <condition match="$job.resultCount$ == 0">
+        <set token="message">No Callback results were returned for the provided IP address</set>
+      </condition>
+      <condition match="$job.resultCount$ == 1 AND len($result.greynoise_message$) &gt; 0 AND isnull($result.greynoise_ip$)">
+        <set token="message">$result.greynoise_message$</set>
+      </condition>
+      <condition match="$job.resultCount$ == 1 AND len($result.greynoise_error$) &gt; 0">
+        <set token="message">No results were returned due to an unexpected reason: $result.greynoise_error$</set>
+      </condition>
+    </done>
+  </search>
+  <row>
+    <panel>
+      <title>Callback Overview</title>
+      <table rejects="$message$">
+        <search base="gncallback_results">
+          <query>
+    | eval stage_1 = if(greynoise_is_stage_1=="1" OR greynoise_is_stage_1==1 OR greynoise_is_stage_1=="true" OR greynoise_is_stage_1=="True", "True", if(greynoise_is_stage_1=="0" OR greynoise_is_stage_1==0 OR greynoise_is_stage_1=="false" OR greynoise_is_stage_1=="False", "False", greynoise_is_stage_1))
+    | eval stage_2 = if(greynoise_is_stage_2=="1" OR greynoise_is_stage_2==1 OR greynoise_is_stage_2=="true" OR greynoise_is_stage_2=="True", "True", if(greynoise_is_stage_2=="0" OR greynoise_is_stage_2==0 OR greynoise_is_stage_2=="false" OR greynoise_is_stage_2=="False", "False", greynoise_is_stage_2))
+    | eval has_files = if(greynoise_has_files=="1" OR greynoise_has_files==1 OR greynoise_has_files=="true" OR greynoise_has_files=="True", "True", if(greynoise_has_files=="0" OR greynoise_has_files==0 OR greynoise_has_files=="false" OR greynoise_has_files=="False", "False", greynoise_has_files))
+    | table greynoise_ip greynoise_source_workspaces greynoise_first_seen greynoise_last_seen stage_1 stage_2 has_files greynoise_message greynoise_error
+    | rename greynoise_ip AS IP, greynoise_source_workspaces AS "Source Workspaces", greynoise_first_seen AS "First Seen", greynoise_last_seen AS "Last Seen", stage_1 AS "Stage 1", stage_2 AS "Stage 2", has_files AS "Has Files", greynoise_message AS Message, greynoise_error AS Error
+          </query>
+        </search>
+        <option name="count">20</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">false</option>
+        <format type="color" field="Stage 1">
+          <colorPalette type="map">{"True":#D41F1F,"False":#65778A}</colorPalette>
+        </format>
+        <format type="color" field="Stage 2">
+          <colorPalette type="map">{"True":#D41F1F,"False":#65778A}</colorPalette>
+        </format>
+        <format type="color" field="Has Files">
+          <colorPalette type="map">{"True":#E3D922,"False":#65778A}</colorPalette>
+        </format>
+        <drilldown>
+          <link target="_blank">/app/SA-GreyNoise/queried_ip_addresses?form.tkn_ip_address=$row.IP$</link>
+        </drilldown>
+      </table>
+      <html depends="$message$">
+         <div class="custom-result-value">$message$</div>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Callback Field Details</title>
+      <table rejects="$message$">
+        <search base="gncallback_results">
+          <query>
+    | fields greynoise_*
+    | fields - greynoise_error greynoise_enrichment
+    | rename greynoise_* AS *
+    | transpose 0
+    | rename column AS Field, "row 1" AS Value
+    | where isnotnull(Value) AND Value!="" AND Value!="None"
+    | eval value_count = mvcount(Value)
+    | eval Value = if(value_count &gt; 20, mvappend(mvindex(Value, 0, 19), "... (" . tostring(value_count - 20) . " more values not shown)"), Value)
+    | fields - value_count
+    | sort Field
+          </query>
+        </search>
+        <option name="count">100</option>
+        <option name="drilldown">none</option>
+        <option name="rowNumbers">false</option>
+      </table>
+    </panel>
+  </row>
+</form>

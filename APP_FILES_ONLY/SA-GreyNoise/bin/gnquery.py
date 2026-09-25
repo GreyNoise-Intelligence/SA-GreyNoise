@@ -10,6 +10,58 @@ from greynoise.api import APIConfig, GreyNoise
 from greynoise_constants import INTEGRATION_NAME
 from splunklib.searchcommands import Configuration, Option, dispatch
 
+# Keys removed from internet_scanner_intelligence.metadata on each GNQL hit before building events.
+GNQUERY_STRIP_ISI_METADATA_FIELDS = (
+    "destination_countries",
+    "destination_country_codes",
+)
+
+# Keys removed from each object in ip_data["tags"] when tags is a list of dicts (e.g. "references").
+GNQUERY_STRIP_TAG_ENTRY_FIELDS = (
+    "references",
+    "description",
+)
+
+
+def _strip_internet_scanner_metadata_fields(ip_data, field_names=GNQUERY_STRIP_ISI_METADATA_FIELDS):
+    """Drop named keys under internet_scanner_intelligence.metadata (mutates dict)."""
+    if not field_names:
+        return
+    try:
+        isi = ip_data.get("internet_scanner_intelligence")
+        if not isinstance(isi, dict):
+            return
+        meta = isi.get("metadata")
+        if not isinstance(meta, dict):
+            return
+        for key in field_names:
+            meta.pop(key, None)
+    except (TypeError, AttributeError):
+        pass
+
+
+def _strip_tag_entry_fields(ip_data, field_names=GNQUERY_STRIP_TAG_ENTRY_FIELDS):
+    """Drop named keys from each dict in ip_data['tags'] (mutates dicts in place)."""
+    if not field_names:
+        return
+    try:
+        tags = ip_data.get("tags")
+        if not isinstance(tags, list):
+            return
+        for entry in tags:
+            if not isinstance(entry, dict):
+                continue
+            for key in field_names:
+                entry.pop(key, None)
+    except (TypeError, AttributeError):
+        pass
+
+
+def _strip_gnquery_hit_fields(ip_data):
+    """Apply configured field removals before building Splunk events."""
+    _strip_internet_scanner_metadata_fields(ip_data)
+    _strip_tag_entry_fields(ip_data)
+
 
 def response_scroller(api_client, logger, query, result_size, page_size, exclude_raw, exclude_fields=None):
     """Uses api_client instance of GreyNoise SDK to fetch query results and traverse them if result set is too large."""
@@ -56,6 +108,7 @@ def response_scroller(api_client, logger, query, result_size, page_size, exclude
             api_data = api_response.get("data", [])
 
             for ip_data in api_data:
+                _strip_gnquery_hit_fields(ip_data)
                 if event_count == 0 and remaining_chunk_size == result_size:
                     yield event_generator.make_valid_event("query", ip_data, True)
                 else:
@@ -138,7 +191,7 @@ class GNQueryCommand(BaseCommandHandler):
 
     exclude_fields = Option(
         doc="""**Syntax:** **exclude_fields=***<comma-separated field names>*
-        **Description:** Fields to omit from each GNQL query response.""",
+        **Description:** Fields to omit from each GNQL hit (passed to the GreyNoise API as exclude_fields).""",
         default="",
         name="exclude_fields",
         require=False,

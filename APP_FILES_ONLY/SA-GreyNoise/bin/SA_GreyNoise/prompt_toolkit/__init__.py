@@ -29,7 +29,7 @@ from .formatted_text import ANSI, HTML
 from .shortcuts import PromptSession, choice, print_formatted_text, prompt
 
 # Don't forget to update in `docs/conf.py`!
-__version__ = metadata.version("prompt_toolkit")
+__version__ = "3.0.52"
 
 assert pep440.match(__version__)
 

@@ -14,12 +14,12 @@
                             "type": "text",
                             "label": "API Key",
                             "field": "api_key",
-                            "defaultValue": "",   
+                            "defaultValue": "",
                             "validators": [
                                 {
-                                    "maxLength": 8192, 
-                                    "minLength": 1, 
-                                    "errorMsg": "The length of the API Key should be between 1 and 8192", 
+                                    "maxLength": 8192,
+                                    "minLength": 1,
+                                    "errorMsg": "The length of the API Key should be between 1 and 8192",
                                     "type": "string"
                                 }
                             ],
@@ -40,7 +40,7 @@
                                 "delimiter": ",",
                                 "endpointUrl": "data/indexes"
                             },
-                            "help" : "Select the indexes to be scanned in the deployment."
+                            "help": "Select the indexes to be scanned in the deployment."
                         },
                         {
                             "required": true,
@@ -161,7 +161,7 @@
                                     }
                                 ],
                                 "disableSearch": true
-                            }, 
+                            },
                             "help": "Specify the time range for scanning the indexed Splunk data."
                         },
                         {
@@ -278,7 +278,7 @@
                             ],
                             "help": "Enter the risk score threshold for Benign classification"
                         }
-                    ], 
+                    ],
                     "hook": {
                         "type": "external",
                         "src": "ScanDeploymentHook"
@@ -289,12 +289,12 @@
                 {
                     "entity": [
                         {
-                            "field":"enable_feed_import",
-                            "type":"checkbox",
-                            "label":"Enable Feed Import",
+                            "field": "enable_feed_import",
+                            "type": "checkbox",
+                            "label": "Enable Feed Import",
                             "defaultValue": 0,
-                            "required":false,
-                            "help":"Select this checkbox to enable the ingest of a GreyNoise Feed. IMPORTANT: Ensure your subscription includes an appropriate license."
+                            "required": false,
+                            "help": "Select this checkbox to enable the ingest of a GreyNoise Feed. IMPORTANT: Ensure your subscription includes an appropriate license."
                         },
                         {
                             "field": "force_enable_ss",
@@ -341,6 +341,14 @@
                             "help": "Select which GreyNoise feed type to ingest."
                         },
                         {
+                            "field": "include_community_dataset",
+                            "type": "checkbox",
+                            "label": "Include Community Dataset",
+                            "defaultValue": 0,
+                            "required": true,
+                            "help": "Select this checkbox to include community dataset results in the feed query."
+                        },
+                        {
                             "field": "ingest_feed_to_index",
                             "type": "checkbox",
                             "label": "Ingest Feed To Index",
@@ -358,7 +366,7 @@
                                 "denyList": "^_.*$",
                                 "endpointUrl": "data/indexes"
                             },
-                            "help" : "Select the index to add feed."
+                            "help": "Select the index to add feed."
                         }
                     ],
                     "hook": {
@@ -371,17 +379,373 @@
                 {
                     "entity": [
                         {
-                            "field":"enable_caching",
-                            "type":"checkbox",
-                            "label":"Enable Caching",
-                            "defaultValue": 1,
-                            "required":false,
-                            "help":"Select this checkbox to enable caching for all custom commands."
+                            "field": "enable_callback_feed",
+                            "type": "checkbox",
+                            "label": "Enable Callback IP Feed",
+                            "defaultValue": 0,
+                            "required": false,
+                            "help": "Select this checkbox to enable scheduled ingest of GreyNoise Callback IPs into the greynoise_callback_indicators store. Requires a Callback-enabled GreyNoise license."
                         },
                         {
-                            "field":"ttl",
-                            "label":"Time to live",
-                            "type":"text",
+                            "field": "force_enable_callback_feed",
+                            "label": "Force Callback Feed Run Now",
+                            "type": "checkbox",
+                            "help": "Select this checkbox to immediately begin a Callback feed ingest using the selected filter options.",
+                            "required": false
+                        },
+                        {
+                            "field": "is_stage_1",
+                            "type": "singleSelect",
+                            "label": "Stage 1 (File Downloaded)",
+                            "defaultValue": "any",
+                            "required": false,
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "Any",
+                                        "value": "any"
+                                    },
+                                    {
+                                        "label": "Yes",
+                                        "value": "true"
+                                    },
+                                    {
+                                        "label": "No",
+                                        "value": "false"
+                                    }
+                                ],
+                                "disableSearch": true
+                            },
+                            "help": "Filter to IPs where a file was downloaded (stage 1), or leave as Any."
+                        },
+                        {
+                            "field": "is_stage_2",
+                            "type": "singleSelect",
+                            "label": "Stage 2 (Suspected C2)",
+                            "defaultValue": "any",
+                            "required": false,
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "Any",
+                                        "value": "any"
+                                    },
+                                    {
+                                        "label": "Yes",
+                                        "value": "true"
+                                    },
+                                    {
+                                        "label": "No",
+                                        "value": "false"
+                                    }
+                                ],
+                                "disableSearch": true
+                            },
+                            "help": "Filter to IPs suspected as C2 from VT/sandbox analysis (stage 2), or leave as Any."
+                        },
+                        {
+                            "field": "has_files",
+                            "type": "singleSelect",
+                            "label": "Has Files",
+                            "defaultValue": "any",
+                            "required": false,
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "Any",
+                                        "value": "any"
+                                    },
+                                    {
+                                        "label": "Yes",
+                                        "value": "true"
+                                    },
+                                    {
+                                        "label": "No",
+                                        "value": "false"
+                                    }
+                                ],
+                                "disableSearch": true
+                            },
+                            "help": "Filter to IPs that have malware files associated, only without files, or Any."
+                        },
+                        {
+                            "field": "first_seen_after",
+                            "type": "singleSelect",
+                            "label": "First Seen After",
+                            "defaultValue": "any",
+                            "required": false,
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "Any",
+                                        "value": "any"
+                                    },
+                                    {
+                                        "label": "1 day ago",
+                                        "value": "1"
+                                    },
+                                    {
+                                        "label": "7 days ago",
+                                        "value": "7"
+                                    },
+                                    {
+                                        "label": "14 days ago",
+                                        "value": "14"
+                                    },
+                                    {
+                                        "label": "30 days ago",
+                                        "value": "30"
+                                    },
+                                    {
+                                        "label": "45 days ago",
+                                        "value": "45"
+                                    },
+                                    {
+                                        "label": "60 days ago",
+                                        "value": "60"
+                                    },
+                                    {
+                                        "label": "90 days ago",
+                                        "value": "90"
+                                    }
+                                ],
+                                "disableSearch": true
+                            },
+                            "help": "Only IPs first seen after this relative date (today minus the selected number of days). Leave as Any for no filter."
+                        },
+                        {
+                            "field": "first_seen_before",
+                            "type": "singleSelect",
+                            "label": "First Seen Before",
+                            "defaultValue": "any",
+                            "required": false,
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "Any",
+                                        "value": "any"
+                                    },
+                                    {
+                                        "label": "1 day ago",
+                                        "value": "1"
+                                    },
+                                    {
+                                        "label": "7 days ago",
+                                        "value": "7"
+                                    },
+                                    {
+                                        "label": "14 days ago",
+                                        "value": "14"
+                                    },
+                                    {
+                                        "label": "30 days ago",
+                                        "value": "30"
+                                    },
+                                    {
+                                        "label": "45 days ago",
+                                        "value": "45"
+                                    },
+                                    {
+                                        "label": "60 days ago",
+                                        "value": "60"
+                                    },
+                                    {
+                                        "label": "90 days ago",
+                                        "value": "90"
+                                    }
+                                ],
+                                "disableSearch": true
+                            },
+                            "help": "Only IPs first seen before this relative date (today minus the selected number of days). Leave as Any for no filter."
+                        },
+                        {
+                            "field": "last_seen_after",
+                            "type": "singleSelect",
+                            "label": "Last Seen After",
+                            "defaultValue": "any",
+                            "required": false,
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "Any",
+                                        "value": "any"
+                                    },
+                                    {
+                                        "label": "1 day ago",
+                                        "value": "1"
+                                    },
+                                    {
+                                        "label": "7 days ago",
+                                        "value": "7"
+                                    },
+                                    {
+                                        "label": "14 days ago",
+                                        "value": "14"
+                                    },
+                                    {
+                                        "label": "30 days ago",
+                                        "value": "30"
+                                    },
+                                    {
+                                        "label": "45 days ago",
+                                        "value": "45"
+                                    },
+                                    {
+                                        "label": "60 days ago",
+                                        "value": "60"
+                                    },
+                                    {
+                                        "label": "90 days ago",
+                                        "value": "90"
+                                    }
+                                ],
+                                "disableSearch": true
+                            },
+                            "help": "Only IPs last seen after this relative date (today minus the selected number of days). Leave as Any for no filter."
+                        },
+                        {
+                            "field": "last_seen_before",
+                            "type": "singleSelect",
+                            "label": "Last Seen Before",
+                            "defaultValue": "any",
+                            "required": false,
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "Any",
+                                        "value": "any"
+                                    },
+                                    {
+                                        "label": "1 day ago",
+                                        "value": "1"
+                                    },
+                                    {
+                                        "label": "7 days ago",
+                                        "value": "7"
+                                    },
+                                    {
+                                        "label": "14 days ago",
+                                        "value": "14"
+                                    },
+                                    {
+                                        "label": "30 days ago",
+                                        "value": "30"
+                                    },
+                                    {
+                                        "label": "45 days ago",
+                                        "value": "45"
+                                    },
+                                    {
+                                        "label": "60 days ago",
+                                        "value": "60"
+                                    },
+                                    {
+                                        "label": "90 days ago",
+                                        "value": "90"
+                                    }
+                                ],
+                                "disableSearch": true
+                            },
+                            "help": "Only IPs last seen before this relative date (today minus the selected number of days). Leave as Any for no filter."
+                        },
+                        {
+                            "field": "file_type",
+                            "type": "text",
+                            "label": "File Type",
+                            "defaultValue": "",
+                            "required": false,
+                            "help": "Filter by MIME type (for example application/x-executable). Leave blank for no filter.",
+                            "validators": [
+                                {
+                                    "maxLength": 256,
+                                    "minLength": 0,
+                                    "errorMsg": "File type must be 256 characters or less",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "file_name",
+                            "type": "text",
+                            "label": "File Name",
+                            "defaultValue": "",
+                            "required": false,
+                            "help": "Filter by file name substring. Leave blank for no filter.",
+                            "validators": [
+                                {
+                                    "maxLength": 512,
+                                    "minLength": 0,
+                                    "errorMsg": "File name must be 512 characters or less",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "file_hash",
+                            "type": "text",
+                            "label": "File Hash (SHA256)",
+                            "defaultValue": "",
+                            "required": false,
+                            "help": "Filter by file SHA256 hash. Leave blank for no filter.",
+                            "validators": [
+                                {
+                                    "maxLength": 128,
+                                    "minLength": 0,
+                                    "errorMsg": "File hash must be 128 characters or less",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "scanner_ips",
+                            "type": "text",
+                            "label": "Scanner IPs",
+                            "defaultValue": "",
+                            "required": false,
+                            "help": "Optional comma-separated scanner IPs used to filter Callback results. Leave blank for no filter.",
+                            "validators": [
+                                {
+                                    "maxLength": 8192,
+                                    "minLength": 0,
+                                    "errorMsg": "Scanner IPs list must be 8192 characters or less",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "ips",
+                            "type": "text",
+                            "label": "Callback IPs",
+                            "defaultValue": "",
+                            "required": false,
+                            "help": "Optional comma-separated Callback IPs to restrict the feed to a specific set. Leave blank to ingest all matching Callback IPs.",
+                            "validators": [
+                                {
+                                    "maxLength": 8192,
+                                    "minLength": 0,
+                                    "errorMsg": "Callback IPs list must be 8192 characters or less",
+                                    "type": "string"
+                                }
+                            ]
+                        }
+                    ],
+                    "title": "Callback IP Feed",
+                    "name": "callback_feed_configuration"
+                },
+                {
+                    "entity": [
+                        {
+                            "field": "enable_caching",
+                            "type": "checkbox",
+                            "label": "Enable Caching",
+                            "defaultValue": 1,
+                            "required": false,
+                            "help": "Select this checkbox to enable caching for all custom commands."
+                        },
+                        {
+                            "field": "ttl",
+                            "label": "Time to live",
+                            "type": "text",
                             "required": false,
                             "defaultValue": "24",
                             "validators": [
@@ -399,14 +763,14 @@
                                     "type": "regex"
                                 }
                             ],
-                            "help":"Enter a positive integer in the range 1-72 representing the caches' Time to live (in hours)."
+                            "help": "Enter a positive integer in the range 1-72 representing the caches' Time to live (in hours)."
                         },
                         {
-                            "field":"purge_cache",
-                            "label":"Purge Cache",
-                            "type":"checkbox",
-                            "required":false,
-                            "help":"Check this option to the purge the cache. After clicking the save button, the cache will be cleared."
+                            "field": "purge_cache",
+                            "label": "Purge Cache",
+                            "type": "checkbox",
+                            "required": false,
+                            "help": "Check this option to the purge the cache. After clicking the save button, the cache will be cleared."
                         }
                     ],
                     "title": "Caching",
@@ -441,9 +805,10 @@
                                         "label": "CRITICAL",
                                         "value": "CRITICAL"
                                     }
-                                ], 
+                                ],
                                 "disableSearch": true
-                            }
+                            },
+                            "required": true
                         }
                     ],
                     "title": "Logging",
@@ -454,11 +819,11 @@
     },
     "meta": {
         "displayName": "GreyNoise App for Splunk",
-        "version": "3.0.2",
+        "version": "3.1.0",
         "restRoot": "app_greynoise",
         "name": "SA-GreyNoise",
         "apiVersion": "3.0.0",
-        "schemaVersion": "0.0.8",
-        "_uccVersion": "5.48.0"
+        "schemaVersion": "0.0.10",
+        "_uccVersion": "6.6.0"
     }
 }

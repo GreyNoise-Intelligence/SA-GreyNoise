@@ -112,7 +112,7 @@ require([
         }
 
         // Escaping the '"'
-        var tokensToEscapeSpecialCharacter = ["tkn_ip_address", "tkn_organization", "tkn_actor", "tkn_tag", "tkn_os", "tkn_category", "tkn_country", "tkn_asn", "tkn_min_score", "tkn_limit", "tkn_days"]
+        var tokensToEscapeSpecialCharacter = ["tkn_ip_address", "tkn_organization", "tkn_actor", "tkn_tag", "tkn_os", "tkn_category", "tkn_country", "tkn_asn", "tkn_min_score", "tkn_limit", "tkn_days", "tkn_source_workspace"]
         for (i = 0; i < tokensToEscapeSpecialCharacter.length; i++) {
             let tokenVal = tokens.get(tokensToEscapeSpecialCharacter[i]);
             if (tokenVal) {

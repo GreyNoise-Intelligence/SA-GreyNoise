@@ -30,6 +30,14 @@ repos:
         exclude: ^APP_FILES_ONLY/SA-GreyNoise/bin/SA_GreyNoise/
         types:
           - python
+      - id: pytest
+        name: Regression tests (pytest)
+        entry: pytest
+        language: python
+        additional_dependencies:
+          - pytest>=8.0
+        pass_filenames: false
+        files: ^(tests/|pytest\.ini|APP_FILES_ONLY/SA-GreyNoise/(bin|default|README)/)
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.17.0
     hooks:

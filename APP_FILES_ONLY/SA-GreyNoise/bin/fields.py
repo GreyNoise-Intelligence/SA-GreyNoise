@@ -44,6 +44,7 @@ IP_FIELDS = {
     "destination_countries": None,
     "destination_country_codes": None,
     "error": None,
+    "source_workspaces": None,
 }
 
 # Dictionary of all the fields that are available in internet scanner status of IP address
@@ -59,6 +60,38 @@ QUICK_FIELDS = {
     "business_service_intelligence_found": None,
     "business_service_intelligence_trust_level": None,
     "error": None,
+}
+
+# Dictionary of all the fields that are available in Psychic lookup results
+# fetched using psychic_lookup_ips method of the GreyNoise Python SDK
+PSYCHIC_FIELDS = {
+    "_raw": None,
+    "_time": None,
+    "source": None,
+    "sourcetype": None,
+    "ip": None,
+    "date": None,
+    "seen": None,
+    "3wh_completed": None,
+    "classification": None,
+    "actor": None,
+    "tags": None,
+    "cves": None,
+    "error": None,
+}
+
+# Dictionary of Psychic fields used when enriching existing Splunk events (transforming command).
+# Field names must use the greynoise_ prefix to avoid overwriting fields on the original event.
+PSYCHIC_MULTI_FIELDS = {
+    "greynoise_ip": None,
+    "greynoise_date": None,
+    "greynoise_seen": None,
+    "greynoise_3wh_completed": None,
+    "greynoise_classification": None,
+    "greynoise_actor": None,
+    "greynoise_tags": None,
+    "greynoise_cves": None,
+    "greynoise_error": None,
 }
 
 # Dictionary of all the fields that are available in the events returned by query method of the GreyNoise Python SDK
@@ -102,6 +135,7 @@ QUERY_FIELDS = {
     "bot": None,
     "destination_countries": None,
     "destination_country_codes": None,
+    "source_workspaces": None,
 }
 
 MULTI_FIELDS = {
@@ -149,6 +183,65 @@ ENRICH_FIELDS = {
     "greynoise_bot": None,
     "greynoise_destination_countries": None,
     "greynoise_destination_country_codes": None,
+    "greynoise_source_workspaces": None,
+}
+
+# Dictionary of Callback intelligence fields used when enriching existing Splunk events.
+# Field names must use the greynoise_ prefix to avoid overwriting fields on the original event.
+CALLBACK_FIELDS = {
+    "greynoise_ip": None,
+    "greynoise_source_workspaces": None,
+    "greynoise_first_seen": None,
+    "greynoise_last_seen": None,
+    "greynoise_is_stage_1": None,
+    "greynoise_is_stage_2": None,
+    "greynoise_has_files": None,
+    "greynoise_enrichment": None,
+    "greynoise_message": None,
+    "greynoise_error": None,
+}
+
+# Dictionary of fields used by the indicator feed generating command
+FEED_FIELDS = {
+    "_time": None,
+    "source": None,
+    "sourcetype": None,
+    "_key": None,
+    "ip": None,
+    "actor": None,
+    "first_seen": None,
+    "last_seen": None,
+    "classification": None,
+    "tags": None,
+    "cve": None,
+    "source_country": None,
+    "asn": None,
+    "organization": None,
+    "spoofable": None,
+    "source_workspaces": None,
+    "message": None,
+    "error": None,
+}
+
+# Dictionary of fields used by the Callback feed generating command
+CALLBACK_FEED_FIELDS = {
+    "_raw": None,
+    "_time": None,
+    "source": None,
+    "sourcetype": None,
+    "ip": None,
+    "first_seen": None,
+    "last_seen": None,
+    "is_stage_1": None,
+    "is_stage_2": None,
+    "has_files": None,
+    "source_workspaces": None,
+    "scanner_ips": None,
+    "file_names": None,
+    "file_types": None,
+    "file_hashes": None,
+    "message": None,
+    "error": None,
 }
 
 # Dictionary of all the fields that are available in riot information of IP address
@@ -181,6 +274,23 @@ GREYNOISE_RIOT_FIELDS = {
     "greynoise_error": None,
 }
 
+RECALL_FIELDS = {
+    "_raw": None,
+    "_time": None,
+    "source": None,
+    "sourcetype": None,
+    "query": None,
+    "start": None,
+    "end": None,
+    "timestamp": None,
+    "count": None,
+    "ip": None,
+    "interval": None,
+    "total": None,
+    "message": None,
+    "error": None,
+}
+
 TIMELINE_FIELDS = {
     "ip": None,
     "end_time": None,
@@ -206,32 +316,4 @@ TIMELINE_FIELDS = {
     "tor": None,
     "vpn": None,
     "vpn_service": None,
-}
-
-SIMILAR_FIELDS = {
-    "ip": None,
-    "actor": None,
-    "classification": None,
-    "first_seen": None,
-    "last_seen": None,
-    "asn": None,
-    "city": None,
-    "country": None,
-    "country_code": None,
-    "organization": None,
-    "similar_ips": None,
-}
-
-GREYNOISE_SIMILAR_FIELDS = {
-    "greynoise_ip": None,
-    "greynoise_actor": None,
-    "greynoise_classification": None,
-    "greynoise_first_seen": None,
-    "greynoise_last_seen": None,
-    "greynoise_asn": None,
-    "greynoise_city": None,
-    "greynoise_country": None,
-    "greynoise_country_code": None,
-    "greynoise_organization": None,
-    "greynoise_similar_ips": None,
 }

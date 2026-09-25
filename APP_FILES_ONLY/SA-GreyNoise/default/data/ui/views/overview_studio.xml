@@ -1,0 +1,1495 @@
+<dashboard version="2" theme="dark">
+  <label>Overview</label>
+  <description>Overview of GreyNoise features and the GreyNoise service status.</description>
+  <definition><![CDATA[
+{
+    "title": "Overview",
+    "description": "This dashboard provides an overview of GreyNoise features and the GreyNoise service status.",
+    "inputs": {
+        "input_e1ixhNs2": {
+            "options": {
+                "defaultValue": "*",
+                "items": [
+                    {
+                        "label": "All",
+                        "value": "*"
+                    },
+                    {
+                        "label": "malicious",
+                        "value": "malicious"
+                    },
+                    {
+                        "label": "suspicious",
+                        "value": "suspicious"
+                    },
+                    {
+                        "label": "benign",
+                        "value": "benign"
+                    },
+                    {
+                        "label": "unknown",
+                        "value": "unknown"
+                    }
+                ],
+                "token": "tkn_classification"
+            },
+            "title": "Classification",
+            "type": "input.dropdown"
+        }
+    },
+    "defaults": {
+        "dataSources": {
+            "ds.search": {
+                "options": {
+                    "queryParameters": {}
+                }
+            },
+            "ds.spl2": {
+                "options": {
+                    "queryParameters": {}
+                }
+            }
+        },
+        "visualizations": {
+            "global": {
+                "showProgressBar": true
+            }
+        }
+    },
+    "visualizations": {
+        "viz_0kOuHyiO": {
+            "dataSources": {
+                "primary": "ds_b4EdjtlR"
+            },
+            "eventHandlers": [
+                {
+                    "options": {
+                        "app": "",
+                        "dashboard": "",
+                        "newTab": true,
+                        "tokens": []
+                    },
+                    "type": "drilldown.linkToDashboard"
+                }
+            ],
+            "options": {
+                "columnGrouping": "overlay",
+                "dataValuesDisplay": "all",
+                "legendDisplay": "off",
+                "legendTruncation": "ellipsisMiddle",
+                "seriesColors": [
+                    "#CB2196",
+                    "#7B56DB",
+                    "#009CEB",
+                    "#00CDAF",
+                    "#DD9900",
+                    "#FF677B",
+                    "#813193",
+                    "#0051B5",
+                    "#008C80",
+                    "#99B100",
+                    "#FFA476",
+                    "#FF6ACE",
+                    "#AE8CFF",
+                    "#00689D",
+                    "#00490A",
+                    "#465D00",
+                    "#9D6300",
+                    "#F6540B",
+                    "#FF969E",
+                    "#E47BFE"
+                ],
+                "showRoundedY2AxisLabels": false,
+                "showY2MajorGridLines": true,
+                "y2": "> primary | frameBySeriesNames('')",
+                "y2AxisAbbreviation": "off",
+                "yAxisAbbreviation": "off",
+                "yAxisScale": "log"
+            },
+            "showProgressBar": true,
+            "title": "Top 10 ASNs",
+            "type": "splunk.column"
+        },
+        "viz_2o6tHhGg": {
+            "context": {
+                "Trust_LevelColumnColorConfig": [
+                    {
+                        "match": "1",
+                        "value": "#0099E0"
+                    },
+                    {
+                        "match": "2",
+                        "value": "#65778A"
+                    }
+                ],
+                "Trust_LevelColumnFormatEditorConfig": {
+                    "string": {
+                        "unitPosition": "after"
+                    }
+                },
+                "Trust_LevelRowBackgroundColorsEditorConfig": [
+                    {
+                        "match": 1,
+                        "value": "#5C33FF"
+                    },
+                    {
+                        "match": 2,
+                        "value": "#207865"
+                    },
+                    {
+                        "match": 3,
+                        "value": "#AD3F20"
+                    }
+                ],
+                "Trust_LevelRowColorsEditorConfig": [
+                    "#ffffff"
+                ],
+                "countColumnFormatEditorConfig": {
+                    "number": {
+                        "thousandSeparated": true,
+                        "unitPosition": "after"
+                    }
+                },
+                "countColumnNumberConfig": {
+                    "number": {
+                        "precision": 0,
+                        "thousandSeparated": true,
+                        "unitPosition": "after"
+                    }
+                },
+                "trust_levelColumnColorConfig": [
+                    {
+                        "match": "1",
+                        "value": "#55C169"
+                    },
+                    {
+                        "match": "2",
+                        "value": "#CBA700"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_rARVVr6y"
+            },
+            "options": {
+                "columnFormat": {
+                    "Trust Level": {
+                        "align": "left",
+                        "data": "> table | seriesByName(\"Trust Level\") | formatByType(Trust_LevelColumnFormatEditorConfig)",
+                        "headerAlign": "left",
+                        "rowBackgroundColors": "> table | seriesByName(\"Trust Level\") | matchValue(Trust_LevelRowBackgroundColorsEditorConfig)",
+                        "rowColors": "> table | seriesByName('Trust Level') | pick(Trust_LevelRowColorsEditorConfig)",
+                        "textOverflow": "break-word"
+                    },
+                    "count": {
+                        "align": "left",
+                        "data": "> table | seriesByName(\"count\") | formatByType(countColumnFormatEditorConfig)",
+                        "headerAlign": "left",
+                        "textOverflow": "break-word"
+                    },
+                    "trust_level": {
+                        "rowBackgroundColors": "> table | seriesByName(\"trust_level\") | matchValue(trust_levelColumnColorConfig)"
+                    }
+                },
+                "drilldown": "none",
+                "showInternalFields": false
+            },
+            "showProgressBar": true,
+            "title": "# of Business Service IPs by Trust Level",
+            "type": "splunk.table"
+        },
+        "viz_3iRmgYqd": {
+            "dataSources": {
+                "primary": "ds_pkGX8jfh"
+            },
+            "eventHandlers": [
+                {
+                    "options": {
+                        "app": "",
+                        "dashboard": "",
+                        "newTab": true,
+                        "tokens": []
+                    },
+                    "type": "drilldown.linkToDashboard"
+                }
+            ],
+            "options": {},
+            "showProgressBar": true,
+            "title": "# of IPs scanned in the deployment",
+            "type": "splunk.singlevalue"
+        },
+        "viz_4eGqNkYl": {
+            "dataSources": {
+                "primary": "ds_wqnbNAau"
+            },
+            "eventHandlers": [
+                {
+                    "options": {
+                        "app": "",
+                        "dashboard": "",
+                        "newTab": true,
+                        "tokens": []
+                    },
+                    "type": "drilldown.linkToDashboard"
+                }
+            ],
+            "options": {},
+            "showProgressBar": true,
+            "title": "# of Internet Scanner IPs in the deployment",
+            "type": "splunk.singlevalue"
+        },
+        "viz_8jhU5ZiE": {
+            "dataSources": {
+                "primary": "ds_i1gmTLJV"
+            },
+            "eventHandlers": [
+                {
+                    "options": {
+                        "app": "",
+                        "dashboard": "",
+                        "newTab": true,
+                        "tokens": []
+                    },
+                    "type": "drilldown.linkToDashboard"
+                }
+            ],
+            "options": {},
+            "showProgressBar": true,
+            "title": "Top 10 Organizations",
+            "type": "splunk.pie"
+        },
+        "viz_FzsCQisK": {
+            "context": {
+                "convertedColorRange": [
+                    {
+                        "from": 0,
+                        "value": "#cba700"
+                    },
+                    {
+                        "to": 0,
+                        "value": "#555"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_3u1vZUlY"
+            },
+            "options": {
+                "majorColor": "> majorValue | rangeValue(convertedColorRange)",
+                "unitPosition": "after"
+            },
+            "showProgressBar": true,
+            "title": "# of Suspicious IP Addresses in GreyNoise today",
+            "type": "splunk.singlevalue"
+        },
+        "viz_LAw9ianM": {
+            "dataSources": {
+                "primary": "ds_I6DwZxLP"
+            },
+            "description": "",
+            "options": {
+                "dataValuesDisplay": "all",
+                "legendDisplay": "off",
+                "seriesColors": [
+                    "#F6540B",
+                    "#7B56DB",
+                    "#009CEB",
+                    "#00CDAF",
+                    "#DD9900",
+                    "#FF677B",
+                    "#CB2196",
+                    "#813193",
+                    "#0051B5",
+                    "#008C80",
+                    "#99B100",
+                    "#FFA476",
+                    "#FF6ACE",
+                    "#AE8CFF",
+                    "#00689D",
+                    "#00490A",
+                    "#465D00",
+                    "#9D6300",
+                    "#FF969E",
+                    "#E47BFE"
+                ],
+                "showTooltip": false
+            },
+            "title": "Top 10 OSs",
+            "type": "splunk.column"
+        },
+        "viz_NdXylb1x": {
+            "context": {
+                "convertedColorRange": [
+                    {
+                        "from": 0,
+                        "value": "#dc4e41"
+                    },
+                    {
+                        "to": 0,
+                        "value": "#555"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_thhcXIeN"
+            },
+            "options": {
+                "majorColor": "> majorValue | rangeValue(convertedColorRange)",
+                "unitPosition": "after"
+            },
+            "showProgressBar": true,
+            "title": "# of Malicious IP Addresses in GreyNoise today",
+            "type": "splunk.singlevalue"
+        },
+        "viz_PDLuk5xd": {
+            "dataSources": {
+                "primary": "ds_k6Fz2bWW"
+            },
+            "options": {
+                "dataValuesDisplay": "all",
+                "legendDisplay": "off",
+                "legendTruncation": "ellipsisMiddle",
+                "showRoundedY2AxisLabels": false,
+                "showY2MajorGridLines": true,
+                "y2AxisAbbreviation": "off",
+                "yAxisAbbreviation": "off",
+                "yAxisScale": "log"
+            },
+            "showProgressBar": true,
+            "title": "Top 10 Categories",
+            "type": "splunk.column"
+        },
+        "viz_PlG8EJrT": {
+            "options": {
+                "markdown": "# The information below represents the state of the GreyNoise service today."
+            },
+            "type": "splunk.markdown"
+        },
+        "viz_QI6nkhog": {
+            "context": {
+                "classificationColumnColorConfig": [
+                    {
+                        "match": "benign",
+                        "value": "#118832"
+                    },
+                    {
+                        "match": "malicious",
+                        "value": "#D41F1F"
+                    },
+                    {
+                        "match": "suspicious",
+                        "value": "#CBA700"
+                    }
+                ],
+                "countColumnNumberConfig": {
+                    "number": {
+                        "precision": 0,
+                        "thousandSeparated": true,
+                        "unitPosition": "after"
+                    }
+                },
+                "ipColumnColorConfig": [
+                    {
+                        "match": "?",
+                        "value": "#D41F1F"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_SxEP9XgM"
+            },
+            "eventHandlers": [
+                {
+                    "options": {
+                        "newTab": false,
+                        "type": "auto"
+                    },
+                    "type": "drilldown.linkToSearch"
+                }
+            ],
+            "options": {
+                "columnFormat": {
+                    "#": {
+                        "width": 60
+                    },
+                    "classification": {
+                        "rowBackgroundColors": "> table | seriesByName(\"classification\") | matchValue(classificationColumnColorConfig)"
+                    },
+                    "count": {
+                        "data": "> table | seriesByName(\"count\") | formatByType(countColumnNumberConfig)"
+                    },
+                    "ip": {
+                        "rowBackgroundColors": "> table | seriesByName(\"ip\") | matchValue(ipColumnColorConfig)",
+                        "width": 84
+                    }
+                },
+                "count": 5,
+                "dataOverlayMode": "none",
+                "drilldown": "row",
+                "headerVisibility": "none",
+                "showInternalFields": false,
+                "tableFormat": {
+                    "align": "left"
+                }
+            },
+            "showProgressBar": true,
+            "title": "5 Most Recent Malicious IPs",
+            "type": "splunk.table"
+        },
+        "viz_QZi6iTSm": {
+            "dataSources": {
+                "primary": "ds_jZKrvSZy"
+            },
+            "eventHandlers": [
+                {
+                    "options": {
+                        "app": "",
+                        "dashboard": "",
+                        "newTab": true,
+                        "tokens": []
+                    },
+                    "type": "drilldown.linkToDashboard"
+                }
+            ],
+            "options": {},
+            "showProgressBar": true,
+            "title": "Top 10 Actors",
+            "type": "splunk.pie"
+        },
+        "viz_TFNmmpRB": {
+            "dataSources": {
+                "primary": "ds_iZhS6YuB"
+            },
+            "options": {
+                "numberPrecision": 2,
+                "unit": "%"
+            },
+            "showProgressBar": true,
+            "title": "Percentage of Internet Scanner IPs in the deployment",
+            "type": "splunk.singlevalue"
+        },
+        "viz_a8CoAzHn": {
+            "context": {
+                "classificationColumnColorConfig": [
+                    {
+                        "match": "benign",
+                        "value": "#118832"
+                    },
+                    {
+                        "match": "malicious",
+                        "value": "#D41F1F"
+                    },
+                    {
+                        "match": "suspicious",
+                        "value": "#CBA700"
+                    }
+                ],
+                "classificationColumnFormatEditorConfig": {
+                    "string": {
+                        "unitPosition": "after"
+                    }
+                },
+                "classificationRowBackgroundColorsEditorConfig": [
+                    {
+                        "match": "malicious",
+                        "value": "#D41F1F"
+                    },
+                    {
+                        "match": "suspicious",
+                        "value": "#CBA700"
+                    },
+                    {
+                        "match": "benign",
+                        "value": "#118832"
+                    }
+                ],
+                "classificationRowColorsEditorConfig": [
+                    "#ffffff"
+                ],
+                "countColumnFormatEditorConfig": {
+                    "number": {
+                        "precision": 0,
+                        "thousandSeparated": true,
+                        "unitPosition": "after"
+                    }
+                },
+                "countColumnNumberConfig": {
+                    "number": {
+                        "precision": 0,
+                        "thousandSeparated": true,
+                        "unitPosition": "after"
+                    }
+                }
+            },
+            "dataSources": {
+                "primary": "ds_yn9qd7IF"
+            },
+            "options": {
+                "columnFormat": {
+                    "classification": {
+                        "align": "left",
+                        "data": "> table | seriesByName(\"classification\") | formatByType(classificationColumnFormatEditorConfig)",
+                        "headerAlign": "left",
+                        "rowBackgroundColors": "> table | seriesByName(\"classification\") | matchValue(classificationRowBackgroundColorsEditorConfig)",
+                        "rowColors": "> table | seriesByName('classification') | pick(classificationRowColorsEditorConfig)",
+                        "textOverflow": "break-word"
+                    },
+                    "count": {
+                        "align": "left",
+                        "data": "> table | seriesByName(\"count\") | formatByType(countColumnFormatEditorConfig)",
+                        "headerAlign": "left"
+                    }
+                },
+                "drilldown": "none",
+                "showInternalFields": false
+            },
+            "showProgressBar": true,
+            "title": "# of Internet Scanner IPs by Classification",
+            "type": "splunk.table"
+        },
+        "viz_awsL0SmE": {
+            "dataSources": {
+                "primary": "ds_iIhg5oPK"
+            },
+            "eventHandlers": [
+                {
+                    "options": {
+                        "app": "",
+                        "dashboard": "",
+                        "newTab": true,
+                        "tokens": []
+                    },
+                    "type": "drilldown.linkToDashboard"
+                }
+            ],
+            "options": {},
+            "showProgressBar": true,
+            "title": "# of Business Service IPs in the deployment",
+            "type": "splunk.singlevalue"
+        },
+        "viz_cNxGRBvW": {
+            "dataSources": {
+                "primary": "ds_rbxH8sZd"
+            },
+            "options": {
+                "additionalTooltipFields": [
+                    "Tag",
+                    "Count"
+                ],
+                "dataValuesDisplay": "all",
+                "legendDisplay": "off",
+                "seriesColors": [
+                    "#009CEB",
+                    "#7B56DB",
+                    "#00CDAF",
+                    "#DD9900",
+                    "#FF677B",
+                    "#CB2196",
+                    "#813193",
+                    "#0051B5",
+                    "#008C80",
+                    "#99B100",
+                    "#FFA476",
+                    "#FF6ACE",
+                    "#AE8CFF",
+                    "#00689D",
+                    "#00490A",
+                    "#465D00",
+                    "#9D6300",
+                    "#F6540B",
+                    "#FF969E",
+                    "#E47BFE"
+                ],
+                "xAxisLabelRotation": 90,
+                "yAxisTitleVisibility": "hide"
+            },
+            "title": "Top 10 Tags",
+            "type": "splunk.column"
+        },
+        "viz_h1X7fpA5": {
+            "dataSources": {
+                "primary": "ds_RR3JAVfG"
+            },
+            "options": {
+                "numberPrecision": 2,
+                "unit": "%"
+            },
+            "showProgressBar": true,
+            "title": "Percentage of Business Service IPs in the deployment",
+            "type": "splunk.singlevalue"
+        },
+        "viz_kbzTMajg": {
+            "context": {
+                "classificationColumnColorConfig": [
+                    {
+                        "match": "benign",
+                        "value": "#118832"
+                    },
+                    {
+                        "match": "malicious",
+                        "value": "#D41F1F"
+                    },
+                    {
+                        "match": "suspicious",
+                        "value": "#CBA700"
+                    }
+                ],
+                "countColumnFormatEditorConfig": {
+                    "number": {
+                        "thousandSeparated": true,
+                        "unitPosition": "after"
+                    }
+                },
+                "countColumnNumberConfig": {
+                    "number": {
+                        "precision": 0,
+                        "thousandSeparated": true,
+                        "unitPosition": "after"
+                    }
+                },
+                "stageColumnColorConfig": [
+                    {
+                        "match": "1",
+                        "value": "#CBA700"
+                    },
+                    {
+                        "match": "2",
+                        "value": "#D41F1F"
+                    }
+                ],
+                "stageColumnFormatEditorConfig": {
+                    "string": {
+                        "unitPosition": "after"
+                    }
+                },
+                "stageColumnNumberConfig": {
+                    "number": {
+                        "precision": 0,
+                        "thousandSeparated": true,
+                        "unitPosition": "after"
+                    }
+                },
+                "stageRowBackgroundColorsEditorConfig": [
+                    {
+                        "match": 1,
+                        "value": "#D41F1F"
+                    },
+                    {
+                        "match": 2,
+                        "value": "#cba700"
+                    }
+                ],
+                "stageRowColorsEditorConfig": [
+                    "#ffffff"
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_BHQPBvSb"
+            },
+            "options": {
+                "columnFormat": {
+                    "classification": {
+                        "rowBackgroundColors": "> table | seriesByName(\"classification\") | matchValue(classificationColumnColorConfig)"
+                    },
+                    "count": {
+                        "align": "left",
+                        "data": "> table | seriesByName(\"count\") | formatByType(countColumnFormatEditorConfig)",
+                        "headerAlign": "left",
+                        "textOverflow": "break-word"
+                    },
+                    "stage": {
+                        "align": "left",
+                        "data": "> table | seriesByName(\"stage\") | formatByType(stageColumnFormatEditorConfig)",
+                        "headerAlign": "left",
+                        "rowBackgroundColors": "> table | seriesByName(\"stage\") | matchValue(stageRowBackgroundColorsEditorConfig)",
+                        "rowColors": "> table | seriesByName('stage') | pick(stageRowColorsEditorConfig)",
+                        "textOverflow": "break-word"
+                    }
+                },
+                "drilldown": "none",
+                "showInternalFields": false
+            },
+            "showProgressBar": true,
+            "title": "# of indicators in Callback Feed by Stage",
+            "type": "splunk.table"
+        },
+        "viz_lLvM3FcC": {
+            "dataSources": {
+                "primary": "ds_vMgqnuAi"
+            },
+            "options": {},
+            "showProgressBar": true,
+            "title": "# of Unknown IP Addresses in GreyNoise today",
+            "type": "splunk.singlevalue"
+        },
+        "viz_ljD7T9z4": {
+            "context": {
+                "convertedColorRange": [
+                    {
+                        "from": 0,
+                        "value": "#118832"
+                    },
+                    {
+                        "to": 0,
+                        "value": "#555"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_wpDpGatX"
+            },
+            "options": {
+                "majorColor": "> majorValue | rangeValue(convertedColorRange)"
+            },
+            "showProgressBar": true,
+            "title": "# of Benign IP Addresses in GreyNoise today",
+            "type": "splunk.singlevalue"
+        },
+        "viz_ryJ8gCXY": {
+            "context": {
+                "convertedColorRange": [
+                    {
+                        "from": 100,
+                        "value": "#dc4e41"
+                    },
+                    {
+                        "from": 70,
+                        "to": 100,
+                        "value": "#f1813f"
+                    },
+                    {
+                        "from": 30,
+                        "to": 70,
+                        "value": "#f8be34"
+                    },
+                    {
+                        "from": 0,
+                        "to": 30,
+                        "value": "#0877a6"
+                    },
+                    {
+                        "to": 0,
+                        "value": "#53a051"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_uh13QaTK"
+            },
+            "eventHandlers": [
+                {
+                    "options": {
+                        "newTab": false,
+                        "type": "auto"
+                    },
+                    "type": "drilldown.linkToSearch"
+                }
+            ],
+            "options": {
+                "majorColor": "#ffffff"
+            },
+            "showProgressBar": true,
+            "title": "# of indicators in GreyNoise Callback lookup",
+            "type": "splunk.singlevalue"
+        },
+        "viz_s8PoENuY": {
+            "options": {
+                "markdown": "## Note: The data in the panels below are updated every 6 hours. For the most recent information, visit the GreyNoise Visualizer."
+            },
+            "type": "splunk.markdown"
+        },
+        "viz_vq2nN8EF": {
+            "context": {
+                "classificationColumnColorConfig": [
+                    {
+                        "match": "benign",
+                        "value": "#118832"
+                    },
+                    {
+                        "match": "malicious",
+                        "value": "#D41F1F"
+                    },
+                    {
+                        "match": "suspicious",
+                        "value": "#CBA700"
+                    }
+                ],
+                "classificationColumnFormatEditorConfig": {
+                    "string": {
+                        "unitPosition": "after"
+                    }
+                },
+                "classificationRowBackgroundColorsEditorConfig": [
+                    {
+                        "match": "malicious",
+                        "value": "#D41F1F"
+                    },
+                    {
+                        "match": "suspicious",
+                        "value": "#CBA700"
+                    },
+                    {
+                        "match": "benign",
+                        "value": "#118832"
+                    }
+                ],
+                "classificationRowColorsEditorConfig": [
+                    "#ffffff"
+                ],
+                "countColumnFormatEditorConfig": {
+                    "number": {
+                        "precision": 0,
+                        "thousandSeparated": true,
+                        "unitPosition": "after"
+                    }
+                },
+                "countColumnNumberConfig": {
+                    "number": {
+                        "precision": 0,
+                        "thousandSeparated": true,
+                        "unitPosition": "after"
+                    }
+                }
+            },
+            "dataSources": {
+                "primary": "ds_3TsmUNMJ"
+            },
+            "options": {
+                "columnFormat": {
+                    "classification": {
+                        "align": "left",
+                        "data": "> table | seriesByName(\"classification\") | formatByType(classificationColumnFormatEditorConfig)",
+                        "headerAlign": "left",
+                        "rowBackgroundColors": "> table | seriesByName(\"classification\") | matchValue(classificationRowBackgroundColorsEditorConfig)",
+                        "rowColors": "> table | seriesByName('classification') | pick(classificationRowColorsEditorConfig)",
+                        "textOverflow": "break-word"
+                    },
+                    "count": {
+                        "align": "left",
+                        "data": "> table | seriesByName(\"count\") | formatByType(countColumnFormatEditorConfig)",
+                        "headerAlign": "left"
+                    }
+                },
+                "drilldown": "none",
+                "showInternalFields": false
+            },
+            "showProgressBar": true,
+            "title": "# of indicators in GreyNoise Feed by Classification",
+            "type": "splunk.table"
+        },
+        "viz_xG9q7FMh": {
+            "context": {
+                "backgroundColorEditorConfig": [
+                    {
+                        "to": 20,
+                        "value": "#D41F1F"
+                    },
+                    {
+                        "from": 20,
+                        "to": 40,
+                        "value": "#D94E17"
+                    },
+                    {
+                        "from": 40,
+                        "to": 60,
+                        "value": "#CBA700"
+                    },
+                    {
+                        "from": 60,
+                        "to": 80,
+                        "value": "#669922"
+                    },
+                    {
+                        "from": 80,
+                        "value": "#118832"
+                    }
+                ],
+                "convertedColorRange": [
+                    {
+                        "from": 100,
+                        "value": "#dc4e41"
+                    },
+                    {
+                        "from": 70,
+                        "to": 100,
+                        "value": "#f1813f"
+                    },
+                    {
+                        "from": 30,
+                        "to": 70,
+                        "value": "#f8be34"
+                    },
+                    {
+                        "from": 0,
+                        "to": 30,
+                        "value": "#0877a6"
+                    },
+                    {
+                        "to": 0,
+                        "value": "#53a051"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_dQAeIOfw"
+            },
+            "eventHandlers": [
+                {
+                    "options": {
+                        "newTab": false,
+                        "type": "auto"
+                    },
+                    "type": "drilldown.linkToSearch"
+                }
+            ],
+            "options": {
+                "backgroundColor": "> majorValue | rangeValue(backgroundColorEditorConfig)",
+                "sparklineDisplay": "off",
+                "splitByLayout": "trellis",
+                "trellisColumns": 1,
+                "trellisPageCount": 5,
+                "trellisSplitBy": "source_workspaces",
+                "trendDisplay": "off"
+            },
+            "showProgressBar": true,
+            "title": "# of indicators in GreyNoise Feed lookup",
+            "type": "splunk.singlevalue"
+        },
+        "viz_y4bCy2eu": {
+            "cornerRadius": [
+                50,
+                50,
+                50,
+                50
+            ],
+            "options": {
+                "markdown": "# The tiles below show data on the Scan Deployment and Feed functions of this app and its deployment."
+            },
+            "type": "splunk.markdown"
+        }
+    },
+    "dataSources": {
+        "ds_3TsmUNMJ": {
+            "name": "_ of indicators in GreyNoise Feed by Classification search",
+            "options": {
+                "query": "| inputlookup greynoise_indicators\n| stats count by classification\n| sort -count"
+            },
+            "type": "ds.search"
+        },
+        "ds_3u1vZUlY": {
+            "name": "_ of Suspicious IP Addresses in GreyNoise today search",
+            "options": {
+                "query": "| inputlookup gn_overview_lookup where (stats_field=classification AND classification=suspicious)\n            | table stats_count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_BHQPBvSb": {
+            "name": "_ of indicators in Callback Feed by Stage search",
+            "options": {
+                "query": "| inputlookup greynoise_callback_indicators\n| eval stage=case(is_stage_1=\"true\", \"1\", is_stage_2=\"true\", \"2\", 1=1, \"Unconfirmed\")\n| stats count by stage"
+            },
+            "type": "ds.search"
+        },
+        "ds_I6DwZxLP": {
+            "name": "Top 10 OS search",
+            "options": {
+                "query": "| inputlookup gn_overview_lookup where (classification=\"$tkn_classification$\" AND stats_field=\"operating_system\")\n            | stats sum(stats_count) as stats_count by stats_value\n            | sort -stats_count\n            | head 10\n            | rename stats_value as \"Operating System\", stats_count as Count\n            | table \"Operating System\", Count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_RR3JAVfG": {
+            "name": "Percentage of Business Service IPs in the deployment search",
+            "options": {
+                "query": "| inputlookup gn_scan_deployment_ip_lookup\n| stats count(eval(business_service_intelligence=1)) AS business_service_ips, count(eval(business_service_intelligence=1 OR business_service_intelligence=0)) AS total_ips\n| eval business_service_percent=((business_service_ips/total_ips)*100)\n| eval business_service_percent = if(business_service_percent>0, business_service_percent, 0)\n| table business_service_percent",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_SxEP9XgM": {
+            "name": "5 Most Recent Malicious IPs search",
+            "options": {
+                "query": "| inputlookup gn_scan_deployment_ip_lookup\n| search classification=malicious\n| eval ip=_key\n| sort -last_checked\n| head 5\n| table ip, last_checked"
+            },
+            "type": "ds.search"
+        },
+        "ds_b4EdjtlR": {
+            "name": "Top 10 ASN search",
+            "options": {
+                "query": "| inputlookup gn_overview_lookup where (classification=\"$tkn_classification$\" AND stats_field=\"asn\")\n            | stats sum(stats_count) as stats_count by stats_value\n            | sort -stats_count\n            | head 10\n            | rename stats_value as ASN, stats_count as Count\n            | table ASN, Count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_dQAeIOfw": {
+            "name": "_ of indicators in GreyNoise Feed lookup search",
+            "options": {
+                "query": "| inputlookup greynoise_indicators\n| fillnull value=\"greynoise\" source_workspaces \n| stats count by source_workspaces",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_i1gmTLJV": {
+            "name": "Top 10 Organizations search",
+            "options": {
+                "query": "| inputlookup gn_overview_lookup where (classification=\"$tkn_classification$\" AND stats_field=\"organization\")\n            | stats sum(stats_count) as stats_count by stats_value\n            | sort -stats_count\n            | head 10\n            | rename stats_value as Organization, stats_count as count\n            | table Organization, count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_iIhg5oPK": {
+            "name": "_ of Business Service IPs in the deployment search",
+            "options": {
+                "query": "| inputlookup gn_scan_deployment_ip_lookup where (business_service_intelligence=\"1\")\n| stats count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_iZhS6YuB": {
+            "name": "Percentage of Internet Scanner IPs in the deployment search",
+            "options": {
+                "query": "| inputlookup gn_scan_deployment_ip_lookup\n| stats count(eval(internet_scanner_intelligence=1)) AS noisy_ips, count(eval(internet_scanner_intelligence=1 OR internet_scanner_intelligence=0)) AS total_ips\n| eval internet_scanner_percent=((noisy_ips/total_ips)*100)\n| eval internet_scanner_percent = if(internet_scanner_percent>0, internet_scanner_percent, 0)\n| table internet_scanner_percent",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_jZKrvSZy": {
+            "name": "Top 10 Actors search",
+            "options": {
+                "query": "| inputlookup gn_overview_lookup where (classification=\"$tkn_classification$\" AND stats_field=\"actor\")\n            | stats sum(stats_count) as stats_count by stats_value\n            | sort -stats_count\n            | head 10\n            | rename stats_value as Actor, stats_count as count\n            | table Actor, count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_k6Fz2bWW": {
+            "name": "Top 10 Categories search",
+            "options": {
+                "query": "| inputlookup gn_overview_lookup where (classification=\"$tkn_classification$\" AND stats_field=\"category\")\n            | stats sum(stats_count) as stats_count by stats_value\n            | sort -stats_count\n            | head 10\n            | rename stats_value as Category, stats_count as Count\n            | table Category, Count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_pkGX8jfh": {
+            "name": "_ of IPs scanned in the deployment search",
+            "options": {
+                "query": "| inputlookup gn_scan_deployment_ip_lookup\n| stats count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_rARVVr6y": {
+            "name": "_ of Business Service IPs by Trust Level search",
+            "options": {
+                "query": "| inputlookup gn_scan_deployment_ip_lookup where (business_service_intelligence=\"1\")\n| eval trust_level_string = tostring(trust_level)\n| rename trust_level_string as \"Trust Level\"\n| stats count by \"Trust Level\"\n| sort -count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_rbxH8sZd": {
+            "name": "Top 10 Tags search",
+            "options": {
+                "query": "| inputlookup gn_overview_lookup where (classification=\"$tkn_classification$\" AND stats_field=\"tag\")\n            | stats sum(stats_count) as stats_count by stats_value\n            | sort -stats_count\n            | head 10\n            | rename stats_value as Tag, stats_count as Count\n            | table Tag, Count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_thhcXIeN": {
+            "name": "_ of Malicious IP Addresses in GreyNoise today search",
+            "options": {
+                "query": "| inputlookup gn_overview_lookup where (stats_field=classification AND classification=malicious)\n            | table stats_count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_uh13QaTK": {
+            "name": "_ of indicators in GreyNoise Callback lookup search",
+            "options": {
+                "query": "| inputlookup greynoise_callback_indicators\n| stats count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_vMgqnuAi": {
+            "name": "_ of Unknown IP Addresses in GreyNoise today search",
+            "options": {
+                "query": "| inputlookup gn_overview_lookup where (stats_field=classification AND classification=unknown)\n            | table stats_count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_wpDpGatX": {
+            "name": "_ of Benign IP Addresses in GreyNoise today search",
+            "options": {
+                "query": "| inputlookup gn_overview_lookup where (stats_field=classification AND classification=benign)\n            | table stats_count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_wqnbNAau": {
+            "name": "_ of Internet Scanner IPs in the deployment search",
+            "options": {
+                "query": "| inputlookup gn_scan_deployment_ip_lookup where (internet_scanner_intelligence=\"1\")\n| stats count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_yn9qd7IF": {
+            "name": "_ of Internet Scanner IPs by Classification search",
+            "options": {
+                "query": "| inputlookup gn_scan_deployment_ip_lookup where (internet_scanner_intelligence=\"1\")\n| stats count by classification\n| sort -count",
+                "queryParameters": {
+                    "earliest": "0",
+                    "latest": ""
+                }
+            },
+            "type": "ds.search"
+        }
+    },
+    "layout": {
+        "globalInputs": [],
+        "layoutDefinitions": {
+            "layout_1": {
+                "options": {
+                    "display": "auto",
+                    "height": 2320,
+                    "width": 1440
+                },
+                "structure": [
+                    {
+                        "item": "viz_y4bCy2eu",
+                        "position": {
+                            "h": 40,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 20
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_3iRmgYqd",
+                        "position": {
+                            "h": 220,
+                            "w": 470,
+                            "x": 0,
+                            "y": 70
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_xG9q7FMh",
+                        "position": {
+                            "h": 220,
+                            "w": 460,
+                            "x": 490,
+                            "y": 70
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_ryJ8gCXY",
+                        "position": {
+                            "h": 220,
+                            "w": 470,
+                            "x": 970,
+                            "y": 70
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_QI6nkhog",
+                        "position": {
+                            "h": 250,
+                            "w": 470,
+                            "x": 0,
+                            "y": 310
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_vq2nN8EF",
+                        "position": {
+                            "h": 250,
+                            "w": 460,
+                            "x": 490,
+                            "y": 310
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_kbzTMajg",
+                        "position": {
+                            "h": 250,
+                            "w": 470,
+                            "x": 970,
+                            "y": 310
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_4eGqNkYl",
+                        "position": {
+                            "h": 230,
+                            "w": 470,
+                            "x": 0,
+                            "y": 580
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_TFNmmpRB",
+                        "position": {
+                            "h": 230,
+                            "w": 460,
+                            "x": 490,
+                            "y": 580
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_a8CoAzHn",
+                        "position": {
+                            "h": 230,
+                            "w": 470,
+                            "x": 970,
+                            "y": 580
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_awsL0SmE",
+                        "position": {
+                            "h": 230,
+                            "w": 470,
+                            "x": 0,
+                            "y": 830
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_h1X7fpA5",
+                        "position": {
+                            "h": 230,
+                            "w": 460,
+                            "x": 490,
+                            "y": 830
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_2o6tHhGg",
+                        "position": {
+                            "h": 230,
+                            "w": 460,
+                            "x": 970,
+                            "y": 830
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_PlG8EJrT",
+                        "position": {
+                            "h": 30,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 1080
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_NdXylb1x",
+                        "position": {
+                            "h": 250,
+                            "w": 340,
+                            "x": 0,
+                            "y": 1130
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_FzsCQisK",
+                        "position": {
+                            "h": 250,
+                            "w": 340,
+                            "x": 360,
+                            "y": 1130
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_ljD7T9z4",
+                        "position": {
+                            "h": 250,
+                            "w": 340,
+                            "x": 720,
+                            "y": 1130
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_lLvM3FcC",
+                        "position": {
+                            "h": 250,
+                            "w": 350,
+                            "x": 1080,
+                            "y": 1130
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "input_e1ixhNs2",
+                        "position": {
+                            "h": 82,
+                            "w": 198,
+                            "x": 0,
+                            "y": 1390
+                        },
+                        "type": "input"
+                    },
+                    {
+                        "item": "viz_s8PoENuY",
+                        "position": {
+                            "h": 30,
+                            "w": 1440,
+                            "x": 10,
+                            "y": 1470
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_8jhU5ZiE",
+                        "position": {
+                            "h": 250,
+                            "w": 710,
+                            "x": 0,
+                            "y": 1510
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_QZi6iTSm",
+                        "position": {
+                            "h": 250,
+                            "w": 710,
+                            "x": 730,
+                            "y": 1510
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_0kOuHyiO",
+                        "position": {
+                            "h": 250,
+                            "w": 710,
+                            "x": 730,
+                            "y": 1780
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_PDLuk5xd",
+                        "position": {
+                            "h": 250,
+                            "w": 710,
+                            "x": 0,
+                            "y": 2050
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_cNxGRBvW",
+                        "position": {
+                            "h": 250,
+                            "w": 710,
+                            "x": 0,
+                            "y": 1780
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_LAw9ianM",
+                        "position": {
+                            "h": 250,
+                            "w": 710,
+                            "x": 730,
+                            "y": 2050
+                        },
+                        "type": "block"
+                    }
+                ],
+                "type": "absolute"
+            }
+        },
+        "options": {
+            "submitButton": false
+        },
+        "tabs": {
+            "items": [
+                {
+                    "label": "New tab",
+                    "layoutId": "layout_1"
+                }
+            ]
+        }
+    },
+    "applicationProperties": {
+        "hideEdit": false,
+        "hideExport": false
+    }
+}
+  ]]></definition>
+</dashboard>

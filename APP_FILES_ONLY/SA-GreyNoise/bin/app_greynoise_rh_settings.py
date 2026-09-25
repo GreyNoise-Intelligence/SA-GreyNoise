@@ -1,9 +1,10 @@
 from greynoise_account_validation import (
     EnableCachingHandler,
     GreyNoiseAPIValidation,
+    GreyNoiseCallbackFeedConfiguration,
+    GreyNoiseESAppValidation,
     GreyNoiseFeedConfiguration,
     GreyNoiseScanDeployment,
-    GreyNoiseESAppValidation,
     PurgeHandler,
     TtlHandler,
 )
@@ -36,12 +37,37 @@ model_caching = RestModel(fields_caching, name="caching")
 
 fields_feed_configuration = [
     field.RestField("feed_selection", required=False, encrypted=False, validator=None),
+    field.RestField("include_community_dataset", required=False, encrypted=False, default="0", validator=None),
     field.RestField("enable_feed_import", required=False, encrypted=False, validator=GreyNoiseFeedConfiguration()),
     field.RestField("force_enable_ss", required=False, encrypted=False, default=None, validator=None),
     field.RestField("ingest_feed_to_index", required=False, encrypted=False, default="0", validator=None),
     field.RestField("feed_index", required=True, encrypted=False, default="main", validator=None),
 ]
 model_feed_configuration = RestModel(fields_feed_configuration, name="feed_configuration")
+
+fields_callback_feed_configuration = [
+    field.RestField(
+        "enable_callback_feed",
+        required=False,
+        encrypted=False,
+        default="0",
+        validator=GreyNoiseCallbackFeedConfiguration(),
+    ),
+    field.RestField("force_enable_callback_feed", required=False, encrypted=False, default="0", validator=None),
+    field.RestField("is_stage_1", required=False, encrypted=False, default="any", validator=None),
+    field.RestField("is_stage_2", required=False, encrypted=False, default="any", validator=None),
+    field.RestField("has_files", required=False, encrypted=False, default="any", validator=None),
+    field.RestField("first_seen_after", required=False, encrypted=False, default="any", validator=None),
+    field.RestField("first_seen_before", required=False, encrypted=False, default="any", validator=None),
+    field.RestField("last_seen_after", required=False, encrypted=False, default="any", validator=None),
+    field.RestField("last_seen_before", required=False, encrypted=False, default="any", validator=None),
+    field.RestField("file_type", required=False, encrypted=False, default=None, validator=None),
+    field.RestField("file_name", required=False, encrypted=False, default=None, validator=None),
+    field.RestField("file_hash", required=False, encrypted=False, default=None, validator=None),
+    field.RestField("scanner_ips", required=False, encrypted=False, default=None, validator=None),
+    field.RestField("ips", required=False, encrypted=False, default=None, validator=None),
+]
+model_callback_feed_configuration = RestModel(fields_callback_feed_configuration, name="callback_feed_configuration")
 
 fields_scan_deployment = [
     field.RestField(
@@ -64,7 +90,13 @@ fields_scan_deployment = [
             max_len=8192,
         ),
     ),
-    field.RestField("update_risk_score_to_splunk_es", required=False, encrypted=False, default=None, validator=GreyNoiseESAppValidation()),
+    field.RestField(
+        "update_risk_score_to_splunk_es",
+        required=False,
+        encrypted=False,
+        default=None,
+        validator=GreyNoiseESAppValidation(),
+    ),
     field.RestField("malicious_score", required=True, encrypted=False, default="80", validator=None),
     field.RestField("suspicious_score", required=True, encrypted=False, default="50", validator=None),
     field.RestField("unknown_score", required=True, encrypted=False, default="30", validator=None),
@@ -78,7 +110,14 @@ model_scan_deployment = RestModel(fields_scan_deployment, name="scan_deployment"
 
 endpoint = MultipleModel(
     "app_greynoise_settings",
-    models=[model_logging, model_parameters, model_scan_deployment, model_feed_configuration, model_caching],
+    models=[
+        model_logging,
+        model_parameters,
+        model_scan_deployment,
+        model_feed_configuration,
+        model_callback_feed_configuration,
+        model_caching,
+    ],
 )
 
 

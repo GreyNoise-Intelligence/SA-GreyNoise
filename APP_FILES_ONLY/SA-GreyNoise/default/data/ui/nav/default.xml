@@ -1,8 +1,10 @@
 <nav search_view="search" color="#3C444D">
-<view name="overview" default="true"/>
-<view name="queried_ip_addresses"/>
-<view name="live_investigation"/>
-<view name="ip_timeline_lookup"/>
-<view name="configuration"/>
-<view name="search" label="Search"/>
+<view name="overview_studio" default="true" icon="layoutoverview"/>
+<view name="executive_dashboard_studio" icon="chartpanels"/>
+<view name="queried_ip_addresses" icon="organizernotebook"/>
+<view name="live_investigation" icon="pulse"/>
+<view name="ip_timeline_lookup" icon="chartline"/>
+<view name="callback_ip_lookup" icon="filenode"/>
+<view name="configuration" icon="cog"/>
+<view name="search" label="Search" icon="magnifier"/>
 </nav>

@@ -23,9 +23,9 @@ number_types = (integer_types, float, Decimal)
 
 logger = logging.getLogger(__name__)
 
-HOSTNAME_TOKENS = re.compile('(?!-)[a-z\d-]{1,63}(?<!-)$', re.IGNORECASE)
+HOSTNAME_TOKENS = re.compile(r'(?!-)[a-z\d-]{1,63}(?<!-)$', re.IGNORECASE)
 HOSTNAME_LAST_TOKEN = re.compile('[a-z]+$', re.IGNORECASE)
-EMAIL = re.compile('[^@]+@[^@]+\.[^@]+')
+EMAIL = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
 CSS_COLORS = set([
     'aliceblue', 'antiquewhite', 'aqua', 'aquamarine', 'azure', 'beige',

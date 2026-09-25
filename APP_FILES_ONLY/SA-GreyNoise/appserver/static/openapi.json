@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "SA-GreyNoise",
-        "version": "3.0.2",
+        "version": "3.1.0",
         "description": "GreyNoise App for Splunk",
         "contact": {
             "name": "GreyNoise",
@@ -157,6 +157,9 @@
                             "ALL"
                         ]
                     },
+                    "include_community_dataset": {
+                        "type": "string"
+                    },
                     "ingest_feed_to_index": {
                         "type": "string"
                     },
@@ -185,10 +188,217 @@
                             "ALL"
                         ]
                     },
+                    "include_community_dataset": {
+                        "type": "string"
+                    },
                     "ingest_feed_to_index": {
                         "type": "string"
                     },
                     "feed_index": {
+                        "type": "string"
+                    }
+                }
+            },
+            "callback_feed_configuration": {
+                "type": "object",
+                "properties": {
+                    "enable_callback_feed": {
+                        "type": "string"
+                    },
+                    "force_enable_callback_feed": {
+                        "type": "string"
+                    },
+                    "is_stage_1": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "true",
+                            "false"
+                        ]
+                    },
+                    "is_stage_2": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "true",
+                            "false"
+                        ]
+                    },
+                    "has_files": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "true",
+                            "false"
+                        ]
+                    },
+                    "first_seen_after": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "1",
+                            "7",
+                            "14",
+                            "30",
+                            "45",
+                            "60",
+                            "90"
+                        ]
+                    },
+                    "first_seen_before": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "1",
+                            "7",
+                            "14",
+                            "30",
+                            "45",
+                            "60",
+                            "90"
+                        ]
+                    },
+                    "last_seen_after": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "1",
+                            "7",
+                            "14",
+                            "30",
+                            "45",
+                            "60",
+                            "90"
+                        ]
+                    },
+                    "last_seen_before": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "1",
+                            "7",
+                            "14",
+                            "30",
+                            "45",
+                            "60",
+                            "90"
+                        ]
+                    },
+                    "file_type": {
+                        "type": "string"
+                    },
+                    "file_name": {
+                        "type": "string"
+                    },
+                    "file_hash": {
+                        "type": "string"
+                    },
+                    "scanner_ips": {
+                        "type": "string"
+                    },
+                    "ips": {
+                        "type": "string"
+                    }
+                }
+            },
+            "callback_feed_configuration_without_name": {
+                "type": "object",
+                "properties": {
+                    "enable_callback_feed": {
+                        "type": "string"
+                    },
+                    "force_enable_callback_feed": {
+                        "type": "string"
+                    },
+                    "is_stage_1": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "true",
+                            "false"
+                        ]
+                    },
+                    "is_stage_2": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "true",
+                            "false"
+                        ]
+                    },
+                    "has_files": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "true",
+                            "false"
+                        ]
+                    },
+                    "first_seen_after": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "1",
+                            "7",
+                            "14",
+                            "30",
+                            "45",
+                            "60",
+                            "90"
+                        ]
+                    },
+                    "first_seen_before": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "1",
+                            "7",
+                            "14",
+                            "30",
+                            "45",
+                            "60",
+                            "90"
+                        ]
+                    },
+                    "last_seen_after": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "1",
+                            "7",
+                            "14",
+                            "30",
+                            "45",
+                            "60",
+                            "90"
+                        ]
+                    },
+                    "last_seen_before": {
+                        "type": "string",
+                        "enum": [
+                            "any",
+                            "1",
+                            "7",
+                            "14",
+                            "30",
+                            "45",
+                            "60",
+                            "90"
+                        ]
+                    },
+                    "file_type": {
+                        "type": "string"
+                    },
+                    "file_name": {
+                        "type": "string"
+                    },
+                    "file_hash": {
+                        "type": "string"
+                    },
+                    "scanner_ips": {
+                        "type": "string"
+                    },
+                    "ips": {
                         "type": "string"
                     }
                 }
@@ -510,6 +720,97 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "$ref": "#/components/schemas/feed_configuration"
+                            }
+                        }
+                    },
+                    "required": false
+                },
+                "deprecated": false
+            },
+            "parameters": [
+                {
+                    "name": "output_mode",
+                    "in": "query",
+                    "required": true,
+                    "description": "Output mode",
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "json"
+                        ],
+                        "default": "json"
+                    }
+                }
+            ]
+        },
+        "/app_greynoise_settings/callback_feed_configuration": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Get list of items for callback_feed_configuration",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/callback_feed_configuration_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get list of items for callback_feed_configuration",
+                "deprecated": false
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Create item in callback_feed_configuration",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entry": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "content": {
+                                                        "$ref": "#/components/schemas/callback_feed_configuration_without_name"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Create item in callback_feed_configuration",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/callback_feed_configuration"
                             }
                         }
                     },

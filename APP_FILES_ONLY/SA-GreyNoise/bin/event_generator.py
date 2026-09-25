@@ -20,7 +20,18 @@ from utility import (
     nested_dict_iter,
 )
 
-GENERATING_COMMAND_METHODS = ["ip", "quick", "query", "stats", "riot", "similar", "timeline"]
+GENERATING_COMMAND_METHODS = [
+    "ip",
+    "quick",
+    "psychic",
+    "query",
+    "recall",
+    "stats",
+    "riot",
+    "similar",
+    "timeline",
+    "callback_feed",
+]
 
 
 def exception_handler(method):
@@ -159,7 +170,62 @@ def pull_data_from_api_multi(fetch_method, cache_enabled, cache, params, logger,
     return {"message": "ok", "response": response}
 
 
-def get_all_events(session_key, api_client, method, field_name, chunk_dict, logger, threads=3):
+@exception_handler
+def pull_data_from_api_psychic(fetch_method, params, logger, api_sleep_timer=0):
+    """
+    Pull Psychic lookup data for a batch of IPs, skipping invalid addresses.
+
+    psychic_lookup_ips raises ValueError on invalid IPs, so invalid entries are
+    filtered before calling the SDK. Missing/invalid IPs are handled later in
+    event_processor via generate_missing_events.
+    """
+    time.sleep(api_sleep_timer)
+    valid_ips = []
+    for ip in params:
+        try:
+            validate_ip(ip, strict=True)
+            valid_ips.append(ip)
+        except ValueError:
+            logger.debug("Skipping invalid IP address in Psychic batch lookup: {}".format(ip))
+
+    if not valid_ips:
+        return {"message": "ok", "response": []}
+
+    response = fetch_method(valid_ips)
+    return {"message": "ok", "response": response}
+
+
+@exception_handler
+def pull_data_from_api_callback(fetch_method, params, logger, source_workspace="all", api_sleep_timer=0):
+    """
+    Pull Callback intelligence for a batch of IPs via single-IP callback_ip lookups.
+
+    Invalid IPs are skipped here so callers can surface them with generate_missing_events.
+    Responses that omit ``ip`` (for example workspace/message payloads) are stamped with
+    the queried address so event_processor can match them back to records.
+    """
+    time.sleep(api_sleep_timer)
+    results = []
+    for ip in params:
+        try:
+            validate_ip(ip, strict=True)
+        except ValueError:
+            logger.debug("Skipping invalid IP address in Callback lookup: {}".format(ip))
+            continue
+
+        response = fetch_method(ip_address=ip, source_workspace=source_workspace)
+        if isinstance(response, dict):
+            if "ip" not in response:
+                response = dict(response)
+                response["ip"] = ip
+            results.append(response)
+        else:
+            results.append({"ip": ip, "message": str(response)})
+
+    return {"message": "ok", "response": results}
+
+
+def get_all_events(session_key, api_client, method, field_name, chunk_dict, logger, threads=3, api_kwargs=None):
     """
     Driver method for the transforming commands that use the threading mechanism to retrieve data from GreyNoise SDK.
 
@@ -170,8 +236,10 @@ def get_all_events(session_key, api_client, method, field_name, chunk_dict, logg
     :param chunk_dict: dict used to manage the records in the chunks
     :param logger: logger instance
     :param threads: number of threads to use
+    :param api_kwargs: optional kwargs forwarded to method-specific API pull helpers
     :return: dict
     """
+    api_kwargs = api_kwargs or {}
     cache_enabled, cache = get_caching(session_key, method, logger)
 
     if method in ["ip", "enrich", "greynoise_riot"]:
@@ -180,11 +248,20 @@ def get_all_events(session_key, api_client, method, field_name, chunk_dict, logg
         fetch_method = api_client.ip_multi
     elif method == "cve":
         fetch_method = api_client.cve
+    elif method in ["psychic", "psychic_multi"]:
+        fetch_method = api_client.psychic_lookup_ips
+    elif method == "callback":
+        fetch_method = api_client.callback_ip
     else:
         # For 'multi' and 'filter' commands
         fetch_method = api_client.quick
 
-    logger.info("Fetching {} API status for {} chunk(s) with {} thread(s)".format(method, len(chunk_dict), threads))
+    event_count = sum(len(records) for records, _ in chunk_dict.values())
+    logger.info(
+        "Fetching {} API status for {} event(s) across {} chunk(s) with {} thread(s)".format(
+            method, event_count, len(chunk_dict), threads
+        )
+    )
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
         # Doing this to pass the multiple arguments to method used in map method
@@ -239,6 +316,17 @@ def get_all_events(session_key, api_client, method, field_name, chunk_dict, logg
                 api_sleep_timer=0,
             )
             results = executor.map(pull_data, cves)
+        elif method in ["psychic", "psychic_multi"]:
+            pull_data = partial(pull_data_from_api_psychic, fetch_method, logger=logger)
+            results = executor.map(pull_data, [ip_list[1] for ip_list in list(chunk_dict.values())])
+        elif method == "callback":
+            pull_data = partial(
+                pull_data_from_api_callback,
+                fetch_method,
+                logger=logger,
+                source_workspace=api_kwargs.get("source_workspace", "all"),
+            )
+            results = executor.map(pull_data, [ip_list[1] for ip_list in list(chunk_dict.values())])
         else:
             pull_data = partial(pull_data_from_api_multi, fetch_method, cache_enabled, cache, logger=logger)
             # Default API sleep timer will be of 3 seconds for each request here
@@ -280,8 +368,8 @@ def method_response_mapper(method, result, logger):
         # Therefore masking the response to the list if the API response is proper and intact
         if result["message"] == "ok":
             result["response"] = [result["response"]]
-    elif method in ["multi", "ip_multi"]:
-        # quick method from GreyNoise SDK will not return the response for invalid IP
+    elif method in ["multi", "ip_multi", "psychic", "psychic_multi", "callback"]:
+        # quick/psychic/callback methods from GreyNoise SDK will not return the response for invalid IP
         # This flag is to indicate the event generation for missing IPs
         generate_missing_events = True
     else:
@@ -378,7 +466,7 @@ def event_processor(records_dict, result, method, field_name, logger):
                 yield make_invalid_event(method, {}, True, record)
 
 
-def make_valid_event(method, data, first_event=False, record=None, logger=None):
+def make_valid_event(method, data, first_event=False, record=None, logger=None, flatten_response=True):
     """
     Returns the event in the JSON format from the data passed to the method.
 
@@ -386,18 +474,25 @@ def make_valid_event(method, data, first_event=False, record=None, logger=None):
     :param data: response retrieved from the response of the GreyNoise API
     :param first_event: flag specifying whether the expected event is first or not
     :param record: greynoise API information will be updated with the fields of event and will be sent to Splunk
+    :param flatten_response: when False for generating commands, skip nested_dict_iter (full payload remains under _raw)
     """
     if record is None:
         record = {}
     # Add these fields only when command is generating command
     if method in GENERATING_COMMAND_METHODS:
-        if first_event:
-            results = dict(get_dict(method))
-            results.update(nested_dict_iter(data))
+        if flatten_response:
+            if first_event:
+                results = dict(get_dict(method))
+                results.update(nested_dict_iter(data))
+            else:
+                # Get the fields from the response json and put them into json
+                # so that Splunk can get the values of the fields from it
+                results = nested_dict_iter(data)
         else:
-            # Get the fields from the response json and put them into json
-            # so that Splunk can get the values of the fields from it
-            results = nested_dict_iter(data)
+            if first_event:
+                results = dict(get_dict(method))
+            else:
+                results = {}
 
         results["source"] = "greynoise"
         results["sourcetype"] = "greynoise"

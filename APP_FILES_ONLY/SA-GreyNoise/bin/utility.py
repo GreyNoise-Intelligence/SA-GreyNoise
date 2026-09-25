@@ -6,6 +6,7 @@ Helper file containing useful methods
 
 import collections
 import logging
+import logging.handlers
 import traceback
 
 import app_greynoise_declare
@@ -176,14 +177,19 @@ def get_dict(method):
     dict_hash = {
         "ip": fields.IP_FIELDS,
         "quick": fields.QUICK_FIELDS,
+        "psychic": fields.PSYCHIC_FIELDS,
         "query": fields.QUERY_FIELDS,
         "multi": fields.MULTI_FIELDS,
+        "psychic_multi": fields.PSYCHIC_MULTI_FIELDS,
         "filter": fields.FILTER_FIELDS,
         "enrich": fields.ENRICH_FIELDS,
         "ip_multi": fields.ENRICH_FIELDS,
+        "callback": fields.CALLBACK_FIELDS,
+        "callback_feed": fields.CALLBACK_FEED_FIELDS,
+        "feed": fields.FEED_FIELDS,
         "riot": fields.RIOT_FIELDS,
-        "similar": fields.SIMILAR_FIELDS,
         "timeline": fields.TIMELINE_FIELDS,
+        "recall": fields.RECALL_FIELDS,
         "greynoise_riot": fields.GREYNOISE_RIOT_FIELDS,
     }
     return dict_hash.get(method, fields.DEFAULT_FIELDS)
@@ -234,7 +240,10 @@ def nested_dict_iter(nested, prefix=""):
                     else:
                         parsed_dict[prefix + key] = value
             else:
-                if current_field in ["business_service_intelligence", "internet_scanner_intelligence"] and key == "found":
+                if (
+                    current_field in ["business_service_intelligence", "internet_scanner_intelligence"]
+                    and key == "found"
+                ):
                     parsed_dict[prefix + current_field + "_" + key] = value
                 else:
                     parsed_dict[prefix + key] = value
@@ -340,7 +349,7 @@ def get_caching(session_key, method, logger):
 
     :returns: cache_enabled flag,cache object.
     """
-    if method in ["filter", "similar", "timeline", "cve"]:
+    if method in ["filter", "similar", "timeline", "cve", "psychic", "psychic_multi", "callback"]:
         cache_enabled = 0
         cache = None
     else:

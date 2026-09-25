@@ -12,6 +12,17 @@ DATE = {
 
 TIME_MAP = {"1": "0", "2": "-5m", "3": "-60m", "4": "-24h", "5": "-7d", "6": "-30d", "7": "-60d"}
 
+FEED_SELECTION_QUERIES = {
+    "ALL": "last_seen:1d",
+    "MALICIOUS": "last_seen:1d classification:malicious",
+    "SUSPICIOUS": "last_seen:1d classification:suspicious",
+    "MALICIOUS_BENIGN": "last_seen:1d (classification:benign OR classification:malicious)",
+    "MALICIOUS_SUSPICIOUS_BENIGN": "last_seen:1d (-classification:unknown)",
+    "BENIGN": "last_seen:1d classification:benign",
+}
+
+COMMUNITY_DATASET_GNQL = "workspace_label:greynoise OR workspace_label:community"
+
 CIM_IP_FIELDS = [
     "dest",
     "dvc",
@@ -26,6 +37,18 @@ CIM_IP_FIELDS = [
     "dest_translated_ip",
     "src_translated_ip",
 ]
+
+
+def build_feed_gnql_query(feed_selection="BENIGN", include_community_dataset=0):
+    """Build the GNQL query stored for feed ingest from Feed Configuration settings."""
+    query = FEED_SELECTION_QUERIES.get(feed_selection, FEED_SELECTION_QUERIES["BENIGN"])
+    try:
+        include_community = bool(int(include_community_dataset))
+    except (TypeError, ValueError):
+        include_community = False
+    if include_community:
+        query = "{} AND ({})".format(query, COMMUNITY_DATASET_GNQL)
+    return query
 
 
 def is_api_configured(conf):

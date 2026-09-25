@@ -1,0 +1,865 @@
+<dashboard version="2" theme="dark">
+  <label>GreyNoise Executive Dashboard</label>
+  <description>Firewall traffic enriched with GreyNoise verdicts.</description>
+  <definition><![CDATA[
+{
+    "title": "GreyNoise Executive Dashboard",
+    "description": "Firewall and VPN traffic enriched with GreyNoise verdicts. Executive summary plus SOC triage views.",
+    "inputs": {
+        "input_direction": {
+            "options": {
+                "defaultValue": "*",
+                "items": [
+                    {
+                        "label": "All",
+                        "value": "*"
+                    },
+                    {
+                        "label": "Inbound",
+                        "value": "Inbound"
+                    },
+                    {
+                        "label": "Outbound",
+                        "value": "Outbound"
+                    }
+                ],
+                "token": "direction"
+            },
+            "title": "Direction",
+            "type": "input.dropdown"
+        },
+        "input_inbound_threshold": {
+            "options": {
+                "defaultValue": "3",
+                "token": "inbound_evt_count"
+            },
+            "title": "Inbound Threshold",
+            "type": "input.text"
+        },
+        "input_outbound_threshold": {
+            "options": {
+                "defaultValue": "3",
+                "token": "outbound_evt_count"
+            },
+            "title": "Outbound Threshold",
+            "type": "input.text"
+        },
+        "input_regex": {
+            "options": {
+                "defaultValue": ".*",
+                "token": "regex_filter"
+            },
+            "title": "Regex Filter",
+            "type": "input.text"
+        },
+        "input_time": {
+            "options": {
+                "defaultValue": "-24h@h,now",
+                "token": "global_time"
+            },
+            "title": "Time Range",
+            "type": "input.timerange"
+        }
+    },
+    "defaults": {
+        "dataSources": {
+            "ds.search": {
+                "options": {
+                    "queryParameters": {
+                        "earliest": "$global_time.earliest$",
+                        "latest": "$global_time.latest$"
+                    }
+                }
+            }
+        }
+    },
+    "visualizations": {
+        "viz_about": {
+            "options": {
+                "backgroundColor": "#171d21",
+                "fontColor": "#c3cbd4",
+                "markdown": "# GreyNoise\n\nFirewall and VPN traffic enriched with GreyNoise Internet Scanner Intelligence to separate mass internet scanning from activity that warrants investigation. Source and destination addresses are matched against a pre-staged GreyNoise indicator lookup, then bucketed by verdict.\n\n**Executive Summary** reports overall volume, the share of traffic classified as malicious, and the highest-severity outcomes. **Malicious Traffic Analysis** and the **Event Detail** tables provide the drill-down: inbound connections from malicious sources the firewall allowed, internal hosts reaching known malicious infrastructure, source organization and ASN attribution, and per-event detail.\n\n## Requirements\nThis Dashboard requires that the GreyNoise Feed indicators import process is configured and working.\n\nAdditionally, this dashboard requires at least one support network firewall or vpn provide log ingest using support CIM fields"
+            },
+            "type": "splunk.markdown"
+        },
+        "viz_allowed_inbound": {
+            "context": {
+                "colorRange": [
+                    {
+                        "to": 1,
+                        "value": "#708794"
+                    },
+                    {
+                        "from": 1,
+                        "value": "#f8be34"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_allowed_inbound"
+            },
+            "description": "Inbound firewall events from an address GreyNoise classifies as malicious where the firewall action was allow, accept, pass, or permit — traffic that reached an internal asset rather than being blocked.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "majorColor": "> majorValue | rangeValue(colorRange)",
+                "majorValue": "> primary | seriesByName('allowed_inbound') | lastPoint()",
+                "numberPrecision": 0,
+                "sparklineDisplay": "off",
+                "trendDisplay": "off",
+                "underLabel": "events reached an asset",
+                "useThousandSeparators": true
+            },
+            "title": "Allowed Inbound Traffic from Malicious Sources",
+            "type": "splunk.singlevalue"
+        },
+        "viz_class_pie": {
+            "dataSources": {
+                "primary": "ds_class_pie"
+            },
+            "description": "Firewall events in the selected direction grouped by GreyNoise verdict. \"Unseen\" means the address is not in the GreyNoise dataset — not observed.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "labelDisplay": "valuesAndPercentage",
+                "seriesColorsByField": {
+                    "benign": "#118832",
+                    "malicious": "#d41f1f",
+                    "suspicious": "#f8be34",
+                    "unknown": "#708794",
+                    "unseen": "#3c444d"
+                },
+                "showDonutHole": true,
+                "showLabels": true
+            },
+            "title": "Traffic by GreyNoise Classification",
+            "type": "splunk.pie"
+        },
+        "viz_class_timeline": {
+            "dataSources": {
+                "primary": "ds_class_timeline"
+            },
+            "description": "Firewall events in the selected direction over time, grouped by GreyNoise verdict. Y-axis is logarithmic — malicious volume is typically orders of magnitude smaller than unclassified traffic, so relative changes matter more than absolute height. NOTE: this is the most API-expensive panel — it enriches hourly per-IP aggregates. Coarsen span=1h to span=4h if it is slow.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "legendDisplay": "right",
+                "seriesColorsByField": {
+                    "benign": "#118832",
+                    "malicious": "#d41f1f",
+                    "suspicious": "#f8be34",
+                    "unknown": "#708794",
+                    "unseen": "#3c444d"
+                },
+                "showRoundedY": false,
+                "xAxisTitleText": "",
+                "yAxisScale": "log",
+                "yAxisTitleText": "Events"
+            },
+            "title": "Traffic by GreyNoise Classification over Time",
+            "type": "splunk.line"
+        },
+        "viz_data_source": {
+            "context": {
+                "StatusColumnFormatEditorConfig": {
+                    "string": {
+                        "unitPosition": "after"
+                    }
+                },
+                "StatusRowColorsEditorConfig": [
+                    {
+                        "match": "OK",
+                        "value": "#2f8811"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_data_source_detector"
+            },
+            "description": "Confirms whether the data this dashboard needs is present in the environment. Fixed 24h window.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "columnFormat": {
+                    "Status": {
+                        "align": "auto",
+                        "data": "> table | seriesByName(\"Status\") | formatByType(StatusColumnFormatEditorConfig)",
+                        "headerAlign": "auto",
+                        "rowColors": "> table | seriesByName(\"Status\") | matchValue(StatusRowColorsEditorConfig)",
+                        "textOverflow": "break-word"
+                    }
+                },
+                "count": 10,
+                "headerVisibility": "fixed"
+            },
+            "title": "Data Source Detector",
+            "type": "splunk.table"
+        },
+        "viz_event_detail": {
+            "dataSources": {
+                "primary": "ds_event_detail"
+            },
+            "description": "Per-event detail for firewall traffic matching GreyNoise-malicious addresses in the selected direction. Enrichment is applied to the most recent 20,000 events, then filtered to malicious and capped at 1,000 rows — so this is a recent-activity sample, not an exhaustive 7-day scan. Use the Regex Filter to narrow results.",
+            "eventHandlers": [
+                {
+                    "options": {
+                        "newTab": true,
+                        "url": "https://viz.greynoise.io/ip/$row.gn_ip.value$"
+                    },
+                    "type": "drilldown.customUrl"
+                }
+            ],
+            "options": {
+                "backgroundColor": "#171d21",
+                "columnFormat": {
+                    "greynoise_actor": {
+                        "width": 126
+                    }
+                },
+                "count": 25,
+                "headerVisibility": "fixed"
+            },
+            "title": "Malicious Traffic — Event Detail",
+            "type": "splunk.table"
+        },
+        "viz_geo_map": {
+            "dataSources": {
+                "primary": "ds_geo_map"
+            },
+            "description": "Geolocated origins (Inbound) or destinations (Outbound) of firewall traffic matching GreyNoise-malicious addresses. Geolocation reflects network registration, not necessarily the operator's actual location — VPNs, proxies, and compromised hosts are common.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "center": [
+                    25,
+                    0
+                ],
+                "layers": [
+                    {
+                        "dataColorsMax": "#d41f1f",
+                        "dataColorsMin": "#3c444d",
+                        "numberOfBins": 6,
+                        "type": "choropleth"
+                    }
+                ],
+                "zoom": 1
+            },
+            "title": "Geographic Distribution of Malicious Traffic",
+            "type": "splunk.map"
+        },
+        "viz_internal_detail": {
+            "dataSources": {
+                "primary": "ds_internal_detail"
+            },
+            "description": "Internal hosts whose outbound connections to GreyNoise-malicious destinations meet or exceed the Outbound Threshold, with connection count, bytes sent, and the destinations contacted. Repeated contact from a single host may indicate an active compromise.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "count": 20,
+                "headerVisibility": "fixed"
+            },
+            "title": "Internal Hosts Contacting Malicious Infrastructure",
+            "type": "splunk.table"
+        },
+        "viz_internal_hosts": {
+            "context": {
+                "colorRange": [
+                    {
+                        "to": 1,
+                        "value": "#708794"
+                    },
+                    {
+                        "from": 1,
+                        "value": "#f8be34"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_internal_hosts"
+            },
+            "description": "Count of distinct internal hosts with at least one outbound connection to a destination GreyNoise classifies as malicious. Unlike inbound scanning, outbound contact suggests a host may already be compromised.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "majorColor": "> majorValue | rangeValue(colorRange)",
+                "majorValue": "> primary | seriesByName('internal_hosts') | lastPoint()",
+                "numberPrecision": 0,
+                "sparklineDisplay": "off",
+                "trendDisplay": "off",
+                "underLabel": "distinct hosts",
+                "useThousandSeparators": true
+            },
+            "title": "Internal Hosts Reaching Malicious Infrastructure",
+            "type": "splunk.singlevalue"
+        },
+        "viz_malicious_rate": {
+            "context": {
+                "colorRange": [
+                    {
+                        "to": 0.1,
+                        "value": "#118832"
+                    },
+                    {
+                        "from": 0.1,
+                        "to": 1,
+                        "value": "#f8be34"
+                    },
+                    {
+                        "from": 1,
+                        "value": "#d41f1f"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_malicious_rate"
+            },
+            "description": "Share of firewall events in the selected direction whose address GreyNoise classifies as malicious. Events with no GreyNoise record are included in the denominator.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "majorColor": "> majorValue | rangeValue(colorRange)",
+                "majorValue": "> primary | seriesByName('malicious_rate') | lastPoint()",
+                "numberPrecision": 2,
+                "sparklineDisplay": "off",
+                "trendDisplay": "off",
+                "underLabel": "of all events",
+                "unit": "%",
+                "unitPosition": "after",
+                "useThousandSeparators": true
+            },
+            "title": "Malicious Traffic Rate",
+            "type": "splunk.singlevalue"
+        },
+        "viz_org_asn": {
+            "context": {
+                "CountFormat": {
+                    "number": {
+                        "thousandSeparated": true
+                    }
+                }
+            },
+            "dataSources": {
+                "primary": "ds_org_asn"
+            },
+            "description": "Firewall events matching GreyNoise-malicious addresses grouped by the owning network organization and autonomous system.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "columnFormat": {
+                    "Count": {
+                        "data": "> table | seriesByName('Count') | formatByType(CountFormat)"
+                    }
+                },
+                "count": 20,
+                "headerVisibility": "fixed"
+            },
+            "title": "Malicious Traffic by Organization & ASN",
+            "type": "splunk.table"
+        },
+        "viz_p1_vpn": {
+            "containerOptions": {},
+            "context": {
+                "colorRange": [
+                    {
+                        "to": 1,
+                        "value": "#708794"
+                    },
+                    {
+                        "from": 1,
+                        "value": "#d41f1f"
+                    }
+                ],
+                "majorColorEditorConfig": [
+                    {
+                        "to": 1,
+                        "value": "#118832"
+                    },
+                    {
+                        "from": 1,
+                        "value": "#D41F1F"
+                    }
+                ],
+                "trendColorEditorConfig": [
+                    {
+                        "to": 0,
+                        "value": "#9E2520"
+                    },
+                    {
+                        "from": 0,
+                        "value": "#1C6B2D"
+                    }
+                ]
+            },
+            "dataSources": {
+                "primary": "ds_p1_vpn"
+            },
+            "description": "Successful VPN authentications from an address GreyNoise classifies as malicious and not spoofable. Highest-priority finding on this dashboard — each represents a completed login from known-malicious infrastructure.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "majorColor": "> majorValue | rangeValue(majorColorEditorConfig)",
+                "trendColor": "> trendValue | rangeValue(trendColorEditorConfig)"
+            },
+            "showLastUpdated": false,
+            "showProgressBar": false,
+            "title": "P1 - Known GreyNoise Successful VPN Logins",
+            "type": "splunk.singlevalue"
+        },
+        "viz_top_countries": {
+            "dataSources": {
+                "primary": "ds_top_countries"
+            },
+            "description": "Firewall events matching GreyNoise-malicious addresses grouped by the country GreyNoise reports for that address. Top 20.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "labelDisplay": "valuesAndPercentage",
+                "showDonutHole": true,
+                "showLabels": true
+            },
+            "title": "Top Countries for Malicious Traffic",
+            "type": "splunk.pie"
+        },
+        "viz_top_sources": {
+            "dataSources": {
+                "primary": "ds_top_sources"
+            },
+            "description": "Malicious sources whose inbound connections the firewall allowed at least as many times as the Inbound Threshold. Shows GreyNoise attribution, when GreyNoise last observed the address, and which internal hosts were reached. Click a row to open the source in the GreyNoise Visualizer.",
+            "eventHandlers": [
+                {
+                    "options": {
+                        "newTab": true,
+                        "url": "https://viz.greynoise.io/ip/$row.src_ip.value$"
+                    },
+                    "type": "drilldown.customUrl"
+                }
+            ],
+            "options": {
+                "backgroundColor": "#171d21",
+                "count": 20,
+                "headerVisibility": "fixed"
+            },
+            "title": "Top Malicious Sources Allowed Inbound",
+            "type": "splunk.table"
+        },
+        "viz_total_events": {
+            "dataSources": {
+                "primary": "ds_total_events"
+            },
+            "description": "Total firewall events in the selected time window and traffic direction.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "majorValue": "> primary | seriesByName('total_events') | lastPoint()",
+                "numberPrecision": 0,
+                "sparklineDisplay": "off",
+                "trendDisplay": "off",
+                "underLabel": "events",
+                "useThousandSeparators": true
+            },
+            "title": "Total Firewall Events",
+            "type": "splunk.singlevalue"
+        },
+        "viz_vpn_detail": {
+            "dataSources": {
+                "primary": "ds_vpn_detail"
+            },
+            "description": "Per-event detail for successful VPN authentications from an address GreyNoise classifies as malicious. Includes the authenticating account, spoofable and TOR exit indicators, and GreyNoise actor attribution. Click a row to open the source in the GreyNoise Visualizer.",
+            "eventHandlers": [
+                {
+                    "options": {
+                        "newTab": true,
+                        "url": "https://viz.greynoise.io/ip/$row.src_ip.value$"
+                    },
+                    "type": "drilldown.customUrl"
+                }
+            ],
+            "options": {
+                "backgroundColor": "#171d21",
+                "count": 20,
+                "headerVisibility": "fixed"
+            },
+            "title": "GlobalProtect VPN — Successful Logins from Malicious Sources",
+            "type": "splunk.table"
+        },
+        "viz_vpn_severity": {
+            "dataSources": {
+                "primary": "ds_vpn_severity"
+            },
+            "description": "VPN authentication attempts from GreyNoise-malicious addresses, tiered by login outcome and whether the source address is spoofable. P1 = successful login from a non-spoofable malicious source.",
+            "options": {
+                "backgroundColor": "#171d21",
+                "labelDisplay": "valuesAndPercentage",
+                "showDonutHole": true,
+                "showLabels": true
+            },
+            "title": "GlobalProtect VPN Logins by Severity",
+            "type": "splunk.pie"
+        }
+    },
+    "dataSources": {
+        "ds_allowed_inbound": {
+            "name": "ds_allowed_inbound",
+            "options": {
+                "extend": "ds_base_ip",
+                "query": "| where traffic_direction=\"Inbound\" AND classification=\"malicious\"\n| stats sum(allowed_events) as allowed_inbound"
+            },
+            "type": "ds.chain"
+        },
+        "ds_base_ip": {
+            "name": "ds_base_ip",
+            "options": {
+                "query": "`gn_fw_scope` \n| where \"$direction$\"=\"*\" OR traffic_direction=\"$direction$\" \n| stats count as events, sum(is_allowed) as allowed_events, sum(xfer_bytes) as bytes,\n    dc(internal_ip) as internal_host_count, values(internal_ip) as internal_ips,\n    max(_time) as last_event\n    by gn_ip, traffic_direction \n| lookup greynoise_indicators _key as gn_ip \n| fillnull value=\"unseen\" classification",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_base_pair": {
+            "name": "ds_base_pair",
+            "options": {
+                "query": "`gn_fw_scope`\n| where traffic_direction=\"Outbound\"\n| stats count as events, sum(xfer_bytes) as bytes by gn_ip, internal_ip\n| lookup greynoise_indicators _key as gn_ip\n| where classification=\"malicious\"",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_base_vpn": {
+            "name": "ds_base_vpn",
+            "options": {
+                "query": "`gn_vpn_scope`\n| lookup greynoise_indicators _key as src_ip \n| fillnull value=\"unseen\" classification\n| fields classification, vpn_status, src_ip, user, actor, asn, source_country ",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_class_pie": {
+            "name": "ds_class_pie",
+            "options": {
+                "extend": "ds_base_ip",
+                "query": "| stats sum(events) as events by classification\n| sort - events\n| rename classification as Classification"
+            },
+            "type": "ds.chain"
+        },
+        "ds_class_timeline": {
+            "name": "ds_class_timeline",
+            "options": {
+                "query": "`gn_fw_scope` \n| where \"$direction$\"=\"*\" OR traffic_direction=\"$direction$\" \n| bin _time span=1h \n| stats count as events by _time, gn_ip \n| lookup greynoise_indicators _key as gn_ip\n| fillnull value=\"unseen\" classification\n| timechart span=1h limit=0 sum(events) by classification",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_data_source_detector": {
+            "name": "ds_data_source_detector",
+            "options": {
+                "query": "| tstats count as event_count, max(_time) as last_event\n    where (`gn_fw_index`) OR (`gn_vpn_index`)\n    by index, sourcetype\n| eval Status = if(event_count > 0, \"OK\", \"NO DATA\")\n| eval Age = tostring(now() - last_event, \"duration\")\n| sort - event_count\n| rename index as \"Index\", sourcetype as \"Data Source\",\n         event_count as \"Event Count\", Age as \"Last Ingest\"\n| table \"Index\", \"Data Source\", Status, \"Event Count\", \"Last Ingest\"",
+                "queryParameters": {
+                    "earliest": "-24h",
+                    "latest": "now"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_event_detail": {
+            "name": "ds_event_detail",
+            "options": {
+                "query": "`gn_fw_scope` \n| where \"$direction$\"=\"*\" OR traffic_direction=\"$direction$\" \n| sort - _time \n| head 20000 \n| lookup greynoise_indicators _key as gn_ip\n| where classification=\"malicious\" \n| regex _raw=\"$regex_filter$\" \n| head 1000 \n| table _time, gn_ip, actor, asn, spoofable, \n    src_ip, src_port, dest_ip, dest_port,\n    src_translated_ip, dest_translated_ip, xfer_bytes, action\n| rename actor as greynoise_actor, asn as greynoise_asn, spoofable as greynoise_spoofable",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_geo_map": {
+            "name": "ds_geo_map",
+            "options": {
+                "extend": "ds_base_ip",
+                "query": "| where classification=\"malicious\" AND isnotnull(source_country) AND source_country!=\"\"\n| stats sum(events) as events by source_country\n| rename source_country as featureId\n| geom geo_countries featureIdField=featureId"
+            },
+            "type": "ds.chain"
+        },
+        "ds_internal_detail": {
+            "name": "ds_internal_detail",
+            "options": {
+                "extend": "ds_base_pair",
+                "query": "| stats sum(events) as connections, sum(bytes) as bytes_total,\n        values(gn_ip) as destination_ips by internal_ip\n| where connections >= $outbound_evt_count$\n| eval volume = tostring(round(bytes_total / 1048576, 2)) . \" MB\"\n| sort - connections\n| rename internal_ip as host\n| table host, connections, volume, destination_ips"
+            },
+            "type": "ds.chain"
+        },
+        "ds_internal_hosts": {
+            "name": "ds_internal_hosts",
+            "options": {
+                "extend": "ds_base_ip",
+                "query": "| where traffic_direction=\"Outbound\" AND greynoise_classification=\"malicious\"\n| stats dc(internal_ips) as internal_hosts"
+            },
+            "type": "ds.chain"
+        },
+        "ds_malicious_rate": {
+            "name": "ds_malicious_rate",
+            "options": {
+                "extend": "ds_base_ip",
+                "query": "| stats sum(eval(if(classification=\"malicious\", events, 0))) as malicious_events,\n        sum(events) as total_events\n| eval malicious_rate = round(malicious_events * 100.0 / total_events, 2)\n| fields malicious_rate"
+            },
+            "type": "ds.chain"
+        },
+        "ds_org_asn": {
+            "name": "ds_org_asn",
+            "options": {
+                "extend": "ds_base_ip",
+                "query": "| where classification=\"malicious\" \n| stats sum(events) as Count by organization, asn \n| sort - Count \n| rename organization as Organization, asn as ASN \n| table Organization, ASN, Count"
+            },
+            "type": "ds.chain"
+        },
+        "ds_p1_vpn": {
+            "name": "ds_p1_vpn",
+            "options": {
+                "extend": "ds_base_vpn",
+                "query": "| where classification!=\"unseen\" AND vpn_status=\"success\" \n| stats count as p1_logins "
+            },
+            "type": "ds.chain"
+        },
+        "ds_top_countries": {
+            "name": "ds_top_countries",
+            "options": {
+                "extend": "ds_base_ip",
+                "query": "| where classification=\"malicious\"\n| stats sum(events) as events by source_country\n| sort - events\n| head 20\n| rename source_country as Country"
+            },
+            "type": "ds.chain"
+        },
+        "ds_top_sources": {
+            "name": "ds_top_sources",
+            "options": {
+                "extend": "ds_base_ip",
+                "query": "| where traffic_direction=\"Inbound\" AND classification=\"malicious\" AND allowed_events >= $inbound_evt_count$\n| eval attribution = if(actor=\"-\" OR isnull(actor), asn, actor)\n| sort - allowed_events\n| rename gn_ip as src_ip,\n         allowed_events as connections, internal_ips as targeted_hosts\n| table src_ip, attribution, last_seen, connections, targeted_hosts"
+            },
+            "type": "ds.chain"
+        },
+        "ds_total_events": {
+            "name": "ds_total_events",
+            "options": {
+                "query": "`gn_fw_index`\n| eval src_is_internal = `gn_is_internal(src_ip)`, dest_is_internal = `gn_is_internal(dest_ip)`\n| eval traffic_direction = case(\n    src_is_internal=0 AND dest_is_internal=1, \"Inbound\",\n    src_is_internal=1 AND dest_is_internal=0, \"Outbound\",\n    src_is_internal=1 AND dest_is_internal=1, \"Internal\",\n    true(), \"Transit\")\n| where \"$direction$\"=\"*\" OR traffic_direction=\"$direction$\"\n| stats count as total_events",
+                "queryParameters": {
+                    "earliest": "$global_time.earliest$",
+                    "latest": "$global_time.latest$"
+                }
+            },
+            "type": "ds.search"
+        },
+        "ds_vpn_detail": {
+            "name": "ds_vpn_detail",
+            "options": {
+                "extend": "ds_base_vpn",
+                "query": "| where classification!=\"unseen\" AND vpn_status=\"success\"\n| sort - _time \n| table _time, src_ip, user, actor, asn, source_country"
+            },
+            "type": "ds.chain"
+        },
+        "ds_vpn_severity": {
+            "name": "ds_vpn_severity",
+            "options": {
+                "extend": "ds_base_vpn",
+                "query": "| eval Severity = case(\n    (vpn_status=\"success\" AND classification!=\"unseen\"), \"P1 (GreyNoise IP, Success)\", (vpn_status=\"failure\" AND classification=\"unseen\"), \"P2 (Unknown Source, Failure)\", (vpn_status=\"failure\" AND classification!=\"unseen\"), \"P3 (GreyNoise IP, Failure)\"\n    ) \n| stats count as events by Severity \n| sort - events"
+            },
+            "type": "ds.chain"
+        }
+    },
+    "layout": {
+        "globalInputs": [
+            "input_time",
+            "input_direction",
+            "input_inbound_threshold",
+            "input_outbound_threshold",
+            "input_regex"
+        ],
+        "layoutDefinitions": {
+            "layout_1": {
+                "options": {
+                    "backgroundColor": "#0b0c0e",
+                    "display": "auto-scale",
+                    "height": 2740,
+                    "width": 1440
+                },
+                "structure": [
+                    {
+                        "item": "viz_about",
+                        "position": {
+                            "h": 230,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 0
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_data_source",
+                        "position": {
+                            "h": 170,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 250
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_total_events",
+                        "position": {
+                            "h": 170,
+                            "w": 275,
+                            "x": 0,
+                            "y": 440
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_malicious_rate",
+                        "position": {
+                            "h": 170,
+                            "w": 275,
+                            "x": 290,
+                            "y": 440
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_p1_vpn",
+                        "position": {
+                            "h": 170,
+                            "w": 275,
+                            "x": 580,
+                            "y": 440
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_internal_hosts",
+                        "position": {
+                            "h": 170,
+                            "w": 275,
+                            "x": 870,
+                            "y": 440
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_allowed_inbound",
+                        "position": {
+                            "h": 170,
+                            "w": 275,
+                            "x": 1160,
+                            "y": 440
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_class_pie",
+                        "position": {
+                            "h": 330,
+                            "w": 470,
+                            "x": 0,
+                            "y": 630
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_class_timeline",
+                        "position": {
+                            "h": 330,
+                            "w": 954,
+                            "x": 490,
+                            "y": 630
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_geo_map",
+                        "position": {
+                            "h": 350,
+                            "w": 710,
+                            "x": 0,
+                            "y": 980
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_top_countries",
+                        "position": {
+                            "h": 350,
+                            "w": 714,
+                            "x": 730,
+                            "y": 980
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_org_asn",
+                        "position": {
+                            "h": 340,
+                            "w": 710,
+                            "x": 0,
+                            "y": 1350
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_vpn_severity",
+                        "position": {
+                            "h": 340,
+                            "w": 714,
+                            "x": 730,
+                            "y": 1350
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_vpn_detail",
+                        "position": {
+                            "h": 300,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 1710
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_top_sources",
+                        "position": {
+                            "h": 320,
+                            "w": 710,
+                            "x": 0,
+                            "y": 2030
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_internal_detail",
+                        "position": {
+                            "h": 320,
+                            "w": 714,
+                            "x": 730,
+                            "y": 2030
+                        },
+                        "type": "block"
+                    },
+                    {
+                        "item": "viz_event_detail",
+                        "position": {
+                            "h": 440,
+                            "w": 1440,
+                            "x": 0,
+                            "y": 2370
+                        },
+                        "type": "block"
+                    }
+                ],
+                "type": "absolute"
+            }
+        },
+        "tabs": {
+            "items": [
+                {
+                    "label": "New tab",
+                    "layoutId": "layout_1"
+                }
+            ]
+        }
+    }
+}
+  ]]></definition>
+</dashboard>

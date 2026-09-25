@@ -9,7 +9,6 @@ from re import compile as re_compile
 ENCODING_MARKS: dict[str, bytes | list[bytes]] = {
     "utf_8": BOM_UTF8,
     "utf_7": [
-        b"\x2b\x2f\x76\x38\x2d",
         b"\x2b\x2f\x76\x38",
         b"\x2b\x2f\x76\x39",
         b"\x2b\x2f\x76\x2b",
@@ -414,8 +413,7 @@ IANA_NO_ALIASES = [
 
 IANA_SUPPORTED: list[str] = sorted(
     filter(
-        lambda x: x.endswith("_codec") is False
-        and x not in {"rot_13", "tactis", "mbcs"},
+        lambda x: not x.endswith("_codec") and x not in {"rot_13", "tactis", "mbcs"},
         list(set(aliases.values())) + IANA_NO_ALIASES,
     )
 )
@@ -2048,3 +2046,10 @@ _FREQUENCIES_RANK: dict[str, dict[str, int]] = {
 _FREQUENCIES_SET: dict[str, frozenset[str]] = {
     lang: frozenset(chars) for lang, chars in FREQUENCIES.items()
 }
+
+# prebuilt list of secondary range names.
+_SECONDARY_RANGE_NAMES: frozenset[str] = frozenset(
+    range_name
+    for range_name in UNICODE_RANGES_COMBINED
+    if any(keyword in range_name for keyword in UNICODE_SECONDARY_RANGE_KEYWORD)
+)

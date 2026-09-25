@@ -32,6 +32,9 @@ class BaseCommandHandler(GeneratingCommand):
 
     def generate(self):
         """Method which calls the custom `do_generate` method that yields records to the Splunk processing pipeline."""
+        # Bind logger before the try so exception handlers never raise UnboundLocalError
+        # (which would hide the original failure from Splunk).
+        logger = None
         try:
             # Setup logger
             logger = utility.setup_logger(
@@ -58,7 +61,8 @@ class BaseCommandHandler(GeneratingCommand):
                 yield event
 
         except RateLimitError:
-            logger.error("Rate limit error occurred while executing the custom command.")
+            if logger:
+                logger.error("Rate limit error occurred while executing the custom command.")
             self.write_error("The Rate Limit has been exceeded. Please contact the Administrator")
         except RequestFailure as e:
             response_code, response_message = e.args
@@ -73,27 +77,35 @@ class BaseCommandHandler(GeneratingCommand):
                     response_code, response_message["error"] if isinstance(response_message, dict) else response_message
                 )
 
-            logger.error("{}".format(str(msg)))
+            if logger:
+                logger.error("{}".format(str(msg)))
             self.write_error(msg)
         except ConnectionError:
-            logger.error("Error while connecting to the Server. Please check your connection and try again.")
+            if logger:
+                logger.error("Error while connecting to the Server. Please check your connection and try again.")
             self.write_error("Error while connecting to the Server. Please check your connection and try again.")
         except RequestException:
-            logger.error(
-                "There was an ambiguous exception that occurred while handling your Request. Please try again."
-            )
-            self.write_error(
-                "There was an ambiguous exception that occurred while handling your Request. Please try again."
-            )
-        except Exception:
-            logger.error(
-                "Exception occured while executing the custom command, Exception: {} ".format(
-                    str(traceback.format_exc())
+            if logger:
+                logger.error(
+                    "There was an ambiguous exception that occurred while handling your Request. Please try again."
                 )
-            )
             self.write_error(
-                "Exception occured while executing the {custom_command} custom command. "
-                "See greynoise_main.log for more details.".format(custom_command=str(self._metadata.searchinfo.command))
+                "There was an ambiguous exception that occurred while handling your Request. Please try again."
+            )
+        except Exception as exc:
+            tb = traceback.format_exc()
+            if logger:
+                logger.error("Exception occurred while executing the custom command, Exception: {} ".format(tb))
+            command = "unknown"
+            try:
+                command = str(self._metadata.searchinfo.command)
+            except Exception:
+                pass
+            self.write_error(
+                "Exception occurred while executing the {custom_command} custom command: {exc_type}: {exc}. "
+                "See greynoise_main.log for more details.".format(
+                    custom_command=command, exc_type=type(exc).__name__, exc=str(exc)
+                )
             )
 
     def do_generate(self, api_key, proxy, logger):

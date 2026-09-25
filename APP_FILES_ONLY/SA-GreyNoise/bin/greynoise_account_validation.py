@@ -3,9 +3,9 @@ import json
 import os
 import time
 import traceback  # noqa # pylint: disable=unused-import
-import requests
 
 import app_greynoise_declare
+import requests
 import splunk.admin as admin
 import splunk.clilib.cli_common
 import splunk.rest as rest
@@ -14,17 +14,18 @@ from greynoise_exceptions import CachingException
 from saved_search_utils import (
     DATE,
     TIME_MAP,
+    build_feed_gnql_query,
     compare_parameters,
     handle_macros,
     is_api_configured,
 )
+from service_utils import create_service
 from solnlib import conf_manager  # noqa # pylint: disable=unused-import
 from solnlib.splunkenv import get_splunkd_uri
 from splunklib.binding import HTTPError
 from splunktaucclib.rest_handler.endpoint import validator
 from splunktaucclib.rest_handler.endpoint.validator import Validator
 from utility import get_conf_file, make_error_message, setup_logger, validate_api_key
-from service_utils import create_service
 
 APP_NAME = app_greynoise_declare.ta_name
 
@@ -519,18 +520,8 @@ class GreyNoiseFeedConfiguration(Validator):
             should_ingest_feed_to_index = data.get("ingest_feed_to_index", 0)
             feed_index = data.get("feed_index", "main")
             feed_selection = data.get("feed_selection", "BENIGN")
-            if feed_selection == "ALL":
-                query = "last_seen:1d"
-            elif feed_selection == "MALICIOUS":
-                query = "last_seen:1d classification:malicious"
-            elif feed_selection == "SUSPICIOUS":
-                query = "last_seen:1d classification:suspicious"
-            elif feed_selection == "MALICIOUS_BENIGN":
-                query = "last_seen:1d (classification:benign OR classification:malicious)"
-            elif feed_selection == "MALICIOUS_SUSPICIOUS_BENIGN":
-                query = "last_seen:1d (-classification:unknown)"
-            else:
-                query = "last_seen:1d classification:benign"
+            include_community_dataset = data.get("include_community_dataset", 0)
+            query = build_feed_gnql_query(feed_selection, include_community_dataset)
 
             # Creating client for connecting server
             self.logger.debug("Creating Splunk Client object.")
@@ -539,17 +530,11 @@ class GreyNoiseFeedConfiguration(Validator):
             try:
                 if bool(int(should_ingest_feed_to_index)):
                     partial_feed_search = (
-                        "| spath input=_raw output=new_raw path=results "
-                        "| eval _raw = tostring(new_raw) "
                         f"| collect index={feed_index} source=greynoise_feed sourcetype=greynoise_feed_indicators "
-                        "| spath output=tags path=internet_scanner_intelligence.tags{}.name "
                     )
                     service.post("properties/macros/greynoise_feed_partial_search", definition=partial_feed_search)
                 else:
-                    partial_feed_search = (
-                        "| spath output=cves path=results.internet_scanner_intelligence.cves{} "
-                        "| spath output=tags path=results.internet_scanner_intelligence.tags{}.name "
-                    )
+                    partial_feed_search = "| noop"
                     service.post("properties/macros/greynoise_feed_partial_search", definition=partial_feed_search)
             except Exception as e:
                 self.logger.error("Error while updating macro greynoise_feed_partial_search: {}".format(str(e)))
@@ -687,6 +672,187 @@ class GreyNoiseFeedConfiguration(Validator):
         else:
             return True
 
+
+class GreyNoiseCallbackFeedConfiguration(Validator):
+    """Class to enable/disable the Callback IP feed saved searches and dispatch runs."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the parameters."""
+        super(GreyNoiseCallbackFeedConfiguration, self).__init__(*args, **kwargs)
+        self._validator = validator
+        self._args = args
+        self._kwargs = kwargs
+        self.path = os.path.abspath(__file__)
+        self.session_key_obj = GetSessionKey()
+        self.session_key = self.session_key_obj.session_key
+        self.logger = setup_logger(
+            session_key=self.session_key_obj.session_key, log_context="callback_feed_configuration"
+        )
+
+    def get_kvstore_status(self):
+        """Get kv store status."""
+        _, content = rest.simpleRequest(
+            "/services/kvstore/status",
+            sessionKey=self.session_key_obj.session_key,
+            method="GET",
+            getargs={"output_mode": "json"},
+            raiseAllErrors=True,
+        )
+        data = json.loads(content)["entry"]
+        return data[0]["content"]["current"].get("status")
+
+    def validate(self, value, data):
+        """Enable/disable Callback feed saved searches based on Callback IP Feed page settings."""
+        try:
+            conf = get_conf_file(self.session_key_obj.session_key, file="app_greynoise_settings")
+
+            try:
+                if not is_api_configured(conf):
+                    msg = "Configure the API key to use this feature"
+                    raise Exception(msg)
+            except HTTPError as e:
+                self.logger.error(str(e))
+                self.put_msg(str(e))
+                return False
+
+            parameters = conf.get("callback_feed_configuration", {}) or {}
+            enable_callback_feed = data.get("enable_callback_feed", 0)
+            force_enable_callback_feed = data.get("force_enable_callback_feed", 0)
+            job_id_feed = parameters.get("job_id_callback_feed", None)
+            job_id_feed_purge = parameters.get("job_id_callback_feed_purge", None)
+
+            # Persist filter options immediately so on-demand runs see the latest settings
+            filter_keys = (
+                "is_stage_1",
+                "is_stage_2",
+                "has_files",
+                "first_seen_after",
+                "first_seen_before",
+                "last_seen_after",
+                "last_seen_before",
+                "file_type",
+                "file_name",
+                "file_hash",
+                "scanner_ips",
+                "ips",
+            )
+            filter_payload = {}
+            for key in filter_keys:
+                if key in data and data.get(key) is not None:
+                    filter_payload[key] = data.get(key)
+            if filter_payload:
+                conf.update("callback_feed_configuration", filter_payload)
+
+            self.logger.debug("Creating Splunk Client object for Callback feed configuration.")
+            service = create_service(self.session_key_obj.session_key)
+
+            if bool(int(enable_callback_feed)):
+                try:
+                    self.logger.info("Retrieving the KV store status for Callback feed.")
+                    status = self.get_kvstore_status()
+                    if status != "ready":
+                        message = "KV store is not in ready state. Make sure it is enabled."
+                        make_error_message(message, self.session_key_obj.session_key, self.logger)
+                except Exception:
+                    self.logger.error("Could not retrieve the status of KV store.")
+
+                self.logger.debug("Enabling Callback feed saved searches.")
+                feed_savedsearch = service.saved_searches["greynoise_callback_feed"]
+                feed_purge_savedsearch = service.saved_searches["greynoise_callback_feed_purge"]
+                feed_savedsearch.enable()
+                feed_purge_savedsearch.enable()
+
+                if job_id_feed:
+                    self.logger.debug("Callback feed job ID present: {}".format(job_id_feed))
+                    if bool(int(force_enable_callback_feed)):
+                        self.logger.debug("Force dispatching Callback feed once.")
+                        try:
+                            job_details = service.job(job_id_feed)
+                            job_details.delete()
+                        except Exception:
+                            pass
+                        feed_once_savedsearch = service.saved_searches["greynoise_callback_feed_once"]
+                        job = feed_once_savedsearch.dispatch()
+                        conf.update("callback_feed_configuration", {"job_id_callback_feed": job["sid"]})
+                        self.logger.info("Callback feed once saved search dispatched successfully.")
+                        return True
+
+                    try:
+                        job_details = service.job(job_id_feed)
+                        status = job_details.state().content["dispatchState"]
+                        if status == "PAUSED":
+                            job_details.unpause()
+                            return True
+                        if status in ["QUEUED", "PARSING", "RUNNING"]:
+                            return True
+                    except Exception:
+                        pass
+
+                    job = feed_savedsearch.dispatch()
+                    job_purge = feed_purge_savedsearch.dispatch()
+                    conf.update("callback_feed_configuration", {"job_id_callback_feed": job["sid"]})
+                    conf.update("callback_feed_configuration", {"job_id_callback_feed_purge": job_purge["sid"]})
+                    self.logger.info("Callback feed saved searches dispatched successfully.")
+                    return True
+
+                self.logger.debug("No Callback feed job ID present.")
+                if bool(int(force_enable_callback_feed)):
+                    self.logger.debug("Force dispatching Callback feed once.")
+                    feed_once_savedsearch = service.saved_searches["greynoise_callback_feed_once"]
+                    job = feed_once_savedsearch.dispatch()
+                    conf.update("callback_feed_configuration", {"job_id_callback_feed": job["sid"]})
+                    self.logger.info("Callback feed once saved search dispatched successfully.")
+                    return True
+
+                self.logger.debug("Dispatching new Callback feed jobs.")
+                job = feed_savedsearch.dispatch()
+                job_purge = feed_purge_savedsearch.dispatch()
+                conf.update("callback_feed_configuration", {"job_id_callback_feed": job["sid"]})
+                conf.update("callback_feed_configuration", {"job_id_callback_feed_purge": job_purge["sid"]})
+                self.logger.info("Callback feed saved searches enabled and dispatched successfully.")
+            else:
+                self.logger.debug("Disabling Callback feed saved searches.")
+                feed_savedsearch = service.saved_searches["greynoise_callback_feed"]
+                feed_purge_savedsearch = service.saved_searches["greynoise_callback_feed_purge"]
+                feed_savedsearch.disable()
+                feed_purge_savedsearch.disable()
+
+                if job_id_feed:
+                    try:
+                        job_details = service.job(job_id_feed)
+                        status = job_details.state().content["dispatchState"]
+                        if status in ["QUEUED", "PARSING", "RUNNING", "FINALIZING", "PAUSED"]:
+                            job_details.cancel()
+                    except Exception:
+                        pass
+                if job_id_feed_purge:
+                    try:
+                        job_details = service.job(job_id_feed_purge)
+                        status = job_details.state().content["dispatchState"]
+                        if status in ["QUEUED", "PARSING", "RUNNING", "FINALIZING", "PAUSED"]:
+                            job_details.cancel()
+                    except Exception:
+                        pass
+                self.logger.info("Callback feed saved searches disabled successfully.")
+        except HTTPError:
+            self.logger.error(
+                "Error while retrieving Callback feed saved searches. Please check if "
+                "greynoise_callback_feed_once and greynoise_callback_feed exist."
+            )
+            self.put_msg("Error while retrieving Saved Search. Kindly check greynoise_main.log for more details.")
+            return False
+        except Exception as e:
+            try:
+                msg
+            except Exception:
+                msg = "Unrecognized error: {}".format(str(e))
+            self.logger.error(msg)
+            self.put_msg(msg)
+            return False
+        else:
+            return True
+
+
 class GreyNoiseESAppValidation(Validator):
     """Validate the Splunk ES app exists."""
 
@@ -699,7 +865,7 @@ class GreyNoiseESAppValidation(Validator):
         self.path = os.path.abspath(__file__)
         self.session_key_obj = GetSessionKey()
         self.logger = setup_logger(session_key=self.session_key_obj.session_key, log_context="es_app_validation")
-    
+
     def validate(self, value, data):
         try:
             is_update_risk_score_to_splunk_es = data.get("update_risk_score_to_splunk_es", 0)
@@ -710,12 +876,12 @@ class GreyNoiseESAppValidation(Validator):
             self.logger.info("Validating the Splunk ES app exists.")
             headers = {
                 "Authorization": "Splunk {}".format(self.session_key_obj.session_key),
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
             response = requests.get(
                 get_splunkd_uri() + "/servicesNS/-/SplunkEnterpriseSecuritySuite/",
                 headers=headers,
-                verify=VERIFY_INTERNAL_SSL
+                verify=VERIFY_INTERNAL_SSL,
             )
             if response.status_code != 200:
                 self.logger.error("Splunk ES app does not exist.")
